@@ -33,11 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TslReader {
 
-    public Optional<TrustStatusListType> getTrustStatusListType(@NonNull final String tslFilename) {
-        return getTrustStatusList(tslFilename);
-    }
-
-    private Optional<TrustStatusListType> getTrustStatusList(final String tslFilename) {
+    public Optional<TrustServiceStatusList> getTrustServiceStatusList(@NonNull final String tslFilename) {
         try (final InputStream inputStream = getClass().getClassLoader().getResourceAsStream(tslFilename)) {
             Objects.requireNonNull(inputStream);
             final JAXBContext jaxbContext = JAXBContext
@@ -45,7 +41,7 @@ public class TslReader {
             final Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
             final JAXBElement<TrustStatusListType> jaxbElement =
                 (JAXBElement<TrustStatusListType>) unmarshaller.unmarshal(inputStream);
-            return Optional.of(jaxbElement.getValue());
+            return Optional.of(new TrustServiceStatusList(jaxbElement.getValue()));
         } catch (final JAXBException e) {
             throw new IllegalStateException("Unable to initialize or parse TSL: " + e, e);
         } catch (final IOException io) {

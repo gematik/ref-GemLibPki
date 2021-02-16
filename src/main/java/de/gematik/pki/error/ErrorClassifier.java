@@ -24,7 +24,8 @@ import lombok.RequiredArgsConstructor;
 public enum ErrorClassifier {
 
     TECHNICAL_ERROR("Technical Error"),
-    SECURITY_ERROR("Security Error");
+    SECURITY_ERROR("Security Error"),
+    INTERNAL_ERROR("Internal Error");
 
     private final String description;
 }

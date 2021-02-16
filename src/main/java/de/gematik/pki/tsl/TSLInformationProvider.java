@@ -16,9 +16,6 @@
 
 package de.gematik.pki.tsl;
 
-import eu.europa.esig.jaxb.tsl.TSPServiceType;
-import eu.europa.esig.jaxb.tsl.TrustStatusListType;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,30 +24,28 @@ import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
-public class TSLInformationProvider {
+public class TslInformationProvider {
 
     private static final String STI_PKC = "http://uri.etsi.org/TrstSvc/Svctype/CA/PKC";
     private static final String STI_OCSP = "http://uri.etsi.org/TrstSvc/Svctype/Certstatus/OCSP";
     private static final String STI_SRV_CERT_CHANGE = "http://uri.etsi.org/TrstSvc/Svctype/TSLServiceCertChange";
     private static final List<String> STI_DEFAULT_FILTER_LIST = Arrays.asList(STI_PKC, STI_OCSP, STI_SRV_CERT_CHANGE);
 
-    private final TrustStatusListType trustStatusList;
+    private final TrustServiceStatusList trustServiceStatusList;
 
-    public List<TSPServiceType> getTspServices() {
+    public List<TspService> getTspServices() {
         return getTspServices(STI_DEFAULT_FILTER_LIST);
     }
 
-    public List<TSPServiceType> getTspServices(final List<String> stiFilterList) {
+    public List<TspService> getTspServices(final List<String> stiFilterList) {
 
-        final List<TSPServiceType> tspServiceList = new ArrayList<>();
-        tspServiceList
-            .addAll(trustStatusList.getTrustServiceProviderList().getTrustServiceProvider()
+        return trustServiceStatusList.getTrustStatusListType().getTrustServiceProviderList().getTrustServiceProvider()
+            .stream()
+            .flatMap(f -> f.getTSPServices().getTSPService()
                 .stream()
-                .flatMap(f -> f.getTSPServices().getTSPService()
-                    .stream()
-                    .filter(c -> stiFilterList.contains(c.getServiceInformation().getServiceTypeIdentifier())))
-                .collect(Collectors.toList()));
-        return tspServiceList;
+                .filter(c -> stiFilterList.contains(c.getServiceInformation().getServiceTypeIdentifier())))
+            .map(TspService::new)
+            .collect(Collectors.toList());
     }
 
 }

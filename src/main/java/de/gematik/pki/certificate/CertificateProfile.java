@@ -22,32 +22,34 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @Getter
-public enum CertificateProfiles {
+public enum CertificateProfile {
 
-    C_CH_AUT_RSA(CertificateType.EGK_AUT, List.of(KeyUsage.KEY_ENCIPHERMENT),
-        List.of(ExtendedKeyUsage.ID_KP_CLIENTAUTH)),
-    C_CH_AUT_ECC(CertificateType.EGK_AUT, List.of(KeyUsage.DIGITAL_SIGNATURE, KeyUsage.KEY_ENCIPHERMENT),
-        List.of(ExtendedKeyUsage.ID_KP_CLIENTAUTH)),
+    C_CH_AUT_RSA(CertificateType.EGK_AUT, List.of(KeyUsage.DIGITAL_SIGNATURE, KeyUsage.KEY_ENCIPHERMENT),
+        List.of(ExtendedKeyUsage.ID_KP_CLIENTAUTH), false),
+    C_CH_AUT_ECC(CertificateType.EGK_AUT, List.of(KeyUsage.DIGITAL_SIGNATURE),
+        List.of(ExtendedKeyUsage.ID_KP_CLIENTAUTH), false),
 
     C_HP_AUT_RSA(CertificateType.HBA_AUT, List.of(KeyUsage.DIGITAL_SIGNATURE, KeyUsage.KEY_ENCIPHERMENT),
-        List.of(ExtendedKeyUsage.ID_KP_CLIENTAUTH, ExtendedKeyUsage.ID_KP_EMAILPROTECTION)),
+        List.of(ExtendedKeyUsage.ID_KP_CLIENTAUTH, ExtendedKeyUsage.ID_KP_EMAILPROTECTION), true),
     C_HP_AUT_ECC(CertificateType.HBA_AUT, List.of(KeyUsage.DIGITAL_SIGNATURE, KeyUsage.KEY_AGREEMENT),
-        List.of(ExtendedKeyUsage.ID_KP_CLIENTAUTH, ExtendedKeyUsage.ID_KP_EMAILPROTECTION)),
+        List.of(ExtendedKeyUsage.ID_KP_CLIENTAUTH, ExtendedKeyUsage.ID_KP_EMAILPROTECTION), true),
 
     C_HCI_AUT_RSA(CertificateType.SMC_B_AUT, List.of(KeyUsage.DIGITAL_SIGNATURE, KeyUsage.KEY_ENCIPHERMENT),
-        List.of(ExtendedKeyUsage.ID_KP_CLIENTAUTH)),
+        List.of(ExtendedKeyUsage.ID_KP_CLIENTAUTH), true),
     C_HCI_AUT_ECC(CertificateType.SMC_B_AUT, List.of(KeyUsage.DIGITAL_SIGNATURE),
-        List.of(ExtendedKeyUsage.ID_KP_CLIENTAUTH)),
+        List.of(ExtendedKeyUsage.ID_KP_CLIENTAUTH), true),
 
-    C_HCI_ENC_RSA(CertificateType.SMC_B_ENC, List.of(KeyUsage.KEY_ENCIPHERMENT, KeyUsage.DATA_ENCIPHERMENT), List.of()),
-    C_HCI_ENC_ECC(CertificateType.SMC_B_ENC, List.of(KeyUsage.KEY_AGREEMENT), List.of()),
+    C_HCI_ENC_RSA(CertificateType.SMC_B_ENC, List.of(KeyUsage.KEY_ENCIPHERMENT, KeyUsage.DATA_ENCIPHERMENT), List.of(),
+        false),
+    C_HCI_ENC_ECC(CertificateType.SMC_B_ENC, List.of(KeyUsage.KEY_AGREEMENT), List.of(), false),
 
     C_TSL_SIG_RSA(CertificateType.NONE, List.of(KeyUsage.NON_REPUDIATION),
-        List.of(ExtendedKeyUsage.ID_TSL_KP_TSLSIGNING)),
-    C_TSL_SIG_ECC(CertificateType.NONE, C_TSL_SIG_RSA.keyUsages, C_TSL_SIG_RSA.extKeyUsages);
+        List.of(ExtendedKeyUsage.ID_TSL_KP_TSLSIGNING), true),
+    C_TSL_SIG_ECC(CertificateType.NONE, C_TSL_SIG_RSA.keyUsages, C_TSL_SIG_RSA.extKeyUsages, true);
 
-    public final CertificateType certificateType;
+    private final CertificateType certificateType;
     private final List<KeyUsage> keyUsages;
     private final List<ExtendedKeyUsage> extKeyUsages;
+    private final boolean failOnMissingEku;
 
 }

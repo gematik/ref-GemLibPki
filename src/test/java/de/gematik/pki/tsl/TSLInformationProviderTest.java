@@ -18,30 +18,29 @@ package de.gematik.pki.tsl;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import eu.europa.esig.jaxb.tsl.TrustStatusListType;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @Slf4j
-class TSLInformationProviderTest {
+class TslInformationProviderTest {
 
     private static final String FILE_NAME_TSL_DEFAULT = "tsls/valid/TSL_default.xml";
     private static final String STI_PKC = "http://uri.etsi.org/TrstSvc/Svctype/CA/PKC";
-    private TSLInformationProvider tslInformationProvider;
+    private TslInformationProvider tslInformationProvider;
 
     @BeforeEach
     void setUp() {
-        final Optional<TrustStatusListType> trustStatusListType = new TslReader()
-            .getTrustStatusListType(FILE_NAME_TSL_DEFAULT);
-        tslInformationProvider = new TSLInformationProvider(trustStatusListType.orElseThrow());
+        final Optional<TrustServiceStatusList> trustStatusList = new TslReader()
+            .getTrustServiceStatusList(FILE_NAME_TSL_DEFAULT);
+        tslInformationProvider = new TslInformationProvider(trustStatusList.orElseThrow());
     }
 
     @Test
     void readTspServices_PkcProviderSizeShouldBeCorrect() {
-        assertThat(tslInformationProvider.getTspServices(Arrays.asList(STI_PKC)).size())
+        assertThat(tslInformationProvider.getTspServices(Collections.singletonList(STI_PKC)).size())
             .isEqualTo(89);
     }
 

@@ -16,17 +16,13 @@
 
 package de.gematik.pki.tsl;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import eu.europa.esig.jaxb.tsl.TrustStatusListType;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-import org.junit.jupiter.api.Test;
+@RequiredArgsConstructor
+@Getter
+public class TrustServiceStatusList {
 
-class TslReaderTest {
-
-    private static final String FILE_NAME_TSL_DEFAULT = "tsls/valid/TSL_default.xml";
-
-    @Test
-    void verifyGetTrustStatusListTypeIsPresent() {
-        assertThat(new TslReader().getTrustServiceStatusList(FILE_NAME_TSL_DEFAULT)).isPresent();
-    }
-
+    private final TrustStatusListType trustStatusListType;
 }

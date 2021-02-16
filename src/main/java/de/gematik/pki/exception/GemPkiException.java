@@ -22,11 +22,20 @@ import lombok.Getter;
 @Getter
 public class GemPkiException extends Exception {
 
-    private static final long serialVersionUID = 7405265126912779712L;
     private final ErrorCode error;
 
     public GemPkiException(final String productType, final ErrorCode error) {
         super(error.getErrorMessage(productType));
+        this.error = error;
+    }
+
+    public GemPkiException(final String productType, final ErrorCode error, final Exception e) {
+        super(error.getErrorMessage(productType), e);
+        this.error = error;
+    }
+
+    public GemPkiException(final ErrorCode error, final String message, final Exception e) {
+        super(message, e);
         this.error = error;
     }
 }

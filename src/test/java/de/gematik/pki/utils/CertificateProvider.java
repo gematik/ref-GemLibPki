@@ -40,7 +40,7 @@ import org.junit.jupiter.params.support.AnnotationConsumer;
 public class CertificateProvider implements ArgumentsProvider, AnnotationConsumer<VariableSource> {
 
     private static String certPathSwitch;
-    private static final String CERTIFICATE_SUBDIR = "/GEM.SMCB-CA10/";
+    private static final String CERTIFICATE_SUBDIR = "/certificates/GEM.SMCB-CA10/";
 
     @Override
     public Stream<? extends Arguments> provideArguments(final ExtensionContext extensionContext)

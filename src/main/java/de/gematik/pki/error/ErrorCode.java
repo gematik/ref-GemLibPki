@@ -69,7 +69,14 @@ public enum ErrorCode {
         "Das Zertifikat ist ungültig. Es wurde nach der Sperrung der ausgebenden CA ausgestellt."),
 
     SE_1061(ErrorSeverity.ERROR, ErrorClassifier.SECURITY_ERROR, "CERT_TYPE_CA_NOT_AUTHORIZED",
-        "CA (laut TSL) nicht autorisiert für die Herausgabe dieses Zertifikatstyps.");
+        "CA (laut TSL) nicht autorisiert für die Herausgabe dieses Zertifikatstyps."),
+
+    // library internal errors
+    UNKNOWN(ErrorSeverity.ERROR, ErrorClassifier.INTERNAL_ERROR, "UNKNOWN_INTERNAL_ERROR",
+        "Ein unbekannter, interner Fehler ist aufgetreten."),
+
+    CERTIFICATE_READ(ErrorSeverity.ERROR, ErrorClassifier.INTERNAL_ERROR, "EE_CERTIFICATE_READ_ERROR",
+        "Es ist ein Fehler beim Lesen des EndEntity Zertifikats aufgetreten.");
 
     private final ErrorSeverity errorSeverity;
     private final ErrorClassifier errorClassifier;
@@ -77,7 +84,7 @@ public enum ErrorCode {
     private final String errorTextDesc;
 
     public String getErrorMessage(final String productType) {
-        return productType + ":PKI - " + getErrorClassifier().name() + " " + name() + " - "
+        return "\n" + productType + ":PKI - " + getErrorClassifier().name() + " " + name() + " - "
             + getErrorTextShort()
             + " "
             + getErrorTextDesc();

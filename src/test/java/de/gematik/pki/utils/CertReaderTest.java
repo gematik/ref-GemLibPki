@@ -28,14 +28,14 @@ class CertReaderTest {
     @Test
     void readExistingX509DerCert() throws IOException {
         final byte[] file = FileUtils
-            .readFileToByteArray(new File("src/test/resources/GEM.SMCB-CA10/valid/DrMedGunther.der"));
+            .readFileToByteArray(new File("src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.der"));
         assertNotNull(CertReader.readX509(file));
     }
 
     @Test
     void readExistingX509PemCert() throws IOException {
         final byte[] file = FileUtils
-            .readFileToByteArray(new File("src/test/resources/GEM.SMCB-CA10/valid/DrMedGunther.pem"));
+            .readFileToByteArray(new File("src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem"));
         assertNotNull(CertReader.readX509(file));
     }
 }
