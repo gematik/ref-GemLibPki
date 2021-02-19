@@ -1,3 +1,7 @@
+# Release 0.3.0
+* fix https://github.com/gematik/ref-GemLibPki/issues/1
+* refactor class names
+
 # Release 0.2.0
 * accept several profiles/policies in certificates
 * change behavior of certficate checks (for [ext]KeyUsage) to fit gematik certificate profiles

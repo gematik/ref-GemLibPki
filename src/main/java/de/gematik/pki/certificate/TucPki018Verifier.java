@@ -32,7 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
-public class CertificateVerifier {
+public class TucPki018Verifier {
 
     @NonNull
     private final String productType;
@@ -49,13 +49,7 @@ public class CertificateVerifier {
         final EnumMap<CertificateProfile, GemPkiException> errors = new EnumMap<>(CertificateProfile.class);
         for (final CertificateProfile certificateProfile : certificateProfiles) {
             try {
-                SingleCertificateVerificationWorker.builder()
-                    .x509EeCert(x509EeCert)
-                    .certificateProfile(certificateProfile)
-                    .tspServiceList(tspServiceList)
-                    .productType(productType)
-                    .build()
-                    .performCertificateChecks();
+                performTucPki018Checks(x509EeCert, certificateProfile);
                 log.debug("Übergebenes Zertifikat wurde erfolgreich gegen das Zertifikatsprofil {} getestet.",
                     certificateProfile);
                 return certificateProfile.getCertificateType();
@@ -66,5 +60,23 @@ public class CertificateVerifier {
             }
         }
         throw new GemPkiParsingException(productType, errors);
+    }
+
+    private void performTucPki018Checks(@NonNull final X509Certificate x509EeCert,
+        @NonNull final CertificateProfile certificateProfile) throws GemPkiException {
+
+        final CertificateVerification cv = CertificateVerification.builder()
+            .x509EeCert(x509EeCert)
+            .certificateProfile(certificateProfile)
+            .tspServiceList(tspServiceList)
+            .productType(productType)
+            .build();
+
+        cv.verifyValidity();
+        cv.verifySignature(cv.getIssuerCertificate());
+        cv.verifyKeyUsage();
+        cv.verifyExtendedKeyUsage();
+        cv.verifyIssuerServiceStatus();
+        cv.verifyCertificateType();
     }
 }

@@ -18,7 +18,6 @@ package de.gematik.pki.certificate;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-
 import de.gematik.pki.error.ErrorCode;
 import de.gematik.pki.exception.GemPkiException;
 import de.gematik.pki.tsl.TslInformationProvider;
@@ -36,10 +35,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 
-@Slf4j(topic = "UNITTEST")
-class CertificateVerifierTest {
+@Slf4j(topic = "INTEGRATIONTESTS")
+class TucPki018VerifierTest {
 
-    private CertificateVerifier certificateVerifier;
+    private TucPki018Verifier tucPki018Verifier;
     private X509Certificate VALID_EE_CERT;
     private static final String FILE_NAME_TSL_DEFAULT = "tsls/valid/TSL_default.xml";
     private final CertificateProfile certificateProfile = CertificateProfile.C_HCI_AUT_ECC;
@@ -49,16 +48,16 @@ class CertificateVerifierTest {
     void setUp() throws IOException {
         VALID_EE_CERT = CertificateProvider
             .getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem");
-        certificateVerifier = buildCertificateChecker(certificateProfiles);
+        tucPki018Verifier = buildCertificateChecker(certificateProfiles);
     }
 
-    private CertificateVerifier buildCertificateChecker(final List<CertificateProfile> certificateProfiles) {
+    private TucPki018Verifier buildCertificateChecker(final List<CertificateProfile> certificateProfiles) {
 
         final List<TspService> tspServiceList = new TslInformationProvider(
             new TslReader().getTrustServiceStatusList(FILE_NAME_TSL_DEFAULT).orElseThrow())
             .getTspServices();
 
-        return CertificateVerifier.builder()
+        return TucPki018Verifier.builder()
             .productType("IDP")
             .tspServiceList(tspServiceList)
             .certificateProfiles(certificateProfiles)
@@ -67,7 +66,7 @@ class CertificateVerifierTest {
 
     @Test
     void verifyPerformTucPki18ChecksValid() {
-        assertDoesNotThrow(() -> certificateVerifier.performTucPki18Checks(VALID_EE_CERT));
+        assertDoesNotThrow(() -> tucPki018Verifier.performTucPki18Checks(VALID_EE_CERT));
     }
 
     @Test
@@ -93,7 +92,7 @@ class CertificateVerifierTest {
 
     @Test
     void verifyNotEveryKeyUsagePresent() {
-        assertThatThrownBy(() -> certificateVerifier.performTucPki18Checks(CertificateProvider
+        assertThatThrownBy(() -> tucPki018Verifier.performTucPki18Checks(CertificateProvider
             .getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA24-RSA/AschoffscheApotheke.pem")))
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1016.name());
@@ -132,7 +131,7 @@ class CertificateVerifierTest {
 
     @Test
     void verifyCertNull() {
-        assertThatThrownBy(() -> certificateVerifier.performTucPki18Checks(null))
+        assertThatThrownBy(() -> tucPki018Verifier.performTucPki18Checks(null))
             .isInstanceOf(NullPointerException.class)
             .hasMessageContaining("x509EeCert");
     }
@@ -155,9 +154,8 @@ class CertificateVerifierTest {
     @ArgumentsSource(CertificateProvider.class)
     @VariableSource(value = "invalid")
     void verifyPerformTucPki18ChecksInvalid(final X509Certificate cert) {
-        assertThatThrownBy(() -> certificateVerifier.performTucPki18Checks(cert))
+        assertThatThrownBy(() -> tucPki018Verifier.performTucPki18Checks(cert))
             .as("Test invalid certificates")
             .isInstanceOf(GemPkiException.class);
     }
-
 }
