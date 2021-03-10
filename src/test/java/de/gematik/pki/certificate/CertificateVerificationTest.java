@@ -16,19 +16,20 @@
 
 package de.gematik.pki.certificate;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+
 import de.gematik.pki.error.ErrorCode;
 import de.gematik.pki.exception.GemPkiException;
 import de.gematik.pki.tsl.TslInformationProvider;
 import de.gematik.pki.tsl.TslReader;
-import de.gematik.pki.tsl.TspService;
+import de.gematik.pki.tsl.TspInformationProvider;
+import de.gematik.pki.tsl.TspServiceSubset;
 import de.gematik.pki.utils.CertificateProvider;
 import java.io.IOException;
 import java.security.cert.X509Certificate;
 import java.time.ZonedDateTime;
-import java.util.List;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,17 +49,18 @@ class CertificateVerificationTest {
     private final CertificateProfile certificateProfile = CertificateProfile.C_HCI_AUT_ECC;
     private String productType;
     private CertificateVerification certificateVerification;
-    private X509Certificate VALID_EE_CERT;
-    private X509Certificate VALID_EE_CERT_ALT_CA;
-    private X509Certificate VALID_ISSUER_CERT;
+    private X509Certificate VALID_X509_EE_CERT;
+    private X509Certificate VALID_X509_EE_CERT_ALT_CA;
+    private X509Certificate VALID_X509_ISSUER_CERT;
 
     @BeforeEach
-    void setUp() throws IOException {
-        VALID_EE_CERT = CertificateProvider
+    @SneakyThrows
+    void setUp() {
+        VALID_X509_EE_CERT = CertificateProvider
             .getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem");
-        VALID_EE_CERT_ALT_CA = CertificateProvider.getX509Certificate(
+        VALID_X509_EE_CERT_ALT_CA = CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.SMCB-CA33/DrMedGuntherKZV.pem");
-        VALID_ISSUER_CERT = CertificateProvider
+        VALID_X509_ISSUER_CERT = CertificateProvider
             .getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA10/GEM.SMCB-CA10_TEST-ONLY.pem");
         DATETIME_TO_CHECK = ZonedDateTime.parse("2020-11-20T15:00:00Z");
         productType = "IDP";
@@ -66,22 +68,22 @@ class CertificateVerificationTest {
     }
 
     private CertificateVerification buildCertificateVerififier(
-        final CertificateProfile certificateProfile) {
-        return buildCertificateVerififier(FILE_NAME_TSL_DEFAULT, certificateProfile, VALID_EE_CERT);
+        final CertificateProfile certificateProfile) throws GemPkiException {
+        return buildCertificateVerififier(FILE_NAME_TSL_DEFAULT, certificateProfile, VALID_X509_EE_CERT);
     }
 
     private CertificateVerification buildCertificateVerififier(final String tslFilename,
-        final CertificateProfile certificateProfile, final X509Certificate eeCert) {
+        final CertificateProfile certificateProfile, final X509Certificate x509EeCert) throws GemPkiException {
 
-        final List<TspService> tspServiceList = new TslInformationProvider(
-            new TslReader().getTrustServiceStatusList(tslFilename).orElseThrow())
-            .getTspServices();
+        final TspServiceSubset tspServiceSubset = new TspInformationProvider(new TslInformationProvider(
+            new TslReader().getTrustServiceStatusList(tslFilename).orElseThrow()).getTspServices(), productType)
+            .getTspServiceSubset(x509EeCert);
 
         return CertificateVerification.builder()
             .productType(productType)
-            .tspServiceList(tspServiceList)
+            .tspServiceSubset(tspServiceSubset)
             .certificateProfile(certificateProfile)
-            .x509EeCert(eeCert)
+            .x509EeCert(x509EeCert)
             .build();
     }
 
@@ -96,7 +98,7 @@ class CertificateVerificationTest {
     @Test
     void verifyCertificateProfileNull() {
         assertThatThrownBy(() -> buildCertificateVerififier(FILE_NAME_TSL_DEFAULT, null,
-            VALID_EE_CERT))
+            VALID_X509_EE_CERT))
             .isInstanceOf(NullPointerException.class)
             .hasMessageContaining("certificateProfile");
     }
@@ -104,7 +106,7 @@ class CertificateVerificationTest {
     @Test
     void verifyTspProfileNull() {
         assertThatThrownBy(() -> buildCertificateVerififier(null, certificateProfile,
-            VALID_EE_CERT))
+            VALID_X509_EE_CERT))
             .isInstanceOf(NullPointerException.class)
             .hasMessageContaining("tslFilename");
     }
@@ -113,21 +115,21 @@ class CertificateVerificationTest {
     void verifySignatureIssuerNull() {
         assertThatThrownBy(() -> certificateVerification.verifySignature(null))
             .isInstanceOf(NullPointerException.class)
-            .hasMessageContaining("issuer");
+            .hasMessageContaining("x509IssuerCert");
     }
 
     @Test
     void verifySignatureValid() {
-        assertDoesNotThrow(() -> certificateVerification.verifySignature(VALID_ISSUER_CERT));
+        assertDoesNotThrow(() -> certificateVerification.verifySignature(VALID_X509_ISSUER_CERT));
     }
 
     @Test
     void verifySignatureNotValid() throws IOException {
-        final X509Certificate invalidEeCert = CertificateProvider.getX509Certificate(
+        final X509Certificate invalidx509EeCert = CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-signature.pem");
         assertThatThrownBy(
-            () -> buildCertificateVerififier(FILE_NAME_TSL_ALT_CA, certificateProfile, invalidEeCert)
-                .verifySignature(VALID_ISSUER_CERT))
+            () -> buildCertificateVerififier(FILE_NAME_TSL_ALT_CA, certificateProfile, invalidx509EeCert)
+                .verifySignature(VALID_X509_ISSUER_CERT))
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1024.getErrorMessage(productType));
     }
@@ -173,11 +175,11 @@ class CertificateVerificationTest {
 
     @Test
     void verifyKeyUsageMissingInCertificate() throws IOException {
-        final X509Certificate missingKeyUsageEeCert = CertificateProvider.getX509Certificate(
+        final X509Certificate missingKeyUsagex509EeCert = CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-keyusage.pem");
         assertThatThrownBy(
             () -> buildCertificateVerififier(FILE_NAME_TSL_DEFAULT, certificateProfile,
-                missingKeyUsageEeCert)
+                missingKeyUsagex509EeCert)
                 .verifyKeyUsage())
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1016.name()); //WRONG_KEYUSAGE
@@ -185,11 +187,11 @@ class CertificateVerificationTest {
 
     @Test
     void verifyKeyUsageInvalidInCertificate() throws IOException {
-        final X509Certificate invalidKeyUsageEeCert = CertificateProvider.getX509Certificate(
+        final X509Certificate invalidKeyUsagex509EeCert = CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-keyusage.pem");
         assertThatThrownBy(
             () -> buildCertificateVerififier(FILE_NAME_TSL_DEFAULT, certificateProfile,
-                invalidKeyUsageEeCert)
+                invalidKeyUsagex509EeCert)
                 .verifyKeyUsage())
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1016.getErrorMessage(productType)); //WRONG_KEYUSAGE
@@ -242,11 +244,11 @@ class CertificateVerificationTest {
 
     @Test
     void verifyExtendedKeyUsageMissingInCertificate() throws IOException {
-        final X509Certificate missingExtKeyUsageEeCert = CertificateProvider.getX509Certificate(
+        final X509Certificate missingExtKeyUsagex509EeCert = CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-extKeyUsage.pem");
         assertThatThrownBy(
             () -> buildCertificateVerififier(FILE_NAME_TSL_DEFAULT, certificateProfile,
-                missingExtKeyUsageEeCert)
+                missingExtKeyUsagex509EeCert)
                 .verifyExtendedKeyUsage())
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1017.name()); //WRONG_EXT_KEYUSAGE
@@ -265,64 +267,31 @@ class CertificateVerificationTest {
     }
 
     @Test
-    void verifyGetIssuerCertificateValidEE() {
-        assertDoesNotThrow(() -> certificateVerification.getIssuerCertificate());
-    }
-
-    @Test
-    void verifyGetIssuerCertificateExtractionError() {
-        final String tslAltCaBroken = "tsls/defect/TSL_defect_altCA_broken.xml";
-        assertThatThrownBy(() -> buildCertificateVerififier(tslAltCaBroken, certificateProfile,
-            VALID_EE_CERT_ALT_CA).getIssuerCertificate())
-            .isInstanceOf(GemPkiException.class)
-            .hasMessageContaining(ErrorCode.TE_1002.name());
-    }
-
-    @Test
-    void verifyGetIssuerCertificateMissing() {
-        assertThatThrownBy(() -> buildCertificateVerififier(FILE_NAME_TSL_DEFAULT,
-            certificateProfile, VALID_EE_CERT_ALT_CA).getIssuerCertificate())
-            .isInstanceOf(GemPkiException.class)
-            .hasMessageContaining(ErrorCode.TE_1027.name());
-    }
-
-    @Test
     void verifyIssuerServiceStatusInaccord() {
         assertDoesNotThrow(() -> buildCertificateVerififier(FILE_NAME_TSL_ALT_CA, certificateProfile,
-            VALID_EE_CERT_ALT_CA).verifyIssuerServiceStatus());
-    }
-
-    @Test
-    void verifyGetIssuerTspServiceMissingAki() throws IOException {
-        final X509Certificate invalidEeCert = CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-authorityKeyId.pem");
-        assertThatThrownBy(
-            () -> buildCertificateVerififier(FILE_NAME_TSL_DEFAULT, certificateProfile, invalidEeCert)
-                .getIssuerTspService())
-            .isInstanceOf(GemPkiException.class)
-            .hasMessageContaining(ErrorCode.SE_1023.getErrorMessage(productType));
+            VALID_X509_EE_CERT_ALT_CA).verifyIssuerServiceStatus());
     }
 
     /**
-     * Timestamp "notBefore" of VALID_EE_CERT_ALT_CA is before StatusStartingTime of TSPService (issuer of
-     * VALID_EE_CERT_ALT_CA) in TSL FILE_NAME_TSL_ALT_CA_REVOKED
+     * Timestamp "notBefore" of VALID_X509_EE_CERT_ALT_CA is before StatusStartingTime of TSPService (issuer of
+     * VALID_X509_EE_CERT_ALT_CA) in TSL FILE_NAME_TSL_ALT_CA_REVOKED
      */
     @Test
     void verifyIssuerServiceStatusRevokedLater() {
         final String tslAltCaRevokedLater = "tsls/valid/TSL_altCA_revokedLater.xml";
         assertDoesNotThrow(() -> buildCertificateVerififier(tslAltCaRevokedLater,
-            certificateProfile, VALID_EE_CERT_ALT_CA)
+            certificateProfile, VALID_X509_EE_CERT_ALT_CA)
             .verifyIssuerServiceStatus());
     }
 
     /**
-     * Timestamp "notBefore" of VALID_EE_CERT_ALT_CA is after StatusStartingTime of TSPService (issuer of
-     * VALID_EE_CERT_ALT_CA) in TSL FILE_NAME_TSL_ALT_CA_REVOKED
+     * Timestamp "notBefore" of VALID_X509_EE_CERT_ALT_CA is after StatusStartingTime of TSPService (issuer of
+     * VALID_X509_EE_CERT_ALT_CA) in TSL FILE_NAME_TSL_ALT_CA_REVOKED
      */
     @Test
     void verifyIssuerServiceStatusRevoked() {
         assertThatThrownBy(() -> buildCertificateVerififier(FILE_NAME_TSL_ALT_CA_REVOKED,
-            certificateProfile, VALID_EE_CERT_ALT_CA)
+            certificateProfile, VALID_X509_EE_CERT_ALT_CA)
             .verifyIssuerServiceStatus())
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1036.getErrorMessage(productType));
@@ -379,25 +348,10 @@ class CertificateVerificationTest {
 
         assertThatThrownBy(
             () -> buildCertificateVerififier(tslAltCaWrongServiceExtension, certificateProfile,
-                VALID_EE_CERT_ALT_CA)
+                VALID_X509_EE_CERT_ALT_CA)
                 .verifyCertificateType())
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1061.getErrorMessage(productType));
     }
 
-    @Test
-    void verifyServiceSupplyPointValid() throws GemPkiException {
-        assertThat(certificateVerification.getServiceSupplyPointFromEeCertificate())
-            .isEqualTo("http://ocsp-sim01-test.gem.telematik-test:8080/ocsp/OCSPSimulator/TSL_default-seq1");
-    }
-
-    @Test
-    void verifyServiceSupplyPointMissing() {
-        final String tslAltCaMissingSsp = "tsls/defect/TSL_defect_altCA_missingSsp.xml";
-        assertThatThrownBy(() -> buildCertificateVerififier(tslAltCaMissingSsp, certificateProfile,
-            VALID_EE_CERT_ALT_CA)
-            .getServiceSupplyPointFromEeCertificate())
-            .isInstanceOf(GemPkiException.class)
-            .hasMessageContaining(ErrorCode.TE_1026.getErrorMessage(productType));
-    }
 }

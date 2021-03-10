@@ -30,9 +30,18 @@ import javax.xml.bind.Unmarshaller;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Class to read up a TSL file and put it in object structure by JAXB.
+ */
 @Slf4j
 public class TslReader {
 
+    /**
+     * Get a list of {@link TrustServiceStatusList} to a parameterized TSL file.
+     *
+     * @param tslFilename file name
+     * @return a TrustServiceStatusList contains issuer certificates among other things
+     */
     public Optional<TrustServiceStatusList> getTrustServiceStatusList(@NonNull final String tslFilename) {
         try (final InputStream inputStream = getClass().getClassLoader().getResourceAsStream(tslFilename)) {
             Objects.requireNonNull(inputStream);

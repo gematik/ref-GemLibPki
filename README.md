@@ -15,7 +15,7 @@ Versions below 1.0.0 are not feature complete.
 - we check against certificate profiles specified by gematik, not against usages and contexts
 - several methods to get information about a certificate and its issuer
 - contains checks of all steps defined in TUC_PKI_018 „Zertifikatsprüfung in der TI“ specified in gematik document "Übergreifende Spezifikation PKI" (gemSpec_PKI)
-
+- no OCSP checks yet
 ##### TSL handling
 - several methods for parsing a TSL
 
@@ -31,7 +31,8 @@ mvn clean install
 ##### TSL
 - instantiate a TslReader to read a TSL from a resource
 - use the result of the TslReader to instantiate a TslInformationProvider and simply call its public methods
-
+##### OCSP
+- OCSP request implemented
+- OCSP response are not analyzed beyond status GOOD (nor signature checking etc.)
 ### ToDo
-* OCSP status requests
-* download and validation of the trust services list (TSL)
+- download and validation of the trust services list (TSL)

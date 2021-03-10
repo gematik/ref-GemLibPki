@@ -20,6 +20,10 @@ import java.util.List;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Enum that host {@link CertificateProfile} information.
+ */
+
 @RequiredArgsConstructor
 @Getter
 public enum CertificateProfile {

@@ -19,20 +19,17 @@ package de.gematik.pki.certificate;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Enum that host {@link KeyUsage} information.
+ */
+
 @RequiredArgsConstructor
 @Getter
 public enum KeyUsage {
-    /*
-     * KeyUsage ::= BIT STRING {
-     *     digitalSignature        (0),
-     *     nonRepudiation          (1),
-     *     keyEncipherment         (2),
-     *     dataEncipherment        (3),
-     *     keyAgreement            (4),
-     *     keyCertSign             (5),
-     *     cRLSign                 (6),
-     *     encipherOnly            (7),
-     *     decipherOnly            (8) }
+    /**
+     * KeyUsage ::= BIT STRING { digitalSignature        (0), nonRepudiation          (1), keyEncipherment         (2),
+     * dataEncipherment        (3), keyAgreement            (4), keyCertSign             (5), cRLSign
+     * (6), encipherOnly            (7), decipherOnly            (8) }
      */
     DIGITAL_SIGNATURE("digitalSignature", 0),
     NON_REPUDIATION("nonRepudiation", 1),

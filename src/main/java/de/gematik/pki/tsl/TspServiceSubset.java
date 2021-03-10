@@ -14,22 +14,25 @@
  * limitations under the License.
  */
 
-package de.gematik.pki.error;
+package de.gematik.pki.tsl;
 
+import eu.europa.esig.jaxb.tsl.ExtensionType;
+import java.security.cert.X509Certificate;
+import java.time.ZonedDateTime;
+import java.util.List;
+import lombok.Builder;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
 /**
- * Enum that host {@link ErrorClassifier} information.
+ * Class containing a subset of a TspService referring explicitly one issuer certificate
  */
-
-@RequiredArgsConstructor
+@Builder
 @Getter
-public enum ErrorClassifier {
+public class TspServiceSubset {
 
-    TECHNICAL_ERROR("Technical Error"),
-    SECURITY_ERROR("Security Error"),
-    INTERNAL_ERROR("Internal Error");
-
-    private final String description;
+    private final X509Certificate x509IssuerCert;
+    private final String serviceStatus;
+    private final ZonedDateTime statusStartingTime;
+    private final String serviceSupplyPoint;
+    private final List<ExtensionType> extensions;
 }

@@ -22,6 +22,9 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Class to provide {@link TspService}.
+ */
 @RequiredArgsConstructor
 @Slf4j
 public class TslInformationProvider {
@@ -33,10 +36,21 @@ public class TslInformationProvider {
 
     private final TrustServiceStatusList trustServiceStatusList;
 
+    /**
+     * Get list of {@link TspService} with specific service type identifiers (PKC, OCSP, TA change).
+     *
+     * @return list with {@link TspService}
+     */
     public List<TspService> getTspServices() {
         return getTspServices(STI_DEFAULT_FILTER_LIST);
     }
 
+    /**
+     * Get list of {@link TspService} to given service type identifiers.
+     *
+     * @param stiFilterList list with
+     * @return list with {@link TspService}
+     */
     public List<TspService> getTspServices(final List<String> stiFilterList) {
 
         return trustServiceStatusList.getTrustStatusListType().getTrustServiceProviderList().getTrustServiceProvider()

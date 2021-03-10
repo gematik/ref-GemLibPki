@@ -20,6 +20,10 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.bouncycastle.asn1.x509.KeyPurposeId;
 
+/**
+ * Enum that host {@link ExtendedKeyUsage} information.
+ */
+
 @RequiredArgsConstructor
 @Getter
 public enum ExtendedKeyUsage {

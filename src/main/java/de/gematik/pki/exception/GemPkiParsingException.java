@@ -24,11 +24,21 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.Getter;
 
+/**
+ * Utility class for {@link GemPkiException}.
+ */
+
 @Getter
 public class GemPkiParsingException extends GemPkiException {
-
+    
     private final Map<CertificateProfile, GemPkiException> errorMap;
 
+    /**
+     * Constructor to build a message.
+     *
+     * @param productType a string determines the caller of function
+     * @param errorMap    the error map
+     */
     public GemPkiParsingException(final String productType, final Map<CertificateProfile, GemPkiException> errorMap) {
         super(
             // first ErrorCode
@@ -46,12 +56,25 @@ public class GemPkiParsingException extends GemPkiException {
         this.errorMap = errorMap;
     }
 
+    /**
+     * Map given parameters to a string.
+     *
+     * @param entry       with {@link CertificateProfile} and {@link GemPkiException}
+     * @param productType a string determines the caller of function
+     * @return formatted String
+     */
     private static String mapToErrorMessage(final Entry<CertificateProfile, GemPkiException> entry,
         final String productType) {
         return entry.getValue().getError().getErrorMessage(productType) + " (für Prüfung gegen das Zertifikatsprofil: "
             + entry.getKey() + ")";
     }
 
+    /**
+     * Get first {@link GemPkiException} from Map of exceptions.
+     *
+     * @param errorMap the error map
+     * @return {@link GemPkiException}
+     */
     private static Optional<GemPkiException> extractFirstError(
         final Map<CertificateProfile, GemPkiException> errorMap) {
         return errorMap.values().stream().findFirst();

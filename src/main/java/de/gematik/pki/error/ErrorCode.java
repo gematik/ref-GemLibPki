@@ -19,62 +19,54 @@ package de.gematik.pki.error;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Enum that host {@link ErrorCode} information. refer to document "Übergreifende Spezifikation PKI" [gemSpec_PKI]
+ *
+ * @see <a href="https://fachportal.gematik.de/downloadcenter/releases">fachportal.gematik.de/downloadcenter/releases</a>
+ */
+
 @RequiredArgsConstructor
 @Getter
 public enum ErrorCode {
-    //refer to document "Übergreifende Spezifikation PKI" [gemSpec_PKI], download at https://fachportal.gematik.de/downloadcenter/releases
 
     TE_1001(ErrorSeverity.ERROR, ErrorClassifier.TECHNICAL_ERROR, "TSL_INIT_ERROR",
         "Es liegt keine gültige TSL vor"),
-
     TE_1026(ErrorSeverity.ERROR, ErrorClassifier.TECHNICAL_ERROR, "SERVICESUPPLYPOINT_MISSING",
         "Das Element „Service-Supply Point“ konnte nicht gefunden werden."),
-
     TE_1027(ErrorSeverity.ERROR, ErrorClassifier.TECHNICAL_ERROR, "CA_CERT_MISSING",
         "CA kann nicht in den TSL- Informationen ermittelt werden."),
-
     TE_1002(ErrorSeverity.ERROR, ErrorClassifier.TECHNICAL_ERROR,
-        "TSL_CERT_EXTRACTION_ERROR",
-        "Zertifikate lassen sich nicht extrahieren"),
+        "TSL_CERT_EXTRACTION_ERROR", "Zertifikate lassen sich nicht extrahieren"),
 
     SE_1003(ErrorSeverity.ERROR, ErrorClassifier.SECURITY_ERROR, "MULTIPLE_TRUST_ANCHOR",
         "Mehr als ein markierter V-Anker gefunden"),
-
     SE_1007(ErrorSeverity.ERROR, ErrorClassifier.SECURITY_ERROR, "TSL_ID_INCORRECT",
         "Vergleich der ID und Sequence- Number entspricht nicht der Vergleichsvariante 6a"),
-
     SE_1016(ErrorSeverity.ERROR, ErrorClassifier.SECURITY_ERROR, "WRONG_KEYUSAGE",
         "KeyUsage ist nicht vorhanden bzw. entspricht nicht der vorgesehenen KeyUsage"),
-
     SE_1018(ErrorSeverity.ERROR, ErrorClassifier.SECURITY_ERROR, "CERT_TYPE_MISMATCH",
         "Zertifikatstyp OID stimmt nicht überein."),
-
     SE_1017(ErrorSeverity.ERROR, ErrorClassifier.SECURITY_ERROR, "WRONG_EXTENDEDKEYUSAGE",
         "Extended KeyUsage entspricht nicht der vorgesehenen Extended KeyUsage"),
-
     SE_1021(ErrorSeverity.ERROR, ErrorClassifier.SECURITY_ERROR, "CERTIFICATE_NOT_VALID_TIME",
         "Zertifikat ist zeitlich nicht gültig"),
-
     SE_1023(ErrorSeverity.ERROR, ErrorClassifier.SECURITY_ERROR, "AUTHORITYKEYID_DIFFERENT",
         "Authority Key Identifier des End Entity Zertifikats von "
             + "Subject Key Identifier des CA Zertifikats unterschiedlich."),
-
     SE_1024(ErrorSeverity.ERROR, ErrorClassifier.SECURITY_ERROR, "CERTIFICATE_NOT_VALID_MATH",
         "Zertifikats-Signatur ist mathematisch nicht gültig."),
-
     SE_1033(ErrorSeverity.ERROR, ErrorClassifier.SECURITY_ERROR, "CERT_TYPE_INFO_MISSING",
         "Kein Element PolicyIdentifier vorhanden."),
-
     SE_1036(ErrorSeverity.ERROR, ErrorClassifier.SECURITY_ERROR, "CA_CERTIFICATE_REVOKED_IN_TSL",
         "Das Zertifikat ist ungültig. Es wurde nach der Sperrung der ausgebenden CA ausgestellt."),
-
     SE_1061(ErrorSeverity.ERROR, ErrorClassifier.SECURITY_ERROR, "CERT_TYPE_CA_NOT_AUTHORIZED",
         "CA (laut TSL) nicht autorisiert für die Herausgabe dieses Zertifikatstyps."),
 
     // library internal errors
-    UNKNOWN(ErrorSeverity.ERROR, ErrorClassifier.INTERNAL_ERROR, "UNKNOWN_INTERNAL_ERROR",
-        "Ein unbekannter, interner Fehler ist aufgetreten."),
-
+    UNKNOWN(ErrorSeverity.ERROR, ErrorClassifier.INTERNAL_ERROR, "INTERNAL_UNKNOWN_ERROR",
+        "Ein interner, unbekannter Fehler ist aufgetreten."),
+    OCSP(ErrorSeverity.ERROR, ErrorClassifier.INTERNAL_ERROR, "INTERNAL_GENERAL_OCSP_ERROR",
+        "Ein interner, allgemeiner OCSP Fehler ist aufgetreten."),
     CERTIFICATE_READ(ErrorSeverity.ERROR, ErrorClassifier.INTERNAL_ERROR, "EE_CERTIFICATE_READ_ERROR",
         "Es ist ein Fehler beim Lesen des EndEntity Zertifikats aufgetreten.");
 

@@ -19,6 +19,10 @@ package de.gematik.pki.exception;
 import de.gematik.pki.error.ErrorCode;
 import lombok.Getter;
 
+/**
+ * {@link GemPkiException} class.
+ */
+
 @Getter
 public class GemPkiException extends Exception {
 

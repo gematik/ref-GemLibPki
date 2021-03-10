@@ -20,6 +20,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import java.util.Collections;
 import java.util.Optional;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,10 +29,12 @@ import org.junit.jupiter.api.Test;
 class TslInformationProviderTest {
 
     private static final String FILE_NAME_TSL_DEFAULT = "tsls/valid/TSL_default.xml";
+
     private static final String STI_PKC = "http://uri.etsi.org/TrstSvc/Svctype/CA/PKC";
     private TslInformationProvider tslInformationProvider;
 
     @BeforeEach
+    @SneakyThrows
     void setUp() {
         final Optional<TrustServiceStatusList> trustStatusList = new TslReader()
             .getTrustServiceStatusList(FILE_NAME_TSL_DEFAULT);
@@ -48,4 +51,5 @@ class TslInformationProviderTest {
     void readTspServices_DefaultListSizeShouldBeCorrect() {
         assertThat(tslInformationProvider.getTspServices().size()).isEqualTo(151);
     }
+
 }

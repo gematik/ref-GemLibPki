@@ -14,22 +14,21 @@
  * limitations under the License.
  */
 
-package de.gematik.pki.error;
+package de.gematik.pki.utils;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-/**
- * Enum that host {@link ErrorClassifier} information.
- */
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class P12Content {
 
-@RequiredArgsConstructor
-@Getter
-public enum ErrorClassifier {
-
-    TECHNICAL_ERROR("Technical Error"),
-    SECURITY_ERROR("Security Error"),
-    INTERNAL_ERROR("Internal Error");
-
-    private final String description;
+    private X509Certificate certificate;
+    private PrivateKey privateKey;
 }

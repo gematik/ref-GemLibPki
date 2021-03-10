@@ -18,6 +18,7 @@ package de.gematik.pki.certificate;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+
 import de.gematik.pki.error.ErrorCode;
 import de.gematik.pki.exception.GemPkiException;
 import de.gematik.pki.tsl.TslInformationProvider;
@@ -39,19 +40,19 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 class TucPki018VerifierTest {
 
     private TucPki018Verifier tucPki018Verifier;
-    private X509Certificate VALID_EE_CERT;
+    private X509Certificate VALID_X509_EE_CERT;
     private static final String FILE_NAME_TSL_DEFAULT = "tsls/valid/TSL_default.xml";
     private final CertificateProfile certificateProfile = CertificateProfile.C_HCI_AUT_ECC;
     private final List<CertificateProfile> certificateProfiles = List.of(certificateProfile);
 
     @BeforeEach
     void setUp() throws IOException {
-        VALID_EE_CERT = CertificateProvider
+        VALID_X509_EE_CERT = CertificateProvider
             .getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem");
-        tucPki018Verifier = buildCertificateChecker(certificateProfiles);
+        tucPki018Verifier = buildTucPki18Verifier(certificateProfiles);
     }
 
-    private TucPki018Verifier buildCertificateChecker(final List<CertificateProfile> certificateProfiles) {
+    private TucPki018Verifier buildTucPki18Verifier(final List<CertificateProfile> certificateProfiles) {
 
         final List<TspService> tspServiceList = new TslInformationProvider(
             new TslReader().getTrustServiceStatusList(FILE_NAME_TSL_DEFAULT).orElseThrow())
@@ -66,26 +67,26 @@ class TucPki018VerifierTest {
 
     @Test
     void verifyPerformTucPki18ChecksValid() {
-        assertDoesNotThrow(() -> tucPki018Verifier.performTucPki18Checks(VALID_EE_CERT));
+        assertDoesNotThrow(() -> tucPki018Verifier.performTucPki18Checks(VALID_X509_EE_CERT));
     }
 
     @Test
     void verifyEgkAutEccCertValid() {
-        assertDoesNotThrow(() -> buildCertificateChecker(List.of(CertificateProfile.C_CH_AUT_ECC))
+        assertDoesNotThrow(() -> buildTucPki18Verifier(List.of(CertificateProfile.C_CH_AUT_ECC))
             .performTucPki18Checks(CertificateProvider
                 .getX509Certificate("src/test/resources/certificates/GEM.EGK-CA10/JunaFuchs.pem")));
     }
 
     @Test
     void verifyHbaAutEccCertValid() {
-        assertDoesNotThrow(() -> buildCertificateChecker(List.of(CertificateProfile.C_HP_AUT_ECC))
+        assertDoesNotThrow(() -> buildTucPki18Verifier(List.of(CertificateProfile.C_HP_AUT_ECC))
             .performTucPki18Checks(CertificateProvider
                 .getX509Certificate("src/test/resources/certificates/GEM.HBA-CA13/GüntherOtís.pem")));
     }
 
     @Test
     void verifySmcbAutRsaCertValid() {
-        assertDoesNotThrow(() -> buildCertificateChecker(List.of(CertificateProfile.C_HCI_AUT_RSA))
+        assertDoesNotThrow(() -> buildTucPki18Verifier(List.of(CertificateProfile.C_HCI_AUT_RSA))
             .performTucPki18Checks(CertificateProvider
                 .getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA24-RSA/AschoffscheApotheke.pem")));
     }
@@ -100,9 +101,9 @@ class TucPki018VerifierTest {
 
     @Test
     void multipleCertificateProfiles_shouldSelectCorrectOne() {
-        assertDoesNotThrow(() -> buildCertificateChecker(List.of(
+        assertDoesNotThrow(() -> buildTucPki18Verifier(List.of(
             CertificateProfile.C_TSL_SIG_ECC, CertificateProfile.C_HCI_AUT_RSA, CertificateProfile.C_HCI_AUT_ECC
-        )).performTucPki18Checks(VALID_EE_CERT));
+        )).performTucPki18Checks(VALID_X509_EE_CERT));
     }
 
     @Test
@@ -111,7 +112,7 @@ class TucPki018VerifierTest {
             .getX509Certificate(
                 "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-keyusage.pem");
         assertThatThrownBy(
-            () -> buildCertificateChecker(List.of(CertificateProfile.C_HCI_AUT_ECC, CertificateProfile.C_HP_AUT_ECC
+            () -> buildTucPki18Verifier(List.of(CertificateProfile.C_HCI_AUT_ECC, CertificateProfile.C_HP_AUT_ECC
             )).performTucPki18Checks(eeWrongKeyUsage))
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1016.name());
@@ -123,7 +124,7 @@ class TucPki018VerifierTest {
             .getX509Certificate(
                 "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-certificate-type.pem");
         assertThatThrownBy(
-            () -> buildCertificateChecker(List.of(CertificateProfile.C_HCI_AUT_ECC, CertificateProfile.C_HP_AUT_ECC
+            () -> buildTucPki18Verifier(List.of(CertificateProfile.C_HCI_AUT_ECC, CertificateProfile.C_HP_AUT_ECC
             )).performTucPki18Checks(eeWrongKeyUsage))
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1018.name());
@@ -138,14 +139,14 @@ class TucPki018VerifierTest {
 
     @Test
     void verifyCertProfilesNull() {
-        assertThatThrownBy(() -> buildCertificateChecker(null))
+        assertThatThrownBy(() -> buildTucPki18Verifier(null))
             .isInstanceOf(NullPointerException.class)
             .hasMessageContaining("certificateProfiles");
     }
 
     @Test
     void verifyCertProfilesEmpty() {
-        assertThatThrownBy(() -> buildCertificateChecker(List.of()).performTucPki18Checks(VALID_EE_CERT))
+        assertThatThrownBy(() -> buildTucPki18Verifier(List.of()).performTucPki18Checks(VALID_X509_EE_CERT))
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.UNKNOWN.name());
     }
@@ -159,3 +160,4 @@ class TucPki018VerifierTest {
             .isInstanceOf(GemPkiException.class);
     }
 }
+

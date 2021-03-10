@@ -20,6 +20,10 @@ import eu.europa.esig.jaxb.tsl.TSPServiceType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+
+/**
+ * Class to encapsulate package eu.europa.esig
+ */
 @RequiredArgsConstructor
 @Getter
 public class TspService {

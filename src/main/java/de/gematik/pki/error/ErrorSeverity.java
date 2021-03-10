@@ -19,6 +19,10 @@ package de.gematik.pki.error;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Enum that host {@link ErrorSeverity} information.
+ */
+
 @RequiredArgsConstructor
 @Getter
 public enum ErrorSeverity {

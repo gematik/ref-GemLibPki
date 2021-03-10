@@ -1,0 +1,2 @@
+releaseLog.md
+Jenkinsfile-MR-CI-SNAPSHOT

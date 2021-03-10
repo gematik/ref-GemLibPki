@@ -19,7 +19,9 @@ package de.gematik.pki.certificate;
 import de.gematik.pki.error.ErrorCode;
 import de.gematik.pki.exception.GemPkiException;
 import de.gematik.pki.exception.GemPkiParsingException;
+import de.gematik.pki.tsl.TspInformationProvider;
 import de.gematik.pki.tsl.TspService;
+import de.gematik.pki.tsl.TspServiceSubset;
 import java.security.cert.X509Certificate;
 import java.util.EnumMap;
 import java.util.List;
@@ -28,6 +30,12 @@ import lombok.Builder;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+/**
+ * Entry point to access a verification of certificate(s) regarding standard process called TucPki18. This class works
+ * with parameterized variables (defined by builder pattern) and with given variables provided by runtime (method
+ * parameters).
+ */
 
 @Slf4j
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -41,6 +49,14 @@ public class TucPki018Verifier {
     @NonNull
     private final List<CertificateProfile> certificateProfiles;
 
+    /**
+     * Verify given end-entity certificate against a list of parameterized certificate profiles {@link
+     * CertificateProfile}. If there is no {@link GemPkiException} the verification process ends successfully.
+     *
+     * @param x509EeCert end-entity certificate to check
+     * @return {@link CertificateType} the determined certificate type
+     * @throws GemPkiException
+     */
     public CertificateType performTucPki18Checks(@NonNull final X509Certificate x509EeCert) throws GemPkiException {
         if (certificateProfiles.isEmpty()) {
             throw new GemPkiException(productType, ErrorCode.UNKNOWN);
@@ -62,18 +78,26 @@ public class TucPki018Verifier {
         throw new GemPkiParsingException(productType, errors);
     }
 
+    /**
+     * Verify given end-entity certificate against a parameterized single certificate profile {@link
+     * CertificateProfile}. If there is no {@link GemPkiException} the verification process ends successfully.
+     *
+     * @param x509EeCert end-entity certificate to check
+     * @throws GemPkiException
+     */
     private void performTucPki018Checks(@NonNull final X509Certificate x509EeCert,
         @NonNull final CertificateProfile certificateProfile) throws GemPkiException {
-
+        final TspServiceSubset tspServiceSubset = new TspInformationProvider(tspServiceList, productType)
+            .getTspServiceSubset(x509EeCert);
         final CertificateVerification cv = CertificateVerification.builder()
             .x509EeCert(x509EeCert)
             .certificateProfile(certificateProfile)
-            .tspServiceList(tspServiceList)
+            .tspServiceSubset(tspServiceSubset)
             .productType(productType)
             .build();
 
         cv.verifyValidity();
-        cv.verifySignature(cv.getIssuerCertificate());
+        cv.verifySignature(tspServiceSubset.getX509IssuerCert());
         cv.verifyKeyUsage();
         cv.verifyExtendedKeyUsage();
         cv.verifyIssuerServiceStatus();

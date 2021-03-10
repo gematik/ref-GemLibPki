@@ -19,6 +19,10 @@ package de.gematik.pki.certificate;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Enum that host {@link CertificateType} information.
+ */
+
 @RequiredArgsConstructor
 @Getter
 public enum CertificateType {
