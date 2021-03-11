@@ -1,3 +1,6 @@
+# Release 0.4.1
+- resign test certificates
+
 # Release 0.4.0
 - refactoring: separate [TspInformationProvider](src/main/java/de/gematik/pki/tsl/TspInformationProvider.java) from
   [TslInformationProvider](src/main/java/de/gematik/pki/tsl/TslInformationProvider.java)
