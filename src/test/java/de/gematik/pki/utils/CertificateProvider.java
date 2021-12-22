@@ -1,14 +1,14 @@
 /*
  * Copyright (c) 2021 gematik GmbH
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * 
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  * 
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
+ * distributed under the License is distributed on an 'AS IS' BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -16,14 +16,12 @@
 
 package de.gematik.pki.utils;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.cert.X509Certificate;
@@ -31,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
-import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
@@ -47,7 +44,7 @@ public class CertificateProvider implements ArgumentsProvider, AnnotationConsume
         throws URISyntaxException {
 
         return listFilesUsingFileWalkAndVisitor(
-            Paths.get(
+            Path.of(
                 getClass()
                     .getProtectionDomain()
                     .getCodeSource()
@@ -60,15 +57,15 @@ public class CertificateProvider implements ArgumentsProvider, AnnotationConsume
     public static Stream<X509Certificate> listFilesUsingFileWalkAndVisitor(final String resourcesFolder) {
         final List<X509Certificate> fileList = new ArrayList<>();
         try {
-            Files.walkFileTree(Paths.get(resourcesFolder).normalize(), new SimpleFileVisitor<>() {
+            Files.walkFileTree(Path.of(resourcesFolder).normalize(), new SimpleFileVisitor<>() {
                 @Override
-                public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) {
+                public FileVisitResult visitFile(final Path path, final BasicFileAttributes attrs) {
 
-                    if (!Files.isDirectory(file)
+                    if (!Files.isDirectory(path)
                         && checkCertificateFilter()) {
                         try {
-                            System.out.println("add: " + file.toAbsolutePath().toString());
-                            fileList.add(getX509Certificate(file.toAbsolutePath().toString()));
+                            System.out.println("add: " + path.toAbsolutePath());
+                            fileList.add(getX509Certificate(path.toAbsolutePath()));
                         } catch (final Exception e) {
                             throw new RuntimeException(
                                 " : GEMLIBPKI - Test - Die Datei ist kein Zertifikat.", e);
@@ -85,8 +82,12 @@ public class CertificateProvider implements ArgumentsProvider, AnnotationConsume
         return fileList.stream();
     }
 
+    public static X509Certificate getX509Certificate(final Path path) throws IOException {
+        return CertReader.readX509(Files.readAllBytes(path));
+    }
+
     public static X509Certificate getX509Certificate(final String path) throws IOException {
-        return CertReader.readX509(FileUtils.readFileToByteArray(new File(path)));
+        return getX509Certificate(Path.of(path));
     }
 
     @Override

@@ -1,3 +1,9 @@
+# Release 0.5.0
+- API change: Main method for certificate checks "performTucPki18Checks(..)" in class [TucPki018Verifier](src/main/java/de/gematik/pki/certificate/TucPki018Verifier.java) returns Admission instead of CertficateType
+- add methods for TSL handling: read, write, modify, sign and validate (RSA/ECC)
+- OCSP request implemented, active by default
+- additional CertificateProfiles implemented
+
 # Release 0.4.1
 - resign test certificates
 

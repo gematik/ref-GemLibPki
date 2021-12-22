@@ -1,14 +1,14 @@
 /*
  * Copyright (c) 2021 gematik GmbH
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * 
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  * 
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
+ * distributed under the License is distributed on an 'AS IS' BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -43,12 +43,15 @@ public enum CertificateProfile {
     C_HCI_AUT_ECC(CertificateType.SMC_B_AUT, List.of(KeyUsage.DIGITAL_SIGNATURE),
         List.of(ExtendedKeyUsage.ID_KP_CLIENTAUTH), true),
 
-    C_HCI_ENC_RSA(CertificateType.SMC_B_ENC, List.of(KeyUsage.KEY_ENCIPHERMENT, KeyUsage.DATA_ENCIPHERMENT), List.of(),
-        false),
+    C_HCI_ENC_RSA(CertificateType.SMC_B_ENC, List.of(KeyUsage.KEY_ENCIPHERMENT, KeyUsage.DATA_ENCIPHERMENT), List.of(), false),
     C_HCI_ENC_ECC(CertificateType.SMC_B_ENC, List.of(KeyUsage.KEY_AGREEMENT), List.of(), false),
 
-    C_TSL_SIG_RSA(CertificateType.NONE, List.of(KeyUsage.NON_REPUDIATION),
-        List.of(ExtendedKeyUsage.ID_TSL_KP_TSLSIGNING), true),
+    C_HCI_OSIG(CertificateType.SMC_B_OSIG, List.of(KeyUsage.NON_REPUDIATION), List.of(), false),
+
+    C_FD_SIG(CertificateType.FD_SIG, List.of(KeyUsage.DIGITAL_SIGNATURE), List.of(), false),
+
+    C_TSL_SIG_RSA(CertificateType.NONE, List.of(KeyUsage.NON_REPUDIATION), List.of(ExtendedKeyUsage.ID_TSL_KP_TSLSIGNING), true),
+
     C_TSL_SIG_ECC(CertificateType.NONE, C_TSL_SIG_RSA.keyUsages, C_TSL_SIG_RSA.extKeyUsages, true);
 
     private final CertificateType certificateType;

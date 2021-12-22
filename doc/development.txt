@@ -1,5 +1,0 @@
-gematik intern
-
-  enum ErrorCode:
-      //Fehlercodes von hier (nachfolgender Link - Punkt "8.6 Fehlercodes bei TSL- und Zertifikatsprüfung X.509") holen und hier hinzufügen.
-      //https://gsbepo03.int.gematik.de/polarion/#/project/Mainline_OPB1/wiki/Spezifikation/gemSpec_PKI?selection=ML-7256

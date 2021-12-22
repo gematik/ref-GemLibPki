@@ -1,14 +1,14 @@
 /*
  * Copyright (c) 2021 gematik GmbH
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * 
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  * 
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
+ * distributed under the License is distributed on an 'AS IS' BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -18,8 +18,8 @@ package de.gematik.pki.tsl;
 
 import de.gematik.pki.error.ErrorCode;
 import de.gematik.pki.exception.GemPkiException;
-import eu.europa.esig.jaxb.tsl.DigitalIdentityType;
-import eu.europa.esig.jaxb.tsl.ServiceSupplyPointsType;
+import eu.europa.esig.trustedlist.jaxb.tsl.DigitalIdentityType;
+import eu.europa.esig.trustedlist.jaxb.tsl.ServiceSupplyPointsType;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,52 +50,14 @@ public class TspInformationProvider {
     private final String productType;
 
     /**
-     * Compose a information subset of a TspService if one of its issuers signed the given end-entity certificate.
-     *
-     * @param x509EeCert The end-entity certificate
-     * @return information subset of a TspService {@link TspServiceSubset}
-     * @throws GemPkiException
-     */
-    public TspServiceSubset getTspServiceSubset(@NonNull final X509Certificate x509EeCert) throws GemPkiException {
-        Optional<X509Certificate> foundx509IssuerCert = Optional.empty();
-
-        for (final TspService tspService : tspServices) {
-            for (final DigitalIdentityType dit : tspService.getTspServiceType().getServiceInformation()
-                .getServiceDigitalIdentity()
-                .getDigitalId()) {
-                final X509Certificate x509IssuerCert = getX509CertificateFromByteArray(dit.getX509Certificate());
-                if (x509EeCert.getIssuerX500Principal().equals(x509IssuerCert.getSubjectX500Principal())) {
-                    if (verifyAkiMatchesSki(x509EeCert, x509IssuerCert)) {
-                        return TspServiceSubset.builder()
-                            .x509IssuerCert(x509IssuerCert)
-                            .serviceStatus(tspService.getTspServiceType().getServiceInformation().getServiceStatus())
-                            .statusStartingTime(getCertificateAuthorityStatusStartingTime(tspService))
-                            .serviceSupplyPoint(getFirstServiceSupplyPointFromTspService(tspService))
-                            .extensions(tspService.getTspServiceType().getServiceInformation()
-                                .getServiceInformationExtensions().getExtension()).build();
-                    }
-                    foundx509IssuerCert = Optional.of(x509IssuerCert);
-                }
-            }
-        }
-
-        if (foundx509IssuerCert.isEmpty()) {
-            throw new GemPkiException(productType, ErrorCode.TE_1027);
-        } else {
-            throw new GemPkiException(productType, ErrorCode.SE_1023);
-        }
-    }
-
-    /**
-     * Verify AKI (authority key identifier - an X.509 v3 certificate extension - derived from the public key of the
-     * given issuer certificate) must match with SKI (subject key identifier - an X.509 v3 certificate extension -
-     * derived from the public key of the given end-entity certificate).
+     * Verify AKI (authority key identifier - an X.509 v3 certificate extension - derived from the public key of the given issuer certificate) must match with
+     * SKI (subject key identifier - an X.509 v3 certificate extension - derived from the public key of the given end-entity certificate).
      *
      * @param x509EeCert     end-entity certificate
      * @param x509IssuerCert issuer certificate determined from TSL file
      * @return true when aki matches ski otherwise false
      */
-    private boolean verifyAkiMatchesSki(@NonNull final X509Certificate x509EeCert,
+    private static boolean verifyAkiMatchesSki(@NonNull final X509Certificate x509EeCert,
         @NonNull final X509Certificate x509IssuerCert) {
         final byte[] subjectKeyIdentifier = x509IssuerCert.getExtensionValue(Extension.subjectKeyIdentifier.getId());
         final Optional<ASN1OctetString> skiAsOctet = Optional
@@ -132,13 +94,68 @@ public class TspInformationProvider {
     }
 
     /**
+     * Get timestamp of status change of given TspService from TSL file.
+     *
+     * @param issuerTspService TspService from TSL file
+     * @return ZonedDateTime timestamp of status change
+     */
+    private static ZonedDateTime getCertificateAuthorityStatusStartingTime(@NonNull final TspService issuerTspService) {
+        return issuerTspService.getTspServiceType().getServiceInformation().getStatusStartingTime()
+            .toGregorianCalendar()
+            .toZonedDateTime();
+    }
+
+    /**
+     * Compose an information subset of a TspService if one of its issuers signed the given end-entity certificate.
+     *
+     * @param x509EeCert The end-entity certificate
+     * @return information subset of a TspService {@link TspServiceSubset}
+     * @throws GemPkiException exception thrown if certificate cannot be found
+     */
+    public TspServiceSubset getTspServiceSubset(@NonNull final X509Certificate x509EeCert) throws GemPkiException {
+        Optional<X509Certificate> foundX509IssuerCert = Optional.empty();
+
+        for (final TspService tspService : tspServices) {
+            try {
+                for (final DigitalIdentityType dit : tspService.getTspServiceType().getServiceInformation()
+                    .getServiceDigitalIdentity()
+                    .getDigitalId()) {
+                    final X509Certificate x509IssuerCert = getX509CertificateFromByteArray(dit.getX509Certificate());
+                    if (x509EeCert.getIssuerX500Principal().equals(x509IssuerCert.getSubjectX500Principal())) {
+                        if (verifyAkiMatchesSki(x509EeCert, x509IssuerCert)) {
+                            return TspServiceSubset.builder()
+                                .x509IssuerCert(x509IssuerCert)
+                                .serviceStatus(tspService.getTspServiceType().getServiceInformation().getServiceStatus())
+                                .statusStartingTime(getCertificateAuthorityStatusStartingTime(tspService))
+                                .serviceSupplyPoint(getFirstServiceSupplyPointFromTspService(tspService))
+                                .extensions(tspService.getTspServiceType().getServiceInformation()
+                                    .getServiceInformationExtensions().getExtension()).build();
+                        }
+                        foundX509IssuerCert = Optional.of(x509IssuerCert);
+                    }
+
+                }
+            } catch (final NullPointerException e) {
+                log.debug("skipped {} due to missing tsp information",
+                    tspService.getTspServiceType().getServiceInformation().getServiceName().getName().get(0).getValue());
+            }
+        }
+
+        if (foundX509IssuerCert.isEmpty()) {
+            throw new GemPkiException(productType, ErrorCode.TE_1027);
+        } else {
+            throw new GemPkiException(productType, ErrorCode.SE_1023);
+        }
+    }
+
+    /**
      * Get a certificate from a given byte array.
      *
      * @param bytes certificate as byte array
      * @return X509Certificate
-     * @throws GemPkiException
+     * @throws GemPkiException exception thrown if certificate cannot be extracted
      */
-    private X509Certificate getX509CertificateFromByteArray(@NonNull final byte[] bytes) throws GemPkiException {
+    private X509Certificate getX509CertificateFromByteArray(final byte[] bytes) throws GemPkiException {
         try (final InputStream in = new ByteArrayInputStream(bytes)) {
             final CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
             return (X509Certificate) certFactory.generateCertificate(in);
@@ -148,23 +165,11 @@ public class TspInformationProvider {
     }
 
     /**
-     * Get timestamp of status change of given TspService from TSL file.
-     *
-     * @param issuerTspService TspService from TSL file
-     * @return ZonedDateTime timestamp of status change
-     */
-    private ZonedDateTime getCertificateAuthorityStatusStartingTime(@NonNull final TspService issuerTspService) {
-        return issuerTspService.getTspServiceType().getServiceInformation().getStatusStartingTime()
-            .toGregorianCalendar()
-            .toZonedDateTime();
-    }
-
-    /**
      * Get OCSP responder URL from given TspService.
      *
      * @param tspService the given TspService
      * @return ServiceSupplyPoint as string (URL)
-     * @throws GemPkiException
+     * @throws GemPkiException exception thrown if service supply point is missing
      */
     private String getFirstServiceSupplyPointFromTspService(final TspService tspService)
         throws GemPkiException {
@@ -173,12 +178,12 @@ public class TspInformationProvider {
         if (serviceSupplyPointsType.isEmpty()) {
             throw new GemPkiException(productType, ErrorCode.TE_1026);
         }
-        final List<String> serviceSupplyPoints = serviceSupplyPointsType.get().getServiceSupplyPoint();
-        if (serviceSupplyPoints.isEmpty()) {
+        final String firstServiceSupplyPoint = serviceSupplyPointsType.get().getServiceSupplyPoint().get(0).getValue();
+        if (firstServiceSupplyPoint.isBlank()) {
             throw new GemPkiException(productType, ErrorCode.TE_1026);
         } else {
-            log.debug("Der erste ServiceSupplyPoint wurde ermittelt {}", serviceSupplyPoints.get(0));
-            return serviceSupplyPoints.get(0);
+            log.debug("Der erste ServiceSupplyPoint wurde ermittelt {}", firstServiceSupplyPoint);
+            return firstServiceSupplyPoint;
         }
     }
 }

@@ -5,3 +5,11 @@
 /doc/swagger.*
 /doc/*.svg
 
+
+Jenkinsfile-MR-CI-SNAPSHOT
+Jenkinsfile_DeployGitHub
+Jenkinsfile_InternalRelease
+Jenkinsfile_PublishToMavenCentral
+doc/development.txt
+releaseLog.md
+

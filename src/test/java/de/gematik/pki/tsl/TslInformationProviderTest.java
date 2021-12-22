@@ -1,14 +1,14 @@
 /*
  * Copyright (c) 2021 gematik GmbH
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * 
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  * 
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
+ * distributed under the License is distributed on an 'AS IS' BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -17,39 +17,37 @@
 package de.gematik.pki.tsl;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-
+import de.gematik.pki.utils.ResourceReader;
+import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.util.Collections;
 import java.util.Optional;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-@Slf4j
 class TslInformationProviderTest {
 
-    private static final String FILE_NAME_TSL_DEFAULT = "tsls/valid/TSL_default.xml";
-
-    private static final String STI_PKC = "http://uri.etsi.org/TrstSvc/Svctype/CA/PKC";
+    private static final String FILE_NAME_TSL_DEFAULT = "tsls/valid/TSL-test.xml";
     private TslInformationProvider tslInformationProvider;
 
     @BeforeEach
     @SneakyThrows
     void setUp() {
-        final Optional<TrustServiceStatusList> trustStatusList = new TslReader()
-            .getTrustServiceStatusList(FILE_NAME_TSL_DEFAULT);
-        tslInformationProvider = new TslInformationProvider(trustStatusList.orElseThrow());
+        final Optional<TrustStatusListType> tsl = TslReader
+            .getTsl(ResourceReader.getFilePathFromResources(FILE_NAME_TSL_DEFAULT));
+        tslInformationProvider = new TslInformationProvider(tsl.orElseThrow());
     }
 
     @Test
     void readTspServices_PkcProviderSizeShouldBeCorrect() {
-        assertThat(tslInformationProvider.getTspServices(Collections.singletonList(STI_PKC)).size())
-            .isEqualTo(89);
+        assertThat(tslInformationProvider.getFilteredTspServices(Collections.singletonList(TslConstants.STI_PKC)).size())
+            .isEqualTo(83);
     }
 
     @Test
-    void readTspServices_DefaultListSizeShouldBeCorrect() {
-        assertThat(tslInformationProvider.getTspServices().size()).isEqualTo(151);
+    void readAllTspServices_providerSizeShouldBeCorrect() {
+        assertThat(tslInformationProvider.getTspServices().size())
+            .isEqualTo(152);
     }
 
 }

@@ -15,9 +15,14 @@ Versions below 1.0.0 are not feature complete.
 - we check against certificate profiles specified by gematik, not against usages and contexts
 - several methods to get information about a certificate and its issuer
 - contains checks of all steps defined in TUC_PKI_018 „Zertifikatsprüfung in der TI“ specified in gematik document "Übergreifende Spezifikation PKI" (gemSpec_PKI)
-- no OCSP checks yet
+- OCSP requests are optional and activated by default
+- OCSP response are not analyzed beyond status GOOD (nor signature checking etc.)
+
 ##### TSL handling
-- several methods for parsing a TSL
+- several methods for parsing, modifying, signing and signature validation of a TSL
+
+##### OCSP
+- signed OCSP responses can be generated, but always with status GOOD
 
 ##### Error codes
 - error codes specified by gematik
@@ -25,14 +30,13 @@ Versions below 1.0.0 are not feature complete.
 ### Build
 mvn clean install
 
-### Usage
-##### Certificate checks
-- instantiate an TucPki018Verifier (via builder) and simply call its public method performTucPki18Checks
-##### TSL
-- instantiate a TslReader to read a TSL from a resource
-- use the result of the TslReader to instantiate a TslInformationProvider and simply call its public methods
-##### OCSP
-- OCSP request implemented
-- OCSP response are not analyzed beyond status GOOD (nor signature checking etc.)
+### Steps to perform certificate checks
+- instantiate a [TslReader](src/main/java/de/gematik/pki/tsl/TslReader.java) to read a TSL
+- use the result of the TslReader to instantiate a [TslInformationProvider](src/main/java/de/gematik/pki/tsl/TslInformationProvider.java) and simply call its public methods
+- get TspServices from TslInformationProvider
+- instantiate a [TucPki018Verifier](src/main/java/de/gematik/pki/certificate/TucPki018Verifier.java) (via builder) and simply call its public method performTucPki18Checks
+
 ### ToDo
-- download and validation of the trust services list (TSL)
+- detailed TSL validation according to TUC_PKI_001
+- detailed OCSP validation according to TUC_PKI_006
+- implement critical extension checks according to GS-A_4661 (RFC5280#4.2)

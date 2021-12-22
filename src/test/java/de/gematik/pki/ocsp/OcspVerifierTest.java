@@ -1,14 +1,14 @@
 /*
  * Copyright (c) 2021 gematik GmbH
  * 
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * 
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  * 
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
+ * distributed under the License is distributed on an 'AS IS' BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -17,16 +17,12 @@
 package de.gematik.pki.ocsp;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-
 import de.gematik.pki.exception.GemPkiException;
 import de.gematik.pki.utils.CertificateProvider;
 import java.io.IOException;
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
-import org.bouncycastle.cert.ocsp.OCSPException;
 import org.bouncycastle.cert.ocsp.OCSPReq;
 import org.bouncycastle.cert.ocsp.OCSPResp;
-import org.bouncycastle.operator.OperatorCreationException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -49,11 +45,13 @@ class OcspVerifierTest {
         final OCSPReq ocspReq = OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT,
             VALID_X509_ISSUER_CERT);
         final OCSPResp ocspResp;
-        try {
-            ocspResp = new OcspResponse().gen(ocspReq);
-        } catch (final OperatorCreationException | IOException | CertificateEncodingException | OCSPException e) {
-            throw new RuntimeException(e);
-        }
+
+        ocspResp = OcspResponseGenerator.builder().
+            signer(OcspConstants.getOcspSignerRsa())
+            .build()
+            .gen(ocspReq);
+
         assertThat(OcspVerifier.isStatusGood(ocspResp)).isTrue();
     }
+
 }

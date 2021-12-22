@@ -5,7 +5,7 @@
 
     <groupId>de.gematik.pki</groupId>
     <artifactId>gemLibPki</artifactId>
-    <version>0.4.1</version>
+    <version>0.5.0</version>
     <packaging>jar</packaging>
     <description>gematik library PKI</description>
     <name>GemLibPki</name>
@@ -51,23 +51,31 @@
         <version.maven-clean-plugin>3.1.0</version.maven-clean-plugin>
         <version.maven-compiler-plugin>3.8.1</version.maven-compiler-plugin>
         <version.maven-jar-plugin>3.2.0</version.maven-jar-plugin>
-        <version.maven-javadoc-plugin>3.0.1</version.maven-javadoc-plugin>
-        <version.maven-resources-plugin>3.0.2</version.maven-resources-plugin>
-        <version.maven-source-plugin>3.0.1</version.maven-source-plugin>
-        <version.maven-surefire-plugin>2.22.2</version.maven-surefire-plugin>
-        <version.build-helper-maven-plugin>3.2.0</version.build-helper-maven-plugin>
-        <version.lombok>1.18.12</version.lombok>
-        <version.bouncycastle.prov>1.46</version.bouncycastle.prov>
-        <version.bouncycastle.bcpkix>1.66</version.bouncycastle.bcpkix>
-        <version.junit-jupiter-api>5.6.2</version.junit-jupiter-api>
-        <version.junit-jupiter-engine>5.6.2</version.junit-jupiter-engine>
-        <version.junit-jupiter-params>5.6.2</version.junit-jupiter-params>
-        <version.junit-jupiter>5.6.2</version.junit-jupiter>
-        <version.slf4j>1.7.30</version.slf4j>
+        <version.maven-javadoc-plugin>3.2.0</version.maven-javadoc-plugin>
+        <version.maven-resources-plugin>3.2.0</version.maven-resources-plugin>
+        <version.maven-source-plugin>3.2.1</version.maven-source-plugin>
+        <version.maven-surefire-plugin>3.0.0-M5</version.maven-surefire-plugin>
+        <version.lombok>1.18.22</version.lombok>
+        <version.bouncycastle.bcpkix>1.70</version.bouncycastle.bcpkix>
+        <version.xades4j>1.7.0</version.xades4j>
+        <version.xmlunit>2.8.3</version.xmlunit>
+        <version.assertj>3.21.0</version.assertj>
+        <version.junit-jupiter>5.8.2</version.junit-jupiter>
+        <version.unirest-java>1.4.9</version.unirest-java>
+        <version.commons-lang3>3.12.0</version.commons-lang3>
+        <version.dss-tsl-validation>5.8.d4j.1</version.dss-tsl-validation>
+        <version.wiremock-jre8>2.32.0</version.wiremock-jre8>
+        <version.maven-site-plugin>3.9.1</version.maven-site-plugin>
+        <version.maven-project-info-reports-plugin>3.1.1</version.maven-project-info-reports-plugin>
+        <version.jacoco-maven-plugin>0.8.6</version.jacoco-maven-plugin>
+        <version.sonar-maven-plugin>3.7.0.1746</version.sonar-maven-plugin>
+        <version.nexus-staging-maven-plugin>1.6.7</version.nexus-staging-maven-plugin>
+        <version.maven-gpg-plugin>1.6</version.maven-gpg-plugin>
+        <version.slf4j>1.7.32</version.slf4j>
+        <version.log4j>2.17.0</version.log4j>
 
         <!-- settings for upload to sonar server -->
-        <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/target/site/jacoco/index.xml
-        </sonar.coverage.jacoco.xmlReportPaths>
+        <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/target/site/jacoco/index.xml</sonar.coverage.jacoco.xmlReportPaths>
         <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
         <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
         <sonar.language>java</sonar.language>
@@ -77,24 +85,24 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>${version.junit-jupiter-api}</version>
+            <version>${version.junit-jupiter}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>${version.junit-jupiter-engine}</version>
+            <version>${version.junit-jupiter}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.mashape.unirest</groupId>
             <artifactId>unirest-java</artifactId>
-            <version>1.4.9</version>
+            <version>${version.unirest-java}</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-params</artifactId>
-            <version>${version.junit-jupiter-params}</version>
+            <version>${version.junit-jupiter}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -102,11 +110,6 @@
             <artifactId>junit-jupiter</artifactId>
             <version>${version.junit-jupiter}</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.6</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -120,9 +123,21 @@
             <version>${version.slf4j}</version>
         </dependency>
         <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>${version.log4j}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${version.log4j}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <version>3.17.2</version>
+            <version>${version.assertj}</version>
             <scope>test</scope>
         </dependency>
 
@@ -135,26 +150,51 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.10</version>
+            <version>${version.commons-lang3}</version>
         </dependency>
 
         <dependency>
             <groupId>org.digidoc4j.dss</groupId>
             <artifactId>dss-tsl-validation</artifactId>
-            <version>5.4.d4j.1</version>
+            <version>${version.dss-tsl-validation}</version>
         </dependency>
 
         <dependency>
             <groupId>com.github.tomakehurst</groupId>
             <artifactId>wiremock-jre8</artifactId>
-            <version>2.27.2</version>
+            <version>${version.wiremock-jre8}</version>
             <scope>test</scope>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.xmlunit/xmlunit-core -->
+        <dependency>
+            <groupId>org.xmlunit</groupId>
+            <artifactId>xmlunit-core</artifactId>
+            <version>${version.xmlunit}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.googlecode.xades4j/xades4j -->
+        <dependency>
+            <groupId>com.googlecode.xades4j</groupId>
+            <artifactId>xades4j</artifactId>
+            <version>${version.xades4j}</version>
         </dependency>
 
     </dependencies>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>${version.maven-clean-plugin}</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>${version.maven-jar-plugin}</version>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -198,12 +238,17 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-site-plugin</artifactId>
-                <version>3.9.1</version>
+                <version>${version.maven-site-plugin}</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>${version.maven-resources-plugin}</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-project-info-reports-plugin</artifactId>
-                <version>3.1.1</version>
+                <version>${version.maven-project-info-reports-plugin}</version>
             </plugin>
 
             <plugin>
@@ -215,7 +260,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.5</version>
+                <version>${version.jacoco-maven-plugin}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -236,7 +281,7 @@
             <plugin>
                 <groupId>org.sonarsource.scanner.maven</groupId>
                 <artifactId>sonar-maven-plugin</artifactId>
-                <version>3.7.0.1746</version>
+                <version>${version.sonar-maven-plugin}</version>
             </plugin>
 
         </plugins>
@@ -250,7 +295,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.6</version>
+                        <version>${version.maven-gpg-plugin}</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -270,12 +315,12 @@
                     <plugin>
                         <groupId>org.sonatype.plugins</groupId>
                         <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.7</version>
+                        <version>${version.nexus-staging-maven-plugin}</version>
                         <extensions>true</extensions>
                         <configuration>
                             <serverId>ossrh</serverId>
                             <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                            <autoReleaseAfterClose>false</autoReleaseAfterClose>
+                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
                             <stagingProgressTimeoutMinutes>20</stagingProgressTimeoutMinutes>
                         </configuration>
                     </plugin>
@@ -283,4 +328,14 @@
             </build>
         </profile>
     </profiles>
+    <distributionManagement>
+        <repository>
+            <id>releases</id>
+            <url>${releaseDeploymentRepository}</url>
+        </repository>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <url>${snapshotDeploymentRepository}</url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>
