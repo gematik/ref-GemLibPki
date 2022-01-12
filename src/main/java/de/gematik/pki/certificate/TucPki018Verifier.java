@@ -75,7 +75,7 @@ public class TucPki018Verifier {
         return tucPki018ProfileChecks(x509EeCert, tspServiceSubset);
     }
 
-    private Admission tucPki018ProfileChecks(@NonNull final X509Certificate x509EeCert, @NonNull final TspServiceSubset tspServiceSubset)
+    protected Admission tucPki018ProfileChecks(@NonNull final X509Certificate x509EeCert, @NonNull final TspServiceSubset tspServiceSubset)
         throws GemPkiException {
         if (certificateProfiles.isEmpty()) {
             throw new GemPkiException(productType, ErrorCode.UNKNOWN);
@@ -98,7 +98,7 @@ public class TucPki018Verifier {
         throw new GemPkiParsingException(productType, errors);
     }
 
-    private void doOcsp(@NonNull final X509Certificate x509EeCert, @NonNull final TspServiceSubset tspServiceSubset) throws GemPkiException {
+    protected void doOcsp(@NonNull final X509Certificate x509EeCert, @NonNull final TspServiceSubset tspServiceSubset) throws GemPkiException {
         final boolean ocspVerification = OcspTransceiver.builder()
             .x509EeCert(x509EeCert)
             .x509IssuerCert(tspServiceSubset.getX509IssuerCert())
@@ -121,7 +121,7 @@ public class TucPki018Verifier {
      * @param tspServiceSubset   the issuing certificates as trust store
      * @throws GemPkiException if the certificate is invalid
      */
-    private void tucPki018ChecksForProfile(@NonNull final X509Certificate x509EeCert, @NonNull final CertificateProfile certificateProfile,
+    protected void tucPki018ChecksForProfile(@NonNull final X509Certificate x509EeCert, @NonNull final CertificateProfile certificateProfile,
         @NonNull final TspServiceSubset tspServiceSubset) throws GemPkiException {
         final CertificateProfileVerification cv = CertificateProfileVerification.builder()
             .x509EeCert(x509EeCert)
@@ -135,7 +135,7 @@ public class TucPki018Verifier {
         cv.verifyCertificateType();
     }
 
-    private void tucPki018CommonChecks(@NonNull final X509Certificate x509EeCert, @NonNull final TspServiceSubset tspServiceSubset) throws GemPkiException {
+    protected void tucPki018CommonChecks(@NonNull final X509Certificate x509EeCert, @NonNull final TspServiceSubset tspServiceSubset) throws GemPkiException {
         final CertificateCommonVerification cv = CertificateCommonVerification.builder()
             .x509EeCert(x509EeCert)
             .tspServiceSubset(tspServiceSubset)
