@@ -41,19 +41,19 @@ import lombok.extern.slf4j.Slf4j;
  */
 
 @Slf4j
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
 public class TucPki018Verifier {
 
     @NonNull
-    private final String productType;
+    protected final String productType;
     @NonNull
-    private final List<TspService> tspServiceList;
+    protected final List<TspService> tspServiceList;
     @NonNull
-    private final List<CertificateProfile> certificateProfiles;
+    protected final List<CertificateProfile> certificateProfiles;
     @Builder.Default
-    private final boolean withOcspCheck = true;
-    private final OcspRespCache ocspRespCache;
+    protected final boolean withOcspCheck = true;
+    protected final OcspRespCache ocspRespCache;
 
     /**
      * Verify given end-entity certificate against a list of parameterized certificate profiles {@link CertificateProfile}. If there is no {@link
