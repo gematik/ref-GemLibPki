@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 gematik GmbH
+ * Copyright (c) 2022 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ public class TucPki018Verifier {
     protected final OcspRespCache ocspRespCache;
 
     /**
-     * Verify given end-entity certificate against a list of parameterized certificate profiles {@link CertificateProfile}. If there is no {@link
+     * Verify given end-entity certificate against TucPki18 (Technical Use Case 18 "Zertifikatsprüfung in der TI", specified by gematik). If there is no {@link
      * GemPkiException} the verification process ends successfully.
      *
      * @param x509EeCert end-entity certificate to check
@@ -71,10 +71,18 @@ public class TucPki018Verifier {
         } else {
             log.info("Ocsp verification turned off!");
         }
-        tucPki018CommonChecks(x509EeCert, tspServiceSubset);
+        commonChecks(x509EeCert, tspServiceSubset);
         return tucPki018ProfileChecks(x509EeCert, tspServiceSubset);
     }
 
+    /**
+     * Verify given end-entity certificate against the list of parameterized certificate profiles {@link CertificateProfile}.
+     *
+     * @param x509EeCert       end-entity certificate to check
+     * @param tspServiceSubset the issuing certificates as trust store
+     * @return the determined {@link Admission}
+     * @throws GemPkiException if the certificate is invalid
+     */
     protected Admission tucPki018ProfileChecks(@NonNull final X509Certificate x509EeCert, @NonNull final TspServiceSubset tspServiceSubset)
         throws GemPkiException {
         if (certificateProfiles.isEmpty()) {
@@ -98,6 +106,13 @@ public class TucPki018Verifier {
         throw new GemPkiParsingException(productType, errors);
     }
 
+    /**
+     * This method will perform TucPki006 checks (not complete yet).
+     *
+     * @param x509EeCert       end-entity certificate to check
+     * @param tspServiceSubset the issuing certificates as trust store
+     * @throws GemPkiException if OCSP verification fails
+     */
     protected void doOcsp(@NonNull final X509Certificate x509EeCert, @NonNull final TspServiceSubset tspServiceSubset) throws GemPkiException {
         final boolean ocspVerification = OcspTransceiver.builder()
             .x509EeCert(x509EeCert)
@@ -135,7 +150,14 @@ public class TucPki018Verifier {
         cv.verifyCertificateType();
     }
 
-    protected void tucPki018CommonChecks(@NonNull final X509Certificate x509EeCert, @NonNull final TspServiceSubset tspServiceSubset) throws GemPkiException {
+    /**
+     * Common checks for date/mathematical validity and certificate chain
+     *
+     * @param x509EeCert       end-entity certificate to check
+     * @param tspServiceSubset the issuing certificates as trust store
+     * @throws GemPkiException if the certificate verification fails
+     */
+    protected void commonChecks(@NonNull final X509Certificate x509EeCert, @NonNull final TspServiceSubset tspServiceSubset) throws GemPkiException {
         final CertificateCommonVerification cv = CertificateCommonVerification.builder()
             .x509EeCert(x509EeCert)
             .tspServiceSubset(tspServiceSubset)

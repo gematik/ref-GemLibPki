@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 gematik GmbH
+ * Copyright (c) 2022 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ class CertificateProfileVerificationTest {
     }
 
     private CertificateProfileVerification buildCertificateProfileVerifier(@NonNull final String tslFilename,
-        final CertificateProfile certificateProfile, final X509Certificate x509EeCert) throws GemPkiException, URISyntaxException, IOException {
+        final CertificateProfile certificateProfile, final X509Certificate x509EeCert) throws GemPkiException, IOException {
 
         final TspServiceSubset tspServiceSubset = new TspInformationProvider(new TslInformationProvider(
             TslReader.getTsl(ResourceReader.getFilePathFromResources(tslFilename)).orElseThrow()).getTspServices(),

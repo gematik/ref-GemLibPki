@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 gematik GmbH
+ * Copyright (c) 2022 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -22,15 +22,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.Getter;
 
 /**
  * Utility class for {@link GemPkiException}.
  */
-@Getter
 public class GemPkiParsingException extends GemPkiException {
-
-    private final Map<CertificateProfile, GemPkiException> errorMap;
 
     /**
      * Constructor to build a message.
@@ -52,7 +48,6 @@ public class GemPkiParsingException extends GemPkiException {
             extractFirstError(errorMap)
                 .orElse(null)
         );
-        this.errorMap = errorMap;
     }
 
     /**

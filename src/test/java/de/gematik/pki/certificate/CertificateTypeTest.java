@@ -14,28 +14,16 @@
  * limitations under the License.
  */
 
-package de.gematik.pki.utils;
+package de.gematik.pki.certificate;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import de.gematik.pki.exception.GemPkiException;
-import de.gematik.pki.ocsp.OcspConstants;
-import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
-class P12ReaderTest {
+class CertificateTypeTest {
 
     @Test
-    void verifyGetContentFromP12Valid() {
-        assertDoesNotThrow(() ->
-            P12Reader.getContentFromP12(OcspConstants.P12_OCSP_RESPONSE_SIGNER_RSA, OcspConstants.P12_PASSWORD)
-        );
+    void getName() {
+        assertDoesNotThrow(CertificateType.SMC_B_AUT::getName);
     }
 
-    @Test
-    void verifyGetContentFromP12Null() throws GemPkiException {
-        assertNull(
-            P12Reader.getContentFromP12(Path.of("src/test/resources/certificates/empty.p12"), OcspConstants.P12_PASSWORD)
-        );
-    }
 }

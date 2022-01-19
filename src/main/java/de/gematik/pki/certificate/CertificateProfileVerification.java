@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 gematik GmbH
+ * Copyright (c) 2022 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -95,8 +95,7 @@ public class CertificateProfileVerification {
      * @param certificateProfile The certificate profile
      * @return List with keyUsage(s)
      */
-    private static List<KeyUsage> getIntendedKeyUsagesFromCertificateProfile(
-        @NonNull final CertificateProfile certificateProfile) {
+    private static List<KeyUsage> getIntendedKeyUsagesFromCertificateProfile(@NonNull final CertificateProfile certificateProfile) {
         return CertificateProfile.valueOf(certificateProfile.name()).getKeyUsages();
     }
 
@@ -145,8 +144,7 @@ public class CertificateProfileVerification {
      * @param certificateProfile The certificate profile
      * @return List of oid(s) of ExtendedKeyUsages from certificate profile {@link CertificateProfile}
      */
-    private static List<String> getOidOfIntendedExtendedKeyUsagesFromCertificateProfile(
-        @NonNull final CertificateProfile certificateProfile) {
+    private static List<String> getOidOfIntendedExtendedKeyUsagesFromCertificateProfile(@NonNull final CertificateProfile certificateProfile) {
         return CertificateProfile.valueOf(certificateProfile.name()).getExtKeyUsages()
             .stream().map(ExtendedKeyUsage::getOid).collect(Collectors.toList());
     }
@@ -226,6 +224,5 @@ public class CertificateProfileVerification {
         }
     }
     // ############## End certificate type checks #######################################################
-
 
 }

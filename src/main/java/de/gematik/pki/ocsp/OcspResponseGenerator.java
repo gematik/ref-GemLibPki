@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 gematik GmbH
+ * Copyright (c) 2022 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ public class OcspResponseGenerator {
      * @param ocspReq OCSP request
      * @return OCSP response
      */
-    public OCSPResp gen(final OCSPReq ocspReq) throws GemPkiException {
+    public OCSPResp gen(@NonNull final OCSPReq ocspReq) throws GemPkiException {
         Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
         try {
             return gen(ocspReq, signer.getCertificate(), ZonedDateTime.now());
@@ -71,8 +71,8 @@ public class OcspResponseGenerator {
      * @param dateTime               will be producedAt
      * @return OCSP response
      */
-    private OCSPResp gen(@NonNull final OCSPReq ocspReq,
-        @NonNull final X509Certificate ocspResponseSignerCert, @NonNull final ZonedDateTime dateTime)
+    private OCSPResp gen(final OCSPReq ocspReq,
+        final X509Certificate ocspResponseSignerCert, final ZonedDateTime dateTime)
         throws OperatorCreationException, IOException, OCSPException, CertificateEncodingException, GemPkiException {
 
         final DigestCalculatorProvider digCalcProv = new BcDigestCalculatorProvider();

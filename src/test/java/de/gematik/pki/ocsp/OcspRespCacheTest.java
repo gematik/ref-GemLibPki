@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 gematik GmbH
+ * Copyright (c) 2022 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,14 @@ class OcspRespCacheTest {
         final int OCSP_GRACE_PERIOD = 10;
         final OcspRespCache ocspRespCache = new OcspRespCache(OCSP_GRACE_PERIOD);
         assertThat(ocspRespCache.getOcspGracePeriodSeconds()).isEqualTo(OCSP_GRACE_PERIOD);
+    }
+
+    @Test
+    void setAndGetOcspGracePeriodSecondsSet() {
+        final int OCSP_GRACE_PERIOD = 10;
+        final OcspRespCache ocspRespCache = new OcspRespCache(OCSP_GRACE_PERIOD);
+        ocspRespCache.setOcspGracePeriodSeconds(OCSP_GRACE_PERIOD + 5);
+        assertThat(ocspRespCache.getOcspGracePeriodSeconds()).isEqualTo(OCSP_GRACE_PERIOD + 5);
     }
 
     @SneakyThrows

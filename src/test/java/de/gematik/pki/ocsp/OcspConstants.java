@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 gematik GmbH
+ * Copyright (c) 2022 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,6 @@ import de.gematik.pki.exception.GemPkiException;
 import de.gematik.pki.exception.UnitTestException;
 import de.gematik.pki.utils.P12Container;
 import de.gematik.pki.utils.P12Reader;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import lombok.Getter;
 
@@ -38,9 +36,9 @@ public class OcspConstants {
 
     static {
         try {
-            ocspSignerRsa = P12Reader.getContentFromP12(Files.readAllBytes(P12_OCSP_RESPONSE_SIGNER_RSA), P12_PASSWORD);
-            ocspSignerEcc = P12Reader.getContentFromP12(Files.readAllBytes(P12_OCSP_RESPONSE_SIGNER_ECC), P12_PASSWORD);
-        } catch (final IOException | GemPkiException e) {
+            ocspSignerRsa = P12Reader.getContentFromP12(P12_OCSP_RESPONSE_SIGNER_RSA, P12_PASSWORD);
+            ocspSignerEcc = P12Reader.getContentFromP12(P12_OCSP_RESPONSE_SIGNER_ECC, P12_PASSWORD);
+        } catch (final GemPkiException e) {
             throw new UnitTestException("Could not read p12 file.", e);
         }
     }

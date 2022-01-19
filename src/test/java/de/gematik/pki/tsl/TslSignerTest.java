@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 gematik GmbH
+ * Copyright (c) 2022 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -122,7 +122,7 @@ class TslSignerTest {
 
     @SneakyThrows
     private static P12Container readSignerCert(final String certPath) {
-        return Objects.requireNonNull(P12Reader.getContentFromP12(Files.readAllBytes(ResourceReader.getFilePathFromResources(certPath)), "00"));
+        return Objects.requireNonNull(P12Reader.getContentFromP12(ResourceReader.getFilePathFromResources(certPath), "00"));
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 gematik GmbH
+ * Copyright (c) 2022 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,13 @@ package de.gematik.pki.ocsp;
 import java.math.BigInteger;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.cert.ocsp.OCSPResp;
 
 /**
  * Class to support ocsp a responder cache (to implement ocsp grace periods) old entries of the cache are deleted when a cached entry is requested
  */
+@Slf4j
 public class OcspRespCache {
 
     private int ocspGracePeriodSeconds;
@@ -87,6 +89,7 @@ public class OcspRespCache {
     }
 
     private void deleteExpiredResponses() {
+        log.info("Deleting cached OCSP responses is not implemented yet. Cache size:{}", cache.size());
         //TODO get current time, compare ... ocspGracePeriodSeconds and delete all expired responses (responses with status revoked remain)
     }
 }

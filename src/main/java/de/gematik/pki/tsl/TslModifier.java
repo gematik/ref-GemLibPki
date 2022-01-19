@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 gematik GmbH
+ * Copyright (c) 2022 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -51,16 +51,14 @@ public class TslModifier {
         final ServiceSupplyPointsType newSspType = new ServiceSupplyPointsType();
         newSspType.getServiceSupplyPoint().add(newSspXml);
 
-        tsl.getTrustServiceProviderList().
-            getTrustServiceProvider().forEach(tsp -> {
+        tsl.getTrustServiceProviderList().getTrustServiceProvider().forEach(tsp -> {
             if (tsp.getTSPInformation().getTSPName().getName().get(0).getValue().contains(tspName)) {
-                tsp.getTSPServices().getTSPService()
-                    .forEach(service -> {
-                            if (TslConstants.STI_CA_LIST.contains(service.getServiceInformation().getServiceTypeIdentifier())) {
-                                service.getServiceInformation().setServiceSupplyPoints(newSspType);
-                            }
+                tsp.getTSPServices().getTSPService().forEach(service -> {
+                        if (TslConstants.STI_CA_LIST.contains(service.getServiceInformation().getServiceTypeIdentifier())) {
+                            service.getServiceInformation().setServiceSupplyPoints(newSspType);
                         }
-                    );
+                    }
+                );
             }
         });
     }
@@ -149,12 +147,12 @@ public class TslModifier {
      * @param issueDate Timestamp of the issueDate element of the tsl
      * @return New tsl id
      */
-    public static String generateTslId(@NonNull final int seqNumber, @NonNull final ZonedDateTime issueDate) {
+    public static String generateTslId(final int seqNumber, @NonNull final ZonedDateTime issueDate) {
         return TslConstants.TSL_ID_PREFIX + TslConstants.TSL_VERSION + seqNumber + issueDate.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
             + issueDate.getZone();
     }
 
-    private static void modifyTslDownloadUrl(@NonNull final TrustStatusListType tsl, @NonNull final String tslDnlUrlPrimary, @NonNull final String oid) {
+    private static void modifyTslDownloadUrl(final TrustStatusListType tsl, final String tslDnlUrlPrimary, final String oid) {
         tsl.getSchemeInformation().getPointersToOtherTSL()
             .getOtherTSLPointer()
             .stream()
@@ -164,7 +162,7 @@ public class TslModifier {
             .setTSLLocation(tslDnlUrlPrimary);
     }
 
-    private static OtherTSLPointerType createOtherTSLPointerType(@NonNull final String oid, @NonNull final String tslDownloadUrl) {
+    private static OtherTSLPointerType createOtherTSLPointerType(final String oid, final String tslDownloadUrl) {
         final OtherTSLPointerType otpt = new OtherTSLPointerType();
         otpt.setTSLLocation(tslDownloadUrl);
 
@@ -179,11 +177,11 @@ public class TslModifier {
         return otpt;
     }
 
-    private static void setElementOtherTSLPointer(@NonNull final TrustStatusListType tsl, @NonNull final OtherTSLPointersType otpt) {
+    private static void setElementOtherTSLPointer(final TrustStatusListType tsl, final OtherTSLPointersType otpt) {
         tsl.getSchemeInformation().setPointersToOtherTSL(otpt);
     }
 
-    private static XMLGregorianCalendar getXmlGregorianCalendar(@NonNull final ZonedDateTime zdt) throws DatatypeConfigurationException {
+    private static XMLGregorianCalendar getXmlGregorianCalendar(final ZonedDateTime zdt) throws DatatypeConfigurationException {
         final GregorianCalendar gregorianCalendar = GregorianCalendar.from(zdt);
         final XMLGregorianCalendar xmlCal = DatatypeFactory.newInstance().newXMLGregorianCalendar(gregorianCalendar);
         xmlCal.setMillisecond(DatatypeConstants.FIELD_UNDEFINED);

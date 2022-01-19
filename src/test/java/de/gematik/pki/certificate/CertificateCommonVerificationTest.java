@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 gematik GmbH
+ * Copyright (c) 2022 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import de.gematik.pki.tsl.TspServiceSubset;
 import de.gematik.pki.utils.CertificateProvider;
 import de.gematik.pki.utils.ResourceReader;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.security.cert.X509Certificate;
 import java.time.ZonedDateTime;
@@ -66,7 +65,7 @@ class CertificateCommonVerificationTest {
     }
 
     private CertificateCommonVerification buildCertificateCommonVerifier(@NonNull final String tslFilename, final X509Certificate x509EeCert)
-        throws GemPkiException, IOException, URISyntaxException {
+        throws GemPkiException, IOException {
 
         final TspServiceSubset tspServiceSubset = new TspInformationProvider(new TslInformationProvider(
             TslReader.getTsl(ResourceReader.getFilePathFromResources(tslFilename)).orElseThrow()).getTspServices(),

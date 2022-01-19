@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 gematik GmbH
+ * Copyright (c) 2022 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import de.gematik.pki.error.ErrorCode;
 import de.gematik.pki.exception.GemPkiException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -42,7 +44,7 @@ public class P12Reader {
      * @param p12FileContent p12 as byte array
      * @param p12Password    password for p12
      * @return a {@link P12Container}
-     * @throws GemPkiException
+     * @throws GemPkiException on any caught exception
      */
     public static P12Container getContentFromP12(final byte[] p12FileContent, final String p12Password) throws GemPkiException {
 
@@ -58,8 +60,25 @@ public class P12Reader {
                 return P12Container.builder().certificate(certificate).privateKey(privateKey).build();
             }
         } catch (final KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException | IOException | CertificateException e) {
-            throw new GemPkiException(ErrorCode.CERTIFICATE_READ, "Cannot read p12 file.", e);
+            throw new GemPkiException(ErrorCode.CERTIFICATE_READ, "Cannot read p12 content.", e);
         }
         return null;
     }
+
+    /**
+     * Read a file from path, representing a p12 file, to pojo
+     *
+     * @param path        path to *.p12 file
+     * @param p12Password password for p12
+     * @return a {@link P12Container}
+     * @throws GemPkiException on any caught exception
+     */
+    public static P12Container getContentFromP12(final Path path, final String p12Password) throws GemPkiException {
+        try {
+            return getContentFromP12(Files.readAllBytes(path), p12Password);
+        } catch (final IOException e) {
+            throw new GemPkiException(ErrorCode.CERTIFICATE_READ, "Cannot read p12 file.", e);
+        }
+    }
+
 }

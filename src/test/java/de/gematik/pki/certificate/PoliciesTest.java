@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 gematik GmbH
+ * Copyright (c) 2022 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -34,14 +34,14 @@ class PoliciesTest {
     }
 
     @Test
-    void policiesCertNull() throws CertificateEncodingException, IOException {
+    void policiesCertNull() {
         assertThatThrownBy(() -> new Policies(null))
             .isInstanceOf(NullPointerException.class)
             .hasMessageContaining("x509EeCert");
     }
 
     @Test
-    void getPolicyOidsMissing() throws CertificateEncodingException, IOException {
+    void getPolicyOidsMissing() throws IOException {
         final X509Certificate missingPolicyId = CertificateProvider
             .getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-policyId.pem");
         assertThatThrownBy(() -> new Policies(missingPolicyId).getPolicyOids()).isInstanceOf(IllegalArgumentException.class);

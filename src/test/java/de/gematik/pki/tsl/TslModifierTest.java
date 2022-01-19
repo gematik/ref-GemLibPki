@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 gematik GmbH
+ * Copyright (c) 2022 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import de.gematik.pki.exception.GemPkiException;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.Month;
@@ -34,6 +33,7 @@ import java.util.Scanner;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -43,7 +43,7 @@ class TslModifierTest {
     TrustStatusListType tsl;
 
     @BeforeEach
-    void setup() throws GemPkiException, IOException, URISyntaxException {
+    void setup() throws GemPkiException, IOException {
         tsl = TslReader.getTsl(getFilePathFromResources(FILE_NAME_TSL)).orElseThrow();
     }
 
@@ -193,4 +193,78 @@ class TslModifierTest {
         final ZonedDateTime issueDateZdUtc = ZonedDateTime.parse("2027-07-21T11:00:00Z");
         assertThat(TslModifier.generateTslId(42, issueDateZdUtc)).isEqualTo("ID34220270721110000Z");
     }
+
+    @Test
+    void nonNullTests() {
+        AssertionsForClassTypes.assertThatThrownBy(
+                () -> TslModifier.modifySspForCAsOfTsp(null, "gematik", "http://my.new-service-supply-point:8080/ocsp"))
+            .isInstanceOf(NullPointerException.class);
+
+        AssertionsForClassTypes.assertThatThrownBy(
+                () -> TslModifier.modifySspForCAsOfTsp(tsl, null, "http://my.new-service-supply-point:8080/ocsp"))
+            .isInstanceOf(NullPointerException.class);
+
+        AssertionsForClassTypes.assertThatThrownBy(
+                () -> TslModifier.modifySspForCAsOfTsp(tsl, "gematik", null))
+            .isInstanceOf(NullPointerException.class);
+
+        AssertionsForClassTypes.assertThatThrownBy(
+                () -> TslModifier.modifySequenceNr(null, 42))
+            .isInstanceOf(NullPointerException.class);
+
+        AssertionsForClassTypes.assertThatThrownBy(
+                () -> TslModifier.modifyNextUpdate(null, ZonedDateTime.now()))
+            .isInstanceOf(NullPointerException.class);
+
+        AssertionsForClassTypes.assertThatThrownBy(
+                () -> TslModifier.modifyNextUpdate(tsl, null))
+            .isInstanceOf(NullPointerException.class);
+
+        AssertionsForClassTypes.assertThatThrownBy(
+                () -> TslModifier.generateTslId(42, null))
+            .isInstanceOf(NullPointerException.class);
+
+        AssertionsForClassTypes.assertThatThrownBy(
+                () -> TslModifier.setOtherTSLPointers(null,
+                    Map.of(TslConstants.TSL_DOWNLOAD_URL_OID_PRIMARY, "foo", TslConstants.TSL_DOWNLOAD_URL_OID_BACKUP, "bar")))
+            .isInstanceOf(NullPointerException.class);
+
+        AssertionsForClassTypes.assertThatThrownBy(
+                () -> TslModifier.setOtherTSLPointers(tsl, null))
+            .isInstanceOf(NullPointerException.class);
+
+        AssertionsForClassTypes.assertThatThrownBy(
+                () -> TslModifier.modifyTslDownloadUrlPrimary(null, "foo"))
+            .isInstanceOf(NullPointerException.class);
+
+        AssertionsForClassTypes.assertThatThrownBy(
+                () -> TslModifier.modifyTslDownloadUrlPrimary(tsl, null))
+            .isInstanceOf(NullPointerException.class);
+
+        AssertionsForClassTypes.assertThatThrownBy(
+                () -> TslModifier.modifyTslDownloadUrlBackup(null, "foo"))
+            .isInstanceOf(NullPointerException.class);
+
+        AssertionsForClassTypes.assertThatThrownBy(
+                () -> TslModifier.modifyTslDownloadUrlBackup(tsl, null))
+            .isInstanceOf(NullPointerException.class);
+
+        AssertionsForClassTypes.assertThatThrownBy(
+                () -> TslModifier.modifyIssueDate(null, ZonedDateTime.now()))
+            .isInstanceOf(NullPointerException.class);
+
+        AssertionsForClassTypes.assertThatThrownBy(
+                () -> TslModifier.modifyIssueDate(tsl, null))
+            .isInstanceOf(NullPointerException.class);
+
+        AssertionsForClassTypes.assertThatThrownBy(
+                () -> TslModifier.modifyIssueDateAndRelatedNextUpdate(null, ZonedDateTime.now(), 42))
+            .isInstanceOf(NullPointerException.class);
+
+        AssertionsForClassTypes.assertThatThrownBy(
+                () -> TslModifier.modifyIssueDateAndRelatedNextUpdate(tsl, null, 42))
+            .isInstanceOf(NullPointerException.class);
+
+    }
+
 }

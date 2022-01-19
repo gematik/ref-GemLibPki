@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 gematik GmbH
+ * Copyright (c) 2022 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package de.gematik.pki.utils;
 
+import java.io.Serializable;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import lombok.Builder;
@@ -27,10 +28,11 @@ import lombok.NonNull;
  */
 @Getter
 @Builder
-public class P12Container {
+public class P12Container implements Serializable {
 
     @NonNull
     private final X509Certificate certificate;
     @NonNull
     private final PrivateKey privateKey;
+
 }

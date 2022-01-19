@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 gematik GmbH
+ * Copyright (c) 2022 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,6 @@ import de.gematik.pki.utils.VariableSource;
 import eu.europa.esig.trustedlist.jaxb.tsl.AttributedNonEmptyURIType;
 import eu.europa.esig.trustedlist.jaxb.tsl.ServiceSupplyPointsType;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import lombok.SneakyThrows;
@@ -143,7 +141,7 @@ class TucPki018VerifierTest {
     }
 
     @Test
-    void verifyProfessionOidsValid() throws IOException, GemPkiException, CertificateEncodingException, URISyntaxException {
+    void verifyProfessionOidsValid() throws IOException, GemPkiException {
         final X509Certificate cert = CertificateProvider.getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA24-RSA/c-hci-osig_apo.valid.crt");
         assertThat(buildTucPki18Verifier(List.of(CertificateProfile.C_HCI_OSIG))
             .performTucPki18Checks(cert).getProfessionOids()).contains(Role.OID_OEFFENTLICHE_APOTHEKE.getProfessionOid());

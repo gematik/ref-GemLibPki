@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 gematik GmbH
+ * Copyright (c) 2022 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package de.gematik.pki.ocsp;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import de.gematik.pki.exception.GemPkiException;
 import de.gematik.pki.utils.CertificateProvider;
 import java.io.IOException;
@@ -48,4 +48,16 @@ class OcspRequestGeneratorTest {
         assertThat(ocspReq.getRequestList()).hasSize(1);
     }
 
+    @Test
+    void nonNullTests() {
+        assertThatThrownBy(
+            () -> OcspRequestGenerator.generateSingleOcspRequest(null,
+                VALID_X509_ISSUER_CERT))
+            .isInstanceOf(NullPointerException.class);
+
+        assertThatThrownBy(
+            () -> OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT,
+                null))
+            .isInstanceOf(NullPointerException.class);
+    }
 }

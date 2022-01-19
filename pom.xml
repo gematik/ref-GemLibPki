@@ -5,7 +5,7 @@
 
     <groupId>de.gematik.pki</groupId>
     <artifactId>gemLibPki</artifactId>
-    <version>0.5.0</version>
+    <version>0.5.2</version>
     <packaging>jar</packaging>
     <description>gematik library PKI</description>
     <name>GemLibPki</name>
@@ -58,8 +58,8 @@
         <version.lombok>1.18.22</version.lombok>
         <version.bouncycastle.bcpkix>1.70</version.bouncycastle.bcpkix>
         <version.xades4j>1.7.0</version.xades4j>
-        <version.xmlunit>2.8.3</version.xmlunit>
-        <version.assertj>3.21.0</version.assertj>
+        <version.xmlunit>2.8.4</version.xmlunit>
+        <version.assertj>3.22.0</version.assertj>
         <version.junit-jupiter>5.8.2</version.junit-jupiter>
         <version.unirest-java>1.4.9</version.unirest-java>
         <version.commons-lang3>3.12.0</version.commons-lang3>
@@ -71,8 +71,7 @@
         <version.sonar-maven-plugin>3.7.0.1746</version.sonar-maven-plugin>
         <version.nexus-staging-maven-plugin>1.6.7</version.nexus-staging-maven-plugin>
         <version.maven-gpg-plugin>1.6</version.maven-gpg-plugin>
-        <version.slf4j>1.7.32</version.slf4j>
-        <version.log4j>2.17.0</version.log4j>
+        <version.log4j>2.17.1</version.log4j>
 
         <!-- settings for upload to sonar server -->
         <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/target/site/jacoco/index.xml</sonar.coverage.jacoco.xmlReportPaths>
@@ -116,11 +115,6 @@
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
             <version>${version.lombok}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${version.slf4j}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>

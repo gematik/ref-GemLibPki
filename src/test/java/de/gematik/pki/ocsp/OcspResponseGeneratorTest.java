@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 gematik GmbH
+ * Copyright (c) 2022 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,6 @@ class OcspResponseGeneratorTest {
         assertDoesNotThrow(() -> OcspResponseGenerator.builder()
             .signer(OcspConstants.getOcspSignerEcc())
             .build());
-
     }
 
     @SneakyThrows
@@ -72,11 +71,20 @@ class OcspResponseGeneratorTest {
     @Test
     void useOcspRespInvalidAlgo() {
         assertThatThrownBy(() -> OcspResponseGenerator.builder()
-            .signer(Objects.requireNonNull(P12Reader.getContentFromP12(Files.readAllBytes(Path.of("src/test/resources/certificates/ocsp/dsaCert.p12")), "00")))
+            .signer(Objects.requireNonNull(P12Reader.getContentFromP12(Path.of("src/test/resources/certificates/ocsp/dsaCert.p12"), "00")))
             .build()
             .gen(ocspReq))
             .hasMessage("Signature algorithm not supported: DSA")
             .isInstanceOf(GemPkiException.class);
+    }
+
+    @Test
+    void nonNullTests() {
+        assertThatThrownBy(() -> OcspResponseGenerator.builder()
+            .signer(Objects.requireNonNull(P12Reader.getContentFromP12(Path.of("src/test/resources/certificates/ocsp/dsaCert.p12"), "00")))
+            .build()
+            .gen(null))
+            .isInstanceOf(NullPointerException.class);
     }
 
     private static void writeOcspRespToFile(final OCSPResp ocspResp) throws IOException {

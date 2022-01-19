@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 gematik GmbH
+ * Copyright (c) 2022 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import eu.europa.esig.trustedlist.jaxb.tsl.MultiLangStringType;
 import eu.europa.esig.trustedlist.jaxb.tsl.OtherTSLPointersType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -35,12 +34,12 @@ class TslReaderTest {
     TrustStatusListType tsl;
 
     @BeforeEach
-    void setup() throws GemPkiException, URISyntaxException, IOException {
+    void setup() throws GemPkiException, IOException {
         tsl = TslReader.getTsl(getFilePathFromResources(FILE_NAME_TSL_DEFAULT)).orElseThrow();
     }
 
     @Test
-    void verifyGetTrustStatusListTypeIsPresent() throws GemPkiException, URISyntaxException, IOException {
+    void verifyGetTrustStatusListTypeIsPresent() throws GemPkiException, IOException {
         assertThat(TslReader.getTsl(getFilePathFromResources(FILE_NAME_TSL_DEFAULT))).isPresent();
     }
 
