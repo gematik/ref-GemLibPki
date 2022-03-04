@@ -57,7 +57,7 @@ public class TspInformationProvider {
      * @param x509IssuerCert issuer certificate determined from TSL file
      * @return true when aki matches ski otherwise false
      */
-    private static boolean verifyAkiMatchesSki(@NonNull final X509Certificate x509EeCert,
+    private static boolean verifyAkiMatchesSki(final X509Certificate x509EeCert,
         @NonNull final X509Certificate x509IssuerCert) {
         final byte[] subjectKeyIdentifier = x509IssuerCert.getExtensionValue(Extension.subjectKeyIdentifier.getId());
         final Optional<ASN1OctetString> skiAsOctet = Optional
@@ -99,7 +99,7 @@ public class TspInformationProvider {
      * @param issuerTspService TspService from TSL file
      * @return ZonedDateTime timestamp of status change
      */
-    private static ZonedDateTime getCertificateAuthorityStatusStartingTime(@NonNull final TspService issuerTspService) {
+    private static ZonedDateTime getCertificateAuthorityStatusStartingTime(final TspService issuerTspService) {
         return issuerTspService.getTspServiceType().getServiceInformation().getStatusStartingTime()
             .toGregorianCalendar()
             .toZonedDateTime();

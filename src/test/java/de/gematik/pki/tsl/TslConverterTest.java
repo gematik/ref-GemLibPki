@@ -19,6 +19,7 @@ package de.gematik.pki.tsl;
 import static de.gematik.pki.utils.ResourceReader.getFilePathFromResources;
 import static de.gematik.pki.utils.XmlCompare.documentsAreEqual;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -64,5 +65,11 @@ class TslConverterTest {
         assertThat(
             documentsAreEqual(TslConverter.bytesToTsl(tslBytes).orElseThrow(), TslReader.getTsl(TSL_PATH).orElseThrow()))
             .isTrue();
+    }
+
+    @Test
+    void nonNullTests() {
+        assertThatThrownBy(() -> TslConverter.tslToDoc(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> TslConverter.docToBytes(null)).isInstanceOf(NullPointerException.class);
     }
 }

@@ -95,7 +95,7 @@ public class CertificateProfileVerification {
      * @param certificateProfile The certificate profile
      * @return List with keyUsage(s)
      */
-    private static List<KeyUsage> getIntendedKeyUsagesFromCertificateProfile(@NonNull final CertificateProfile certificateProfile) {
+    private static List<KeyUsage> getIntendedKeyUsagesFromCertificateProfile(final CertificateProfile certificateProfile) {
         return CertificateProfile.valueOf(certificateProfile.name()).getKeyUsages();
     }
 
@@ -144,7 +144,7 @@ public class CertificateProfileVerification {
      * @param certificateProfile The certificate profile
      * @return List of oid(s) of ExtendedKeyUsages from certificate profile {@link CertificateProfile}
      */
-    private static List<String> getOidOfIntendedExtendedKeyUsagesFromCertificateProfile(@NonNull final CertificateProfile certificateProfile) {
+    private static List<String> getOidOfIntendedExtendedKeyUsagesFromCertificateProfile(final CertificateProfile certificateProfile) {
         return CertificateProfile.valueOf(certificateProfile.name()).getExtKeyUsages()
             .stream().map(ExtendedKeyUsage::getOid).collect(Collectors.toList());
     }
@@ -169,7 +169,7 @@ public class CertificateProfileVerification {
      * @param certificatePolicyOidList list with policy oid(s)
      * @throws GemPkiException if the certificate has a wong cert type
      */
-    private void verifyCertificateProfileByCertificateTypeOid(@NonNull final Set<String> certificatePolicyOidList)
+    private void verifyCertificateProfileByCertificateTypeOid(final Set<String> certificatePolicyOidList)
         throws GemPkiException {
         if (!certificatePolicyOidList.contains(certificateProfile.getCertificateType().getOid())) {
             log.debug("ZertifikatsTypOids im Zertifikat: {}", certificatePolicyOidList);
@@ -184,7 +184,7 @@ public class CertificateProfileVerification {
      * @param certificateTypeOidList a list with certificate type oid(s)
      * @throws GemPkiException if the certificate issuer is not allowed to issue this cert type
      */
-    private void verifyCertificateTypeOidInIssuerTspServiceExtension(@NonNull final Set<String> certificateTypeOidList)
+    private void verifyCertificateTypeOidInIssuerTspServiceExtension(final Set<String> certificateTypeOidList)
         throws GemPkiException {
         log.debug("Prüfe CA Authorisierung für die Herausgabe des Zertifikatstyps {} ",
             certificateProfile.getCertificateType().getOidReference());
@@ -210,7 +210,7 @@ public class CertificateProfileVerification {
      * @return Set<String> policy oids from end-entity certificate
      * @throws GemPkiException if the certificate has no cert type
      */
-    private Set<String> getCertificatePolicyOids(@NonNull final X509Certificate x509EeCert) throws GemPkiException {
+    private Set<String> getCertificatePolicyOids(final X509Certificate x509EeCert) throws GemPkiException {
         try {
             final Policies policies = new Policies(x509EeCert);
             if (policies.getPolicyOids().isEmpty()) {

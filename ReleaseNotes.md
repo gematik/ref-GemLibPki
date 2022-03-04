@@ -1,6 +1,10 @@
+# Release 0.5.3
+
+- add C.FD.OSIG certificate profile
+
 # Release 0.5.2
 
-- set AccessLevel from private to protected for class TucPki018Verifier to make it extendable
+- set AccessLevel from private to protected for class TucPki018Verifier to make it extendable https://github.com/gematik/ref-GemLibPki/pull/2
 - raise code coverage
 
 # Release 0.5.1

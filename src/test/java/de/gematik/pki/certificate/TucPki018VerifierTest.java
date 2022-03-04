@@ -141,6 +141,20 @@ class TucPki018VerifierTest {
     }
 
     @Test
+    void verifyFdOsigRsaCertValid() {
+        assertDoesNotThrow(() -> buildTucPki18Verifier(List.of(CertificateProfile.C_FD_OSIG))
+            .performTucPki18Checks(CertificateProvider.getX509Certificate(
+                "src/test/resources/certificates/GEM.KOMP-CA50/erzpecc.pem")));
+    }
+
+    @Test
+    void verifyFdOsigEccCertValid() {
+        assertDoesNotThrow(() -> buildTucPki18Verifier(List.of(CertificateProfile.C_FD_OSIG))
+            .performTucPki18Checks(CertificateProvider.getX509Certificate(
+                "src/test/resources/certificates/GEM.KOMP-CA54/erzprsa.pem")));
+    }
+
+    @Test
     void verifyProfessionOidsValid() throws IOException, GemPkiException {
         final X509Certificate cert = CertificateProvider.getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA24-RSA/c-hci-osig_apo.valid.crt");
         assertThat(buildTucPki18Verifier(List.of(CertificateProfile.C_HCI_OSIG))
@@ -198,6 +212,14 @@ class TucPki018VerifierTest {
         assertThatThrownBy(() -> buildTucPki18Verifier(null))
             .isInstanceOf(NullPointerException.class)
             .hasMessageContaining("certificateProfiles");
+    }
+
+    @Test
+    void nonNullTests() {
+        assertThatThrownBy(() -> tucPki018Verifier.tucPki018ProfileChecks(null, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> tucPki018Verifier.doOcsp(null, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> tucPki018Verifier.tucPki018ChecksForProfile(null, null, null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> tucPki018Verifier.commonChecks(null, null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test

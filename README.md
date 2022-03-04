@@ -5,8 +5,8 @@
 ## GemLibPki - a Java library for functionalities in PKI (Public Key Infrastructure) of products specified by gematik
 
 Products specified by gematik which have to deal with PKI will have to handle certificates and TSLs (
-TrustedServiceProvider Status List). This library may help to understand the intention of specification and could be
-useful for software implementations.
+TrustedServiceProvider Status List). This library may help to understand the intention of the specification as a reference implementation.
+Please see [liability limitation](https://fachportal.gematik.de/default-titlegrundsaetzliche-nutzungsbedingungen) for further information.
 
 Specifications are published at [Gematik Fachportal](https://fachportal.gematik.de/).
 
@@ -15,6 +15,10 @@ Specifications are published at [Gematik Fachportal](https://fachportal.gematik.
 ### Version
 
 Versions below 1.0.0 are not feature complete.
+
+### Remark
+Cryptographic private keys used in this project are solely used in test resources for the purpose of unit tests. 
+We are fully aware of the content and meaning of the test data. We never publish productive data.
 
 ### Content
 

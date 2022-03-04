@@ -82,4 +82,16 @@ class TslReaderTest {
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining("Error reading TSL");
     }
+
+    @Test
+    void nonNullTests() {
+        assertThatThrownBy(() -> TslReader.getTslAsDoc(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> TslReader.getTsl(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> TslReader.getSequenceNumber(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> TslReader.getNextUpdate(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> TslReader.getIssueDate(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> TslReader.getOtherTslPointers(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> TslReader.getTslDownloadUrlPrimary(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> TslReader.getTslDownloadUrlBackup(null)).isInstanceOf(NullPointerException.class);
+    }
 }

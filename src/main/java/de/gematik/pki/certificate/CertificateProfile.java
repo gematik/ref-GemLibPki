@@ -49,6 +49,7 @@ public enum CertificateProfile {
     C_HCI_OSIG(CertificateType.SMC_B_OSIG, List.of(KeyUsage.NON_REPUDIATION), List.of(), false),
 
     C_FD_SIG(CertificateType.FD_SIG, List.of(KeyUsage.DIGITAL_SIGNATURE), List.of(), false),
+    C_FD_OSIG(CertificateType.FD_OSIG, List.of(KeyUsage.NON_REPUDIATION), List.of(), false),
 
     C_TSL_SIG_RSA(CertificateType.NONE, List.of(KeyUsage.NON_REPUDIATION), List.of(ExtendedKeyUsage.ID_TSL_KP_TSLSIGNING), true),
 

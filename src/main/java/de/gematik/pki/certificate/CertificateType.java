@@ -32,6 +32,7 @@ public enum CertificateType {
     SMC_B_ENC("C.HCI.ENC", "oid_smc_b_enc", "1.2.276.0.76.4.76"),
     SMC_B_OSIG("C.HCI.OSIG", "oid_smc_b_osig", "1.2.276.0.76.4.78"),
     FD_SIG("C.FD.SIG", "oid_fd_sig", "1.2.276.0.76.4.203"),
+    FD_OSIG("C.FD.OSIG", "oid_fd_osig", "1.2.276.0.76.4.283"),
     NONE("", "", "");
 
     private final String name;

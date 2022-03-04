@@ -123,7 +123,7 @@ public class TslReader {
         return getTslDownloadUrl(tsl, TslConstants.TSL_DOWNLOAD_URL_OID_BACKUP);
     }
 
-    private static String getTslDownloadUrl(@NonNull final TrustStatusListType tsl, @NonNull final String oid) {
+    private static String getTslDownloadUrl(final TrustStatusListType tsl, final String oid) {
         return getOtherTslPointers(tsl)
             .getOtherTSLPointer()
             .stream()
@@ -132,5 +132,5 @@ public class TslReader {
             .orElseThrow(() -> new IllegalArgumentException("TSL enthaelt nicht OID: " + oid))
             .getTSLLocation();
     }
-
+    
 }

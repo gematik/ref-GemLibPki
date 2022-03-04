@@ -38,7 +38,7 @@ class TslSignerTest {
     private static final String TSL_PATH_RSA_NOSIG = "tsls/valid/TSL-test_nosig.xml";
     private static final String TRUSTANCHOR_PATH_RSA = "certificates/GEM.TSL-CA4/GEM.TSL-CA4_TEST-ONLY.cer";
     private static final String SIGNER_PATH_RSA = "certificates/GEM.TSL-CA4/tslSigner.p12";
-    private static final String TSL_PATH_ECC = "tsls/valid/ECC-RSA_TSL-test.xml";
+    private static final String TSL_PATH_ECC = "tsls/valid/TSL_default.xml";
     private static final String TRUSTANCHOR_PATH_ECC = "certificates/GEM.TSL-CA8/GEM.TSL-CA8_brainpoolIP256r1.der";
     private static final String SIGNER_PATH_ECC = "certificates/GEM.TSL-CA8/TSL-Signing-Unit-8-TEST-ONLY.p12";
 
