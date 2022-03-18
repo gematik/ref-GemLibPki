@@ -16,7 +16,9 @@
 
 package de.gematik.pki.ocsp;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.bouncycastle.internal.asn1.isismtt.ISISMTTObjectIdentifiers.id_isismtt_at_certHash;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import de.gematik.pki.exception.GemPkiException;
 import de.gematik.pki.utils.CertificateProvider;
@@ -29,8 +31,12 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import lombok.SneakyThrows;
+import org.bouncycastle.asn1.isismtt.ocsp.CertHash;
+import org.bouncycastle.cert.ocsp.BasicOCSPResp;
 import org.bouncycastle.cert.ocsp.OCSPReq;
 import org.bouncycastle.cert.ocsp.OCSPResp;
+import org.bouncycastle.util.encoders.Hex;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class OcspResponseGeneratorTest {
@@ -60,11 +66,10 @@ class OcspResponseGeneratorTest {
     @SneakyThrows
     @Test
     void useOcspResp() {
-
         assertDoesNotThrow(() -> writeOcspRespToFile(OcspResponseGenerator.builder()
             .signer(OcspConstants.getOcspSignerEcc())
             .build()
-            .gen(ocspReq)));
+            .gen(ocspReq, VALID_X509_EE_CERT)));
     }
 
     @SneakyThrows
@@ -73,19 +78,70 @@ class OcspResponseGeneratorTest {
         assertThatThrownBy(() -> OcspResponseGenerator.builder()
             .signer(Objects.requireNonNull(P12Reader.getContentFromP12(Path.of("src/test/resources/certificates/ocsp/dsaCert.p12"), "00")))
             .build()
-            .gen(ocspReq))
+            .gen(ocspReq, VALID_X509_EE_CERT))
             .hasMessage("Signature algorithm not supported: DSA")
             .isInstanceOf(GemPkiException.class);
     }
 
+    @SneakyThrows
     @Test
-    void nonNullTests() {
-        assertThatThrownBy(() -> OcspResponseGenerator.builder()
-            .signer(Objects.requireNonNull(P12Reader.getContentFromP12(Path.of("src/test/resources/certificates/ocsp/dsaCert.p12"), "00")))
+    @DisplayName("Validate CertHash valid")
+    void validateCertHashValid() {
+        final OCSPResp ocspResp = OcspResponseGenerator.builder()
+            .signer(OcspConstants.getOcspSignerEcc())
+            .validCertHash(true)
             .build()
-            .gen(null))
+            .gen(ocspReq, VALID_X509_EE_CERT);
+        final BasicOCSPResp basicOcspResp = (BasicOCSPResp) ocspResp.getResponseObject();
+        final CertHash asn1CertHash = CertHash.getInstance(basicOcspResp.getExtension(id_isismtt_at_certHash).getParsedValue());
+        assertThat(new String(Hex.encode(asn1CertHash.getCertificateHash())))
+            .isEqualTo("6cda0ef261c36bc05cc66e809ea1621e1dafa794a8c8a04e114e9114689d2ff7"); // sha256 hash over der encoded end-entity certificate file
+    }
+
+    @SneakyThrows
+    @Test
+    @DisplayName("Validate CertHash invalid")
+    void validateCertHashInvalid() {
+        final OCSPResp ocspResp = OcspResponseGenerator.builder()
+            .signer(OcspConstants.getOcspSignerEcc())
+            .validCertHash(false)
+            .build()
+            .gen(ocspReq, VALID_X509_EE_CERT);
+        final BasicOCSPResp basicOcspResp = (BasicOCSPResp) ocspResp.getResponseObject();
+        final CertHash asn1CertHash = CertHash.getInstance(basicOcspResp.getExtension(id_isismtt_at_certHash).getParsedValue());
+        assertThat(new String(Hex.encode(asn1CertHash.getCertificateHash())))
+            .isEqualTo("65785b5437ef3a7a7521ba3ac418c8b05c036eeca88e53688ff460676f5288ba"); // sha256 hash from string: "notAValidCertHash"
+    }
+
+    @SneakyThrows
+    @Test
+    @DisplayName("Validate CertHash missing")
+    void validateCertHashMissing() {
+        final OCSPResp ocspResp = OcspResponseGenerator.builder()
+            .signer(OcspConstants.getOcspSignerEcc())
+            .withCertHash(false)
+            .build()
+            .gen(ocspReq, VALID_X509_EE_CERT);
+        final BasicOCSPResp basicOcspResp = (BasicOCSPResp) ocspResp.getResponseObject();
+        assertThatThrownBy(() -> CertHash.getInstance(basicOcspResp.getExtension(id_isismtt_at_certHash).getParsedValue()))
             .isInstanceOf(NullPointerException.class);
     }
+
+    @Test
+    @DisplayName("Validate null parameters")
+    void nonNullTests() {
+        final OcspResponseGenerator ocspResponseGenerator = OcspResponseGenerator.builder()
+            .signer(OcspConstants.getOcspSignerEcc())
+            .build();
+
+        assertThatThrownBy(() -> ocspResponseGenerator.gen(null, VALID_X509_EE_CERT))
+            .isInstanceOf(NullPointerException.class)
+            .hasMessageContaining("ocspReq");
+        assertThatThrownBy(() -> ocspResponseGenerator.gen(ocspReq, null))
+            .isInstanceOf(NullPointerException.class)
+            .hasMessageContaining("eeCert");
+    }
+
 
     private static void writeOcspRespToFile(final OCSPResp ocspResp) throws IOException {
         Files.write(createOcspResponseLogFile(), ocspResp.getEncoded());

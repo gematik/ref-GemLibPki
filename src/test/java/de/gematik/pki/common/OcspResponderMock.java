@@ -24,6 +24,7 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import de.gematik.pki.exception.GemPkiException;
 import de.gematik.pki.ocsp.OcspConstants;
 import de.gematik.pki.ocsp.OcspResponseGenerator;
+import java.security.cert.X509Certificate;
 import lombok.SneakyThrows;
 import org.apache.http.HttpStatus;
 import org.bouncycastle.cert.ocsp.OCSPReq;
@@ -49,13 +50,13 @@ public class OcspResponderMock {
         this.ocspHost = ocspHost;
     }
 
-    public void configureForOcspRequest(final OCSPReq ocspReq)
+    public void configureForOcspRequest(final OCSPReq ocspReq, final X509Certificate eeCert)
         throws GemPkiException {
         // build OCSP Response depending on request
         final OCSPResp ocspRespToSent = OcspResponseGenerator.builder()
             .signer(OcspConstants.getOcspSignerRsa())
             .build()
-            .gen(ocspReq);
+            .gen(ocspReq, eeCert);
 
         // configure WireMock with OCSP Response
         configureWireMockReceiveHttpPost(ocspRespToSent, HttpStatus.SC_OK);

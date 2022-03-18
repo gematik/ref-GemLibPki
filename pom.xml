@@ -5,7 +5,7 @@
 
     <groupId>de.gematik.pki</groupId>
     <artifactId>gemLibPki</artifactId>
-    <version>0.5.3</version>
+    <version>0.6.0</version>
     <packaging>jar</packaging>
     <description>gematik library PKI</description>
     <name>GemLibPki</name>
@@ -57,8 +57,8 @@
         <version.maven-surefire-plugin>3.0.0-M5</version.maven-surefire-plugin>
         <version.lombok>1.18.22</version.lombok>
         <version.bouncycastle.bcpkix>1.70</version.bouncycastle.bcpkix>
-        <version.xades4j>1.7.0</version.xades4j>
-        <version.xmlunit>2.8.4</version.xmlunit>
+        <version.xades4j>2.0.0</version.xades4j>
+        <version.xmlunit>2.9.0</version.xmlunit>
         <version.assertj>3.22.0</version.assertj>
         <version.junit-jupiter>5.8.2</version.junit-jupiter>
         <version.unirest-java>1.4.9</version.unirest-java>

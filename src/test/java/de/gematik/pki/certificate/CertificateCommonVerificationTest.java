@@ -16,6 +16,9 @@
 
 package de.gematik.pki.certificate;
 
+import static de.gematik.pki.TestConstants.FILE_NAME_TSL_ALT_CA;
+import static de.gematik.pki.TestConstants.FILE_NAME_TSL_DEFAULT;
+import static de.gematik.pki.TestConstants.PRODUCT_TYPE;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import de.gematik.pki.error.ErrorCode;
@@ -41,11 +44,8 @@ import org.junit.jupiter.api.Test;
  */
 class CertificateCommonVerificationTest {
 
-    private static final String FILE_NAME_TSL_DEFAULT = "tsls/valid/TSL_default.xml";
-    private static final String FILE_NAME_TSL_ALT_CA = "tsls/valid/TSL_altCA.xml";
     private static final String FILE_NAME_TSL_ALT_CA_REVOKED = "tsls/valid/TSL_altCA_revoked.xml";
     private static ZonedDateTime DATETIME_TO_CHECK;
-    private String productType;
     private CertificateCommonVerification certificateCommonVerification;
     private X509Certificate validX509EeCertAltCa;
     private X509Certificate validX509IssuerCert;
@@ -60,7 +60,6 @@ class CertificateCommonVerificationTest {
         validX509IssuerCert = CertificateProvider
             .getX509Certificate(ResourceReader.getFilePathFromResources("certificates/GEM.SMCB-CA10/GEM.SMCB-CA10_TEST-ONLY.pem"));
         DATETIME_TO_CHECK = ZonedDateTime.parse("2020-11-20T15:00:00Z");
-        productType = "IDP";
         certificateCommonVerification = buildCertificateCommonVerifier(FILE_NAME_TSL_DEFAULT, VALID_X509_EE_CERT);
     }
 
@@ -68,12 +67,11 @@ class CertificateCommonVerificationTest {
         throws GemPkiException, IOException {
 
         final TspServiceSubset tspServiceSubset = new TspInformationProvider(new TslInformationProvider(
-            TslReader.getTsl(ResourceReader.getFilePathFromResources(tslFilename)).orElseThrow()).getTspServices(),
-            productType)
+            TslReader.getTsl(ResourceReader.getFilePathFromResources(tslFilename)).orElseThrow()).getTspServices(), PRODUCT_TYPE)
             .getTspServiceSubset(x509EeCert);
 
         return CertificateCommonVerification.builder()
-            .productType(productType)
+            .productType(PRODUCT_TYPE)
             .tspServiceSubset(tspServiceSubset)
             .x509EeCert(x509EeCert)
             .build();
@@ -101,13 +99,13 @@ class CertificateCommonVerificationTest {
 
     @Test
     void verifySignatureNotValid() throws IOException {
-        final X509Certificate invalidx509EeCert = CertificateProvider
+        final X509Certificate invalidX509EeCert = CertificateProvider
             .getX509Certificate(Path.of("src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-signature.pem"));
         assertThatThrownBy(
-            () -> buildCertificateCommonVerifier(FILE_NAME_TSL_ALT_CA, invalidx509EeCert)
+            () -> buildCertificateCommonVerifier(FILE_NAME_TSL_ALT_CA, invalidX509EeCert)
                 .verifySignature(validX509IssuerCert))
             .isInstanceOf(GemPkiException.class)
-            .hasMessageContaining(ErrorCode.SE_1024.getErrorMessage(productType));
+            .hasMessageContaining(ErrorCode.SE_1024.getErrorMessage(PRODUCT_TYPE));
     }
 
     @Test
@@ -169,7 +167,7 @@ class CertificateCommonVerificationTest {
         assertThatThrownBy(() -> buildCertificateCommonVerifier(FILE_NAME_TSL_ALT_CA_REVOKED, validX509EeCertAltCa)
             .verifyIssuerServiceStatus())
             .isInstanceOf(GemPkiException.class)
-            .hasMessageContaining(ErrorCode.SE_1036.getErrorMessage(productType));
+            .hasMessageContaining(ErrorCode.SE_1036.getErrorMessage(PRODUCT_TYPE));
     }
 
 }

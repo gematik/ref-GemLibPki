@@ -77,7 +77,10 @@ public class TslValidator {
         trustAnchorStore.load(null);
         trustAnchorStore.setCertificateEntry(trustAnchor.getSubjectX500Principal().getName(), trustAnchor);
 
-        final CertificateValidationProvider certValidator = new PKIXCertificateValidationProvider(trustAnchorStore, false, "BC");
+        final CertificateValidationProvider certValidator = PKIXCertificateValidationProvider.builder(trustAnchorStore)
+            .certPathBuilderProvider("BC")
+            .checkRevocation(false)
+            .build();
 
         final XadesVerificationProfile p = new XadesVerificationProfile(certValidator);
         final XadesVerifier v = p.newVerifier();

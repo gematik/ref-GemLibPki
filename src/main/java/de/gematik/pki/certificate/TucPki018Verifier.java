@@ -36,10 +36,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Entry point to access a verification of certificate(s) regarding standard process called TucPki18. This class works with parameterized variables (defined by
+ * Entry point to access a verification of certificate(s) regarding standard process called TucPki018. This class works with parameterized variables (defined by
  * builder pattern) and with given variables provided by runtime (method parameters).
  */
-
 @Slf4j
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
@@ -52,7 +51,7 @@ public class TucPki018Verifier {
     @NonNull
     protected final List<CertificateProfile> certificateProfiles;
     @Builder.Default
-    protected final boolean withOcspCheck = true;
+    protected final boolean withOcspCheck = true; //NOSONAR
     protected final OcspRespCache ocspRespCache;
 
     /**
@@ -69,7 +68,7 @@ public class TucPki018Verifier {
         if (withOcspCheck) {
             doOcsp(x509EeCert, tspServiceSubset);
         } else {
-            log.info("Ocsp verification turned off!");
+            throw new GemPkiException(productType, ErrorCode.SE_1039);
         }
         commonChecks(x509EeCert, tspServiceSubset);
         return tucPki018ProfileChecks(x509EeCert, tspServiceSubset);
@@ -114,17 +113,13 @@ public class TucPki018Verifier {
      * @throws GemPkiException if OCSP verification fails
      */
     protected void doOcsp(@NonNull final X509Certificate x509EeCert, @NonNull final TspServiceSubset tspServiceSubset) throws GemPkiException {
-        final boolean ocspVerification = OcspTransceiver.builder()
+        OcspTransceiver.builder()
             .x509EeCert(x509EeCert)
             .x509IssuerCert(tspServiceSubset.getX509IssuerCert())
             .ssp(tspServiceSubset.getServiceSupplyPoint())
+            .productType(productType)
             .build()
-            .verifyOcspStatusGood(ocspRespCache);
-        log.info("OCSP verification: " + (ocspVerification ? "pass" : "fail"));
-        if (!ocspVerification) {
-            // TODO create new OCSP exceptions: OCSP_CHECK_REVOCATION_FAILED, OCSP_CHECK_REVOCATION_ERROR, OCSP_NOT_AVAILABLE...
-            throw new GemPkiException(productType, ErrorCode.UNKNOWN);
-        }
+            .verifyOcspResponse(ocspRespCache);
     }
 
     /**

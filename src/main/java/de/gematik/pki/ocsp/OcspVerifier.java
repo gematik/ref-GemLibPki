@@ -16,24 +16,47 @@
 
 package de.gematik.pki.ocsp;
 
+import static de.gematik.pki.utils.Utils.calculateSha256;
+import static org.bouncycastle.internal.asn1.isismtt.ISISMTTObjectIdentifiers.id_isismtt_at_certHash;
 import de.gematik.pki.error.ErrorCode;
 import de.gematik.pki.exception.GemPkiException;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import lombok.Builder;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import org.bouncycastle.asn1.isismtt.ocsp.CertHash;
 import org.bouncycastle.cert.ocsp.*;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+/**
+ * Entry point to access a verification of ocspresponses regarding standard process called TucPki006. This class works with parameterized variables (defined by
+ * builder pattern) and with given variables provided by runtime (method parameters).
+ */
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
 public class OcspVerifier {
 
+    @NonNull
+    private final String productType;
+    @NonNull
+    final X509Certificate eeCert;
+    @NonNull
+    final OCSPResp ocspResponse;
+
+    public void performOcspChecks() throws GemPkiException {
+        // TODO create new OCSP checks: OCSP_CHECK_REVOCATION_FAILED, OCSP_CHECK_REVOCATION_ERROR, OCSP_NOT_AVAILABLE...
+        verifyCertHash();
+        verifyStatusGood();
+    }
+
     /**
-     * @param ocspResponse OCSP Response
-     * @return True if certificate status of first single response in OCSP response has status GOOD
      * @throws GemPkiException exception thrown if ocsp response cannot be evaluated
      */
-    public static boolean isStatusGood(@NonNull final OCSPResp ocspResponse) throws GemPkiException {
+    public void verifyStatusGood() throws GemPkiException {
         if (ocspResponse.getStatus() != 0) {
-            return false;
+            throw new GemPkiException(ErrorCode.OCSP, "OCSP response status ist nicht 0, sondern: " + ocspResponse.getStatus());
         }
         final BasicOCSPResp basicResponse;
         try {
@@ -43,11 +66,31 @@ public class OcspVerifier {
         }
         if (basicResponse != null) {
             final SingleResp[] responses = basicResponse.getResponses();
-            if (responses.length == 1) {
-                final SingleResp resp = responses[0];
-                return CertificateStatus.GOOD == resp.getCertStatus();
+            if (responses.length != 1) {
+                throw new GemPkiException(ErrorCode.OCSP, "Mehr als eine OCSP Response erhalten: " + responses.length);
+            } else {
+                if (CertificateStatus.GOOD != responses[0].getCertStatus()) {
+                    throw new GemPkiException(ErrorCode.OCSP, "OCSP Response ist nicht GOOD, sondern: " + responses[0].getCertStatus());
+                }
             }
+        } else {
+            throw new GemPkiException(ErrorCode.OCSP, "Keine OCSP Response erhalten.");
         }
-        return false;
+
     }
+
+    public void verifyCertHash() throws GemPkiException {
+        try {
+            final BasicOCSPResp basicOcspResp = (BasicOCSPResp) ocspResponse.getResponseObject();
+            final CertHash asn1CertHash = CertHash.getInstance(basicOcspResp.getExtension(id_isismtt_at_certHash).getParsedValue());
+            if (!Arrays.equals(asn1CertHash.getCertificateHash(), calculateSha256(eeCert.getEncoded()))) {
+                throw new GemPkiException(productType, ErrorCode.SE_1041);
+            }
+        } catch (final NullPointerException e) {
+            throw new GemPkiException(productType, ErrorCode.SE_1040);
+        } catch (final CertificateEncodingException | OCSPException e) {
+            throw new GemPkiException(ErrorCode.OCSP, "OCSP response Auswertung fehlgeschlagen", e);
+        }
+    }
+
 }

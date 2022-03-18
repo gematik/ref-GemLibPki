@@ -89,7 +89,7 @@ public class OcspRespCache {
     }
 
     private void deleteExpiredResponses() {
-        log.info("Deleting cached OCSP responses is not implemented yet. Cache size:{}", cache.size());
+        log.warn("Deleting cached OCSP responses is not implemented yet. Cache size:{}", cache.size());
         //TODO get current time, compare ... ocspGracePeriodSeconds and delete all expired responses (responses with status revoked remain)
     }
 }

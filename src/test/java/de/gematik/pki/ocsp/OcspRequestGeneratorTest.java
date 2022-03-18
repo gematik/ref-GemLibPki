@@ -33,17 +33,14 @@ class OcspRequestGeneratorTest {
 
     @BeforeAll
     public static void start() throws IOException {
-        VALID_X509_EE_CERT = CertificateProvider
-            .getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem");
-        VALID_X509_ISSUER_CERT = CertificateProvider
-            .getX509Certificate("src/test/resources/certificates/GEM.RCA1_TEST-ONLY.pem");
+        VALID_X509_EE_CERT = CertificateProvider.getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem");
+        VALID_X509_ISSUER_CERT = CertificateProvider.getX509Certificate("src/test/resources/certificates/GEM.RCA1_TEST-ONLY.pem");
     }
 
     @Test
     void verifyGenerateOCSPRequest()
         throws GemPkiException {
-        final OCSPReq ocspReq = OcspRequestGenerator
-            .generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
+        final OCSPReq ocspReq = OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
         assertThat(ocspReq).isNotNull();
         assertThat(ocspReq.getRequestList()).hasSize(1);
     }
@@ -51,13 +48,11 @@ class OcspRequestGeneratorTest {
     @Test
     void nonNullTests() {
         assertThatThrownBy(
-            () -> OcspRequestGenerator.generateSingleOcspRequest(null,
-                VALID_X509_ISSUER_CERT))
+            () -> OcspRequestGenerator.generateSingleOcspRequest(null, VALID_X509_ISSUER_CERT))
             .isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(
-            () -> OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT,
-                null))
+            () -> OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, null))
             .isInstanceOf(NullPointerException.class);
     }
 }

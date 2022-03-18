@@ -16,6 +16,8 @@
 
 package de.gematik.pki.ocsp;
 
+import static de.gematik.pki.utils.Utils.calculateSha256;
+import static org.bouncycastle.internal.asn1.isismtt.ISISMTTObjectIdentifiers.id_isismtt_at_certHash;
 import de.gematik.pki.error.ErrorCode;
 import de.gematik.pki.exception.GemPkiException;
 import de.gematik.pki.utils.P12Container;
@@ -26,8 +28,13 @@ import java.security.cert.X509Certificate;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import lombok.Builder;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.asn1.isismtt.ocsp.CertHash;
+import org.bouncycastle.asn1.nist.NISTObjectIdentifiers;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.Extensions;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
@@ -42,11 +49,16 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 /**
  * Class to support OCSP response generation.
  */
+@Slf4j
 @Builder
 public class OcspResponseGenerator {
 
     @NonNull
     private final P12Container signer;
+    @Builder.Default
+    private final boolean withCertHash = true; //NOSONAR
+    @Builder.Default
+    private final boolean validCertHash = true; //NOSONAR
 
     /**
      * Create OCSP response from given OCSP request. producedAt is now (UTC).
@@ -54,10 +66,10 @@ public class OcspResponseGenerator {
      * @param ocspReq OCSP request
      * @return OCSP response
      */
-    public OCSPResp gen(@NonNull final OCSPReq ocspReq) throws GemPkiException {
+    public OCSPResp gen(@NonNull final OCSPReq ocspReq, @NonNull final X509Certificate eeCert) throws GemPkiException {
         Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
         try {
-            return gen(ocspReq, signer.getCertificate(), ZonedDateTime.now());
+            return gen(ocspReq, eeCert, signer.getCertificate(), ZonedDateTime.now());
         } catch (final OperatorCreationException | IOException | OCSPException | CertificateEncodingException e) {
             throw new GemPkiException(ErrorCode.UNKNOWN, "Ocsp response generation failed.", e);
         }
@@ -71,7 +83,7 @@ public class OcspResponseGenerator {
      * @param dateTime               will be producedAt
      * @return OCSP response
      */
-    private OCSPResp gen(final OCSPReq ocspReq,
+    private OCSPResp gen(final OCSPReq ocspReq, final X509Certificate eeCert,
         final X509Certificate ocspResponseSignerCert, final ZonedDateTime dateTime)
         throws OperatorCreationException, IOException, OCSPException, CertificateEncodingException, GemPkiException {
 
@@ -96,11 +108,28 @@ public class OcspResponseGenerator {
                 throw new GemPkiException(ErrorCode.UNKNOWN, "Signature algorithm not supported: " + signer.getPrivateKey().getAlgorithm());
         }
 
-        final BasicOCSPResp resp = basicBuilder.build(
-            new JcaContentSignerBuilder(sigAlgo)
-                .setProvider(BouncyCastleProvider.PROVIDER_NAME)
-                .build(signer.getPrivateKey()),
-            chain, new Date(dateTime.toInstant().toEpochMilli()));
+        final List<Extension> extensionList = new ArrayList<>();
+        if (withCertHash) {
+            final byte[] certificateHash;
+            if (validCertHash) {
+                certificateHash = calculateSha256(eeCert.getEncoded());
+            } else {
+                log.warn("Invalid CertHash is generated because of user request. Parameter 'validCertHash' is set to false.");
+                certificateHash = calculateSha256("notAValidCertHash".getBytes());
+            }
+            final CertHash certHash = new CertHash(new AlgorithmIdentifier(NISTObjectIdentifiers.id_sha256), certificateHash);
+            extensionList.add(new Extension(id_isismtt_at_certHash, true, certHash.getEncoded()));
+        } else {
+            log.warn("CertHash generation disabled because of user request. Parameter 'withCertHash' is set to false.");
+        }
+        if (!extensionList.isEmpty()) {
+            final Extensions extensions = new Extensions(extensionList.toArray(Extension[]::new));
+            basicBuilder.setResponseExtensions(extensions);
+        }
+
+        final BasicOCSPResp resp = basicBuilder
+            .build(new JcaContentSignerBuilder(sigAlgo).setProvider(BouncyCastleProvider.PROVIDER_NAME).build(signer.getPrivateKey()), chain,
+                new Date(dateTime.toInstant().toEpochMilli()));
 
         final OCSPRespBuilder builder = new OCSPRespBuilder();
         return builder.build(OCSPRespBuilder.SUCCESSFUL, resp);

@@ -16,7 +16,7 @@
 
 package de.gematik.pki.tsl;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import de.gematik.pki.utils.ResourceReader;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.util.Collections;
@@ -40,14 +40,14 @@ class TslInformationProviderTest {
 
     @Test
     void readTspServices_PkcProviderSizeShouldBeCorrect() {
-        assertThat(tslInformationProvider.getFilteredTspServices(Collections.singletonList(TslConstants.STI_PKC)).size())
-            .isEqualTo(83);
+        assertThat(tslInformationProvider.getFilteredTspServices(Collections.singletonList(TslConstants.STI_PKC)))
+            .hasSize(83);
     }
 
     @Test
     void readAllTspServices_providerSizeShouldBeCorrect() {
-        assertThat(tslInformationProvider.getTspServices().size())
-            .isEqualTo(152);
+        assertThat(tslInformationProvider.getTspServices())
+            .hasSize(152);
     }
 
 }

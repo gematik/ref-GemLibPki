@@ -16,9 +16,12 @@
 
 package de.gematik.pki.ocsp;
 
+import static de.gematik.pki.TestConstants.PRODUCT_TYPE;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import de.gematik.pki.error.ErrorCode;
 import de.gematik.pki.exception.GemPkiException;
+import de.gematik.pki.exception.UnitTestException;
 import de.gematik.pki.utils.CertificateProvider;
 import java.io.IOException;
 import java.security.cert.X509Certificate;
@@ -31,35 +34,104 @@ class OcspVerifierTest {
 
     private static X509Certificate VALID_X509_EE_CERT;
     private static X509Certificate VALID_X509_ISSUER_CERT;
+    private static OCSPReq ocspReq;
 
     @BeforeAll
-    public static void start() throws IOException {
+    public static void start() throws IOException, GemPkiException {
         VALID_X509_EE_CERT = CertificateProvider
             .getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem");
         VALID_X509_ISSUER_CERT = CertificateProvider
             .getX509Certificate("src/test/resources/certificates/GEM.RCA1_TEST-ONLY.pem");
+        ocspReq = OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
     }
 
     @Test
-    void verifyCertificateStatusGood()
-        throws GemPkiException {
-        final OCSPReq ocspReq = OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT,
-            VALID_X509_ISSUER_CERT);
-        final OCSPResp ocspResp;
+    void verifyCertificateStatusGood() {
+        assertDoesNotThrow(() -> genDefaultOcspVerifier().verifyStatusGood()
+        );
+    }
 
-        ocspResp = OcspResponseGenerator.builder().
-            signer(OcspConstants.getOcspSignerRsa())
+    @Test
+    void verifyCertHashValid() {
+        assertDoesNotThrow(() -> genDefaultOcspVerifier().verifyCertHash()
+        );
+    }
+
+    @Test
+    void verifyCertHashInValid() {
+        assertThatThrownBy(() -> OcspVerifier.builder()
+            .productType(PRODUCT_TYPE)
+            .eeCert(VALID_X509_ISSUER_CERT)
+            .ocspResponse(genDefaultOcspResp())
             .build()
-            .gen(ocspReq);
+            .verifyCertHash()
+        )
+            .hasMessage(ErrorCode.SE_1041.getErrorMessage(PRODUCT_TYPE))
+            .isInstanceOf(GemPkiException.class);
+    }
 
-        assertThat(OcspVerifier.isStatusGood(ocspResp)).isTrue();
+    @Test
+    void verifyCertHashMissing() throws GemPkiException {
+        final OCSPResp ocspRespLocal = OcspResponseGenerator.builder()
+            .signer(OcspConstants.getOcspSignerRsa())
+            .withCertHash(false)
+            .build()
+            .gen(ocspReq, VALID_X509_EE_CERT);
+        assertThatThrownBy(() -> OcspVerifier.builder()
+            .productType(PRODUCT_TYPE)
+            .eeCert(VALID_X509_EE_CERT)
+            .ocspResponse(ocspRespLocal)
+            .build().verifyCertHash()
+        )
+            .hasMessage(ErrorCode.SE_1040.getErrorMessage(PRODUCT_TYPE))
+            .isInstanceOf(GemPkiException.class);
     }
 
     @Test
     void nonNullTests() {
+        assertThatThrownBy(() -> OcspVerifier.builder()
+            .productType(null)
+            .eeCert(VALID_X509_EE_CERT)
+            .ocspResponse(genDefaultOcspResp())
+            .build()
+            .performOcspChecks())
+            .isInstanceOf(NullPointerException.class)
+            .hasMessage("productType is marked non-null but is null");
+        assertThatThrownBy(() -> OcspVerifier.builder()
+            .productType(PRODUCT_TYPE)
+            .eeCert(null)
+            .ocspResponse(genDefaultOcspResp())
+            .build()
+            .performOcspChecks())
+            .isInstanceOf(NullPointerException.class)
+            .hasMessageContaining("eeCert");
         assertThatThrownBy(
-            () -> OcspVerifier.isStatusGood(null))
-            .isInstanceOf(NullPointerException.class);
+            () -> OcspVerifier.builder()
+                .productType(PRODUCT_TYPE)
+                .eeCert(VALID_X509_EE_CERT)
+                .ocspResponse(null)
+                .build().verifyStatusGood())
+            .isInstanceOf(NullPointerException.class)
+            .hasMessageContaining("ocspResponse");
+    }
+
+    private static OCSPResp genDefaultOcspResp() {
+        try {
+            return OcspResponseGenerator.builder().
+                signer(OcspConstants.getOcspSignerRsa())
+                .build()
+                .gen(ocspReq, VALID_X509_EE_CERT);
+        } catch (final GemPkiException e) {
+            throw new UnitTestException("Error in generating ocsp response in unit test.", e);
+        }
+    }
+
+    private OcspVerifier genDefaultOcspVerifier() {
+        return OcspVerifier.builder()
+            .productType(PRODUCT_TYPE)
+            .eeCert(VALID_X509_EE_CERT)
+            .ocspResponse(genDefaultOcspResp())
+            .build();
     }
 
 }

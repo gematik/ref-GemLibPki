@@ -38,6 +38,8 @@ We are fully aware of the content and meaning of the test data. We never publish
 ##### OCSP
 
 - signed OCSP responses can be generated, but always with status GOOD
+- OCSP response status and certHash values are validated. CertHash validation can be disabled via builder parameter `withOcspCheck` of [TucPki018Verifier](src/main/java/de/gematik/pki/certificate/TucPki018Verifier.java).
+- OCSP responses are generated with certHash extension by default.
 
 ##### Error codes
 

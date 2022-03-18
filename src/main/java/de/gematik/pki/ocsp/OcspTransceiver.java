@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.security.cert.X509Certificate;
 import java.util.Optional;
 import lombok.Builder;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.cert.ocsp.OCSPReq;
@@ -39,37 +40,51 @@ import org.bouncycastle.cert.ocsp.OCSPResp;
 @Builder
 public class OcspTransceiver {
 
+    @NonNull
     private final X509Certificate x509EeCert;
+    @NonNull
     private final X509Certificate x509IssuerCert;
+    @NonNull
     private final String ssp;
+    @NonNull
+    private final String productType;
 
     /**
      * Verifies OCSP status of end-entity certificate. Sends OCSP request if OCSP response is not cached.
      *
      * @param ocspRespCache Cache for OCSP Responses
-     * @return True if certificate status is GOOD.
      * @throws GemPkiException
      */
-    public boolean verifyOcspStatusGood(final OcspRespCache ocspRespCache) throws GemPkiException {
+    public void verifyOcspResponse(final OcspRespCache ocspRespCache) throws GemPkiException {
         if (ocspRespCache != null) {
             final Optional<OCSPResp> cached = ocspRespCache.getResponse(x509EeCert.getSerialNumber());
             if (cached.isPresent()) {
-                return OcspVerifier.isStatusGood(cached.get());
+                OcspVerifier.builder()
+                    .productType(productType)
+                    .eeCert(x509EeCert)
+                    .ocspResponse(cached.get()
+                    )
+                    .build().verifyStatusGood();
+            } else {
+                verifyOcspResponseOnline();
             }
+        } else {
+            verifyOcspResponseOnline();
         }
-        return verifyOcspStatusGoodOnline();
     }
 
     /**
      * Verifies OCSP status of end-entity certificate by sending an OCSP request. Operates on member variables given by builder.
      *
-     * @return True if certificate status is GOOD.
      * @throws GemPkiException
      */
-    private boolean verifyOcspStatusGoodOnline() throws GemPkiException {
-        return OcspVerifier
-            .isStatusGood(sendOcspRequest(OcspRequestGenerator.generateSingleOcspRequest(x509EeCert,
-                x509IssuerCert)));
+    private void verifyOcspResponseOnline() throws GemPkiException {
+        OcspVerifier.builder()
+            .productType(productType)
+            .eeCert(x509EeCert)
+            .ocspResponse(sendOcspRequest(OcspRequestGenerator.generateSingleOcspRequest(x509EeCert, x509IssuerCert)))
+            .build()
+            .performOcspChecks();
     }
 
     /**

@@ -29,11 +29,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
 import org.junit.jupiter.params.support.AnnotationConsumer;
 
+@Slf4j
 public class CertificateProvider implements ArgumentsProvider, AnnotationConsumer<VariableSource> {
 
     private static String certPathSwitch;
@@ -61,14 +63,12 @@ public class CertificateProvider implements ArgumentsProvider, AnnotationConsume
                 @Override
                 public FileVisitResult visitFile(final Path path, final BasicFileAttributes attrs) {
 
-                    if (!Files.isDirectory(path)
-                        && checkCertificateFilter()) {
+                    if (!Files.isDirectory(path) && checkCertificateFilter()) {
                         try {
-                            System.out.println("add: " + path.toAbsolutePath());
+                            log.info("add: " + path.toAbsolutePath());
                             fileList.add(getX509Certificate(path.toAbsolutePath()));
-                        } catch (final Exception e) {
-                            throw new RuntimeException(
-                                " : GEMLIBPKI - Test - Die Datei ist kein Zertifikat.", e);
+                        } catch (final IOException e) {
+                            throw new RuntimeException(" : GEMLIBPKI - Test - Die Datei ist kein Zertifikat.", e);
                         }
                     }
                     return FileVisitResult.CONTINUE;
@@ -76,8 +76,7 @@ public class CertificateProvider implements ArgumentsProvider, AnnotationConsume
                 }
             });
         } catch (final IOException io) {
-            throw new UncheckedIOException(
-                " : GEMLIBPKI - Test - Bei der Ermittlung der Testzertifikate ist ein Fehler aufgetreten.", io);
+            throw new UncheckedIOException(" : GEMLIBPKI - Test - Bei der Ermittlung der Testzertifikate ist ein Fehler aufgetreten.", io);
         }
         return fileList.stream();
     }

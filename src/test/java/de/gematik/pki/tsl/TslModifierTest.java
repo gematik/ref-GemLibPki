@@ -17,8 +17,8 @@
 package de.gematik.pki.tsl;
 
 import static de.gematik.pki.utils.ResourceReader.getFilePathFromResources;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import de.gematik.pki.exception.GemPkiException;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.io.IOException;
@@ -121,7 +121,7 @@ class TslModifierTest {
         assertThat(TslReader.getIssueDate(tsl)).isEqualTo(issueDateZdUtc);
         final ZonedDateTime nextUpdate = TslReader.getNextUpdate(tsl);
         assertThat(nextUpdate.getMonth()).isEqualTo(Month.MAY);
-        assertThat(nextUpdate.toInstant().toString()).isEqualTo("2030-05-22T10:00:00Z");
+        assertThat(nextUpdate.toInstant()).hasToString("2030-05-22T10:00:00Z");
     }
 
     @Test

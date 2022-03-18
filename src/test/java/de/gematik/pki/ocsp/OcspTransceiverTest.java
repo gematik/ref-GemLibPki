@@ -16,8 +16,10 @@
 
 package de.gematik.pki.ocsp;
 
+import static de.gematik.pki.TestConstants.PRODUCT_TYPE;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import de.gematik.pki.common.OcspResponderMock;
 import de.gematik.pki.error.ErrorCode;
 import de.gematik.pki.exception.GemPkiException;
@@ -31,10 +33,10 @@ import org.junit.jupiter.api.Test;
 
 class OcspTransceiverTest {
 
+    private static final String LOCAL_SSP_DIR = "/services/ocsp";
+    private static final String OCSP_HOST = "http://localhost:";
     private static X509Certificate VALID_X509_EE_CERT;
     private static X509Certificate VALID_X509_ISSUER_CERT;
-    private final static String LOCAL_SSP_DIR = "/services/ocsp";
-    private final static String OCSP_HOST = "http://localhost:";
     private static OcspResponderMock ocspResponderMock;
 
     @SneakyThrows
@@ -50,11 +52,12 @@ class OcspTransceiverTest {
     @Test
     void verifyOcspStatusExpectedGood() throws GemPkiException {
         configureOcspResponderMockForOcspRequest();
-        assertThat(
+        assertDoesNotThrow(() ->
             OcspTransceiver.builder().x509EeCert(VALID_X509_EE_CERT).x509IssuerCert(VALID_X509_ISSUER_CERT)
                 .ssp(ocspResponderMock.getSspUrl())
+                .productType(PRODUCT_TYPE)
                 .build()
-                .verifyOcspStatusGood(null)).isTrue();
+                .verifyOcspResponse(null));
     }
 
     @Test
@@ -62,8 +65,9 @@ class OcspTransceiverTest {
         assertThatThrownBy(
             () -> OcspTransceiver.builder().x509EeCert(VALID_X509_EE_CERT).x509IssuerCert(VALID_X509_ISSUER_CERT)
                 .ssp("http://no/wiremock/started")
+                .productType(PRODUCT_TYPE)
                 .build()
-                .verifyOcspStatusGood(null))
+                .verifyOcspResponse(null))
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining("OCSP senden/empfangen fehlgeschlagen");
     }
@@ -71,14 +75,22 @@ class OcspTransceiverTest {
     @Test
     void sendOcspRequestReceiveOcspResponseGood() throws GemPkiException {
         final OCSPReq ocspReq = configureOcspResponderMockForOcspRequest();
-        final OCSPResp ocspRespRx = OcspTransceiver.builder().x509EeCert(VALID_X509_EE_CERT)
+        final OCSPResp ocspRespRx = OcspTransceiver.builder()
+            .x509EeCert(VALID_X509_EE_CERT)
             .x509IssuerCert(VALID_X509_ISSUER_CERT)
-            .ssp(ocspResponderMock.getSspUrl())
+            .ssp(ocspResponderMock.getSspUrl()
+            )
+            .productType(PRODUCT_TYPE)
             .build()
             .sendOcspRequest(ocspReq);
 
         assertThat(ocspReq).isNotNull();
-        assertThat(OcspVerifier.isStatusGood(ocspRespRx)).isTrue();
+        assertDoesNotThrow(() -> OcspVerifier.builder()
+            .productType(PRODUCT_TYPE)
+            .eeCert(VALID_X509_EE_CERT)
+            .ocspResponse(ocspRespRx).build()
+            .verifyStatusGood()
+        );
     }
 
     @Test
@@ -87,7 +99,9 @@ class OcspTransceiverTest {
         final OCSPResp ocspRespRx = OcspTransceiver.sendOcspRequestToUrl(ocspResponderMock.getSspUrl(), ocspReq);
 
         assertThat(ocspReq).isNotNull();
-        assertThat(OcspVerifier.isStatusGood(ocspRespRx)).isTrue();
+        assertDoesNotThrow(() -> OcspVerifier.builder()
+            .eeCert(VALID_X509_EE_CERT)
+            .ocspResponse(ocspRespRx).productType(PRODUCT_TYPE).build().verifyStatusGood());
     }
 
     @SneakyThrows
@@ -118,7 +132,7 @@ class OcspTransceiverTest {
         throws GemPkiException {
         final OCSPReq ocspReq = OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT,
             VALID_X509_ISSUER_CERT);
-        ocspResponderMock.configureForOcspRequest(ocspReq);
+        ocspResponderMock.configureForOcspRequest(ocspReq, VALID_X509_EE_CERT);
         return ocspReq;
     }
 

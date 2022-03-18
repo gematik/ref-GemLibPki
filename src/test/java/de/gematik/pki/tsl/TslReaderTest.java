@@ -71,7 +71,7 @@ class TslReaderTest {
     @Test
     void getOtherTslPointers() {
         final OtherTSLPointersType oTslPtr = TslReader.getOtherTslPointers(tsl);
-        assertThat(oTslPtr.getOtherTSLPointer().size()).isEqualTo(2);
+        assertThat(oTslPtr.getOtherTSLPointer()).hasSize(2);
         assertThat(((MultiLangStringType) oTslPtr.getOtherTSLPointer().get(0).getAdditionalInformation().getTextualInformationOrOtherInformation()
             .get(0)).getLang()).isEqualTo("DE");
     }

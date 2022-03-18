@@ -16,6 +16,7 @@
 
 package de.gematik.pki.certificate;
 
+import static de.gematik.pki.TestConstants.FILE_NAME_TSL_DEFAULT;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import de.gematik.pki.error.ErrorCode;
@@ -27,7 +28,6 @@ import de.gematik.pki.tsl.TspServiceSubset;
 import de.gematik.pki.utils.CertificateProvider;
 import de.gematik.pki.utils.ResourceReader;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.security.cert.X509Certificate;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -36,7 +36,6 @@ import org.junit.jupiter.api.Test;
 
 class CertificateProfileVerificationTest {
 
-    private static final String FILE_NAME_TSL_DEFAULT = "tsls/valid/TSL_default.xml";
     private final CertificateProfile certificateProfile = CertificateProfile.C_HCI_AUT_ECC;
     private String productType;
     private CertificateProfileVerification certificateProfileVerification;
@@ -55,7 +54,7 @@ class CertificateProfileVerificationTest {
     }
 
     private CertificateProfileVerification buildCertificateProfileVerifier(
-        final CertificateProfile certificateProfile) throws GemPkiException, URISyntaxException, IOException {
+        final CertificateProfile certificateProfile) throws GemPkiException, IOException {
         return buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile, validX509EeCert);
     }
 

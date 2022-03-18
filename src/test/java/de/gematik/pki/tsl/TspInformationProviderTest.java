@@ -70,7 +70,7 @@ class TspInformationProviderTest {
             .getTsl(ResourceReader.getFilePathFromResources(FILE_NAME_TSL_ALT_CA_BROKEN));
         assertThatThrownBy(
             () -> new TspInformationProvider(
-                new TslInformationProvider(tslAltCaBroken.get()).getTspServices(),
+                new TslInformationProvider(tslAltCaBroken.orElseThrow()).getTspServices(),
                 productType)
                 .getTspServiceSubset(VALID_X509_EE_CERT_ALT_CA))
             .isInstanceOf(GemPkiException.class)

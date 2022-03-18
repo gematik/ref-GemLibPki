@@ -17,7 +17,6 @@
 package de.gematik.pki.tsl;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import de.gematik.pki.utils.CertReader;
 import de.gematik.pki.utils.P12Container;
 import de.gematik.pki.utils.P12Reader;
@@ -30,7 +29,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import xades4j.UnsupportedAlgorithmException;
 
 class TslSignerTest {
 
@@ -109,15 +107,6 @@ class TslSignerTest {
 
         assertThat(TslValidator.checkSignature(tsl_new.getOwnerDocument(), trustAnchorRsa))
             .isFalse();
-    }
-
-    @SneakyThrows
-    @Test
-    void signDsaNotSupported() {
-        final String SIGNER_PATH_DSA = "certificates/ocsp/dsaCert.p12";
-        assertThatThrownBy(() -> TslSigner.sign(tslEcc, readSignerCert(SIGNER_PATH_DSA)))
-            .hasMessage("Signature algorithm not supported by the provider (DSA)")
-            .isInstanceOf(UnsupportedAlgorithmException.class);
     }
 
     @SneakyThrows

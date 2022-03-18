@@ -17,6 +17,7 @@
 package de.gematik.pki.tsl;
 
 import static javax.xml.crypto.dsig.XMLSignature.XMLNS;
+import static org.apache.xml.security.signature.XMLSignature.ALGO_ID_SIGNATURE_RSA_SHA256_MGF1;
 import de.gematik.pki.utils.P12Container;
 import java.security.Security;
 import lombok.AccessLevel;
@@ -62,7 +63,11 @@ public class TslSigner {
         final KeyingDataProvider kdp = new DirectKeyingDataProvider(signer.getCertificate(), signer.getPrivateKey());
 
         final XadesSigner xSigner = new XadesBesSigningProfile(kdp)
-            .withAlgorithmsProviderEx(new AlgorithmProvider())
+            .withSignatureAlgorithms(new SignatureAlgorithms()
+                .withSignatureAlgorithm("RSA", ALGO_ID_SIGNATURE_RSA_SHA256_MGF1)
+                .withCanonicalizationAlgorithmForSignature(new ExclusiveCanonicalXMLWithoutComments())
+                .withCanonicalizationAlgorithmForTimeStampProperties(new ExclusiveCanonicalXMLWithoutComments())
+            )
             .withBasicSignatureOptions(new BasicSignatureOptions().includeIssuerSerial(false).includeSubjectName(false))
             .newSigner();
         final DataObjectDesc dod = new DataObjectReference("")

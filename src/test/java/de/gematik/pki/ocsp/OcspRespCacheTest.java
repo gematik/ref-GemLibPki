@@ -34,13 +34,10 @@ class OcspRespCacheTest {
     @SneakyThrows
     @BeforeAll
     static void setup() {
-        VALID_X509_EE_CERT = CertificateProvider
-            .getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem");
+        VALID_X509_EE_CERT = CertificateProvider.getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem");
         // certificate is not issued by VALID_X509_ISSUER_CERT - this will fail when certHash check is implemented
-        VALID_X509_ISSUER_CERT = CertificateProvider
-            .getX509Certificate("src/test/resources/certificates/GEM.RCA1_TEST-ONLY.pem");
-        ocspReq = OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT,
-            VALID_X509_ISSUER_CERT);
+        VALID_X509_ISSUER_CERT = CertificateProvider.getX509Certificate("src/test/resources/certificates/GEM.RCA1_TEST-ONLY.pem");
+        ocspReq = OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
     }
 
     @Test
@@ -66,7 +63,7 @@ class OcspRespCacheTest {
         final OCSPResp ocspResp = OcspResponseGenerator.builder()
             .signer(OcspConstants.getOcspSignerRsa())
             .build()
-            .gen(ocspReq);
+            .gen(ocspReq, VALID_X509_EE_CERT);
         ocspRespCache.saveResponse(VALID_X509_EE_CERT.getSerialNumber(), ocspResp);
         assertThat(ocspRespCache.getSize()).isEqualTo(1);
     }
@@ -80,7 +77,7 @@ class OcspRespCacheTest {
         final OCSPResp ocspResp = OcspResponseGenerator.builder()
             .signer(OcspConstants.getOcspSignerRsa())
             .build()
-            .gen(ocspReq);
+            .gen(ocspReq, VALID_X509_EE_CERT);
         ocspRespCache.saveResponse(VALID_X509_EE_CERT.getSerialNumber(), ocspResp);
         assertThat(ocspRespCache.getResponse(VALID_X509_EE_CERT.getSerialNumber())).isPresent();
     }
