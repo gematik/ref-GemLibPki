@@ -92,9 +92,26 @@ public class OcspResponseGenerator {
             SubjectPublicKeyInfo.getInstance(ocspResponseSignerCert.getPublicKey().getEncoded()),
             digCalcProv.get(CertificateID.HASH_SHA1));
 
-        for (final Req singleRequest : ocspReq.getRequestList()) {
-            addSingleResponseWithStatusGood(basicBuilder, singleRequest);
+        final List<Extension> extensionList = new ArrayList<>();
+        if (withCertHash) {
+            final byte[] certificateHash;
+            if (validCertHash) {
+                certificateHash = calculateSha256(eeCert.getEncoded());
+            } else {
+                log.warn("Invalid CertHash is generated because of user request. Parameter 'validCertHash' is set to false.");
+                certificateHash = calculateSha256("notAValidCertHash".getBytes());
+            }
+            final CertHash certHash = new CertHash(new AlgorithmIdentifier(NISTObjectIdentifiers.id_sha256), certificateHash);
+            extensionList.add(new Extension(id_isismtt_at_certHash, false, certHash.getEncoded()));
+        } else {
+            log.warn("CertHash generation disabled because of user request. Parameter 'withCertHash' is set to false.");
         }
+        final Extensions extensions = new Extensions(extensionList.toArray(Extension[]::new));
+
+        for (final Req singleRequest : ocspReq.getRequestList()) {
+            addSingleResponseWithStatusGood(basicBuilder, singleRequest, extensions);
+        }
+
         final X509CertificateHolder[] chain = {new X509CertificateHolder(ocspResponseSignerCert.getEncoded())};
         final String sigAlgo;
         switch (signer.getPrivateKey().getAlgorithm()) {
@@ -106,25 +123,6 @@ public class OcspResponseGenerator {
                 break;
             default:
                 throw new GemPkiException(ErrorCode.UNKNOWN, "Signature algorithm not supported: " + signer.getPrivateKey().getAlgorithm());
-        }
-
-        final List<Extension> extensionList = new ArrayList<>();
-        if (withCertHash) {
-            final byte[] certificateHash;
-            if (validCertHash) {
-                certificateHash = calculateSha256(eeCert.getEncoded());
-            } else {
-                log.warn("Invalid CertHash is generated because of user request. Parameter 'validCertHash' is set to false.");
-                certificateHash = calculateSha256("notAValidCertHash".getBytes());
-            }
-            final CertHash certHash = new CertHash(new AlgorithmIdentifier(NISTObjectIdentifiers.id_sha256), certificateHash);
-            extensionList.add(new Extension(id_isismtt_at_certHash, true, certHash.getEncoded()));
-        } else {
-            log.warn("CertHash generation disabled because of user request. Parameter 'withCertHash' is set to false.");
-        }
-        if (!extensionList.isEmpty()) {
-            final Extensions extensions = new Extensions(extensionList.toArray(Extension[]::new));
-            basicBuilder.setResponseExtensions(extensions);
         }
 
         final BasicOCSPResp resp = basicBuilder
@@ -140,13 +138,10 @@ public class OcspResponseGenerator {
      *
      * @param basicBuilder  The basic builder of an OCSP Response
      * @param singleRequest A single request of an requestList of an OCSP request
+     * @param extensions    the single response extensions
      */
-    private static void addSingleResponseWithStatusGood(final BasicOCSPRespBuilder basicBuilder,
-        final Req singleRequest) {
-
-        basicBuilder.addResponse(singleRequest.getCertID(),
-            CertificateStatus.GOOD, new Date(), null,
-            new Extensions(new ArrayList<Extension>().toArray(new Extension[0])));
+    private static void addSingleResponseWithStatusGood(final BasicOCSPRespBuilder basicBuilder, final Req singleRequest, final Extensions extensions) {
+        basicBuilder.addResponse(singleRequest.getCertID(), CertificateStatus.GOOD, new Date(), null, extensions);
     }
 
 }

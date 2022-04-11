@@ -1,6 +1,7 @@
 # ![Logo](./doc/images/certification_64px.png) GemLibPki
 
-<div>Icons made by <a href="https://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
+<div>Icons made by <a href="https://www.freepik.com" title="Freepik">Freepik</a> from 
+<a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
 
 ## GemLibPki - a Java library for functionalities in PKI (Public Key Infrastructure) of products specified by gematik
 
@@ -38,7 +39,8 @@ We are fully aware of the content and meaning of the test data. We never publish
 ##### OCSP
 
 - signed OCSP responses can be generated, but always with status GOOD
-- OCSP response status and certHash values are validated. CertHash validation can be disabled via builder parameter `withOcspCheck` of [TucPki018Verifier](src/main/java/de/gematik/pki/certificate/TucPki018Verifier.java).
+- OCSP response status and certHash values are validated. OCSP validation can be disabled via builder parameter `withOcspCheck` of 
+[TucPki018Verifier](src/main/java/de/gematik/pki/certificate/TucPki018Verifier.java).
 - OCSP responses are generated with certHash extension by default.
 
 ##### Error codes

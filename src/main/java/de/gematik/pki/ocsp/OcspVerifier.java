@@ -82,14 +82,15 @@ public class OcspVerifier {
     public void verifyCertHash() throws GemPkiException {
         try {
             final BasicOCSPResp basicOcspResp = (BasicOCSPResp) ocspResponse.getResponseObject();
-            final CertHash asn1CertHash = CertHash.getInstance(basicOcspResp.getExtension(id_isismtt_at_certHash).getParsedValue());
+            final SingleResp[] singleResponse = basicOcspResp.getResponses();
+            final CertHash asn1CertHash = CertHash.getInstance(singleResponse[0].getExtension(id_isismtt_at_certHash).getParsedValue());
             if (!Arrays.equals(asn1CertHash.getCertificateHash(), calculateSha256(eeCert.getEncoded()))) {
                 throw new GemPkiException(productType, ErrorCode.SE_1041);
             }
         } catch (final NullPointerException e) {
             throw new GemPkiException(productType, ErrorCode.SE_1040);
         } catch (final CertificateEncodingException | OCSPException e) {
-            throw new GemPkiException(ErrorCode.OCSP, "OCSP response Auswertung fehlgeschlagen", e);
+            throw new GemPkiException(ErrorCode.OCSP, "OCSP Response Auswertung fehlgeschlagen", e);
         }
     }
 

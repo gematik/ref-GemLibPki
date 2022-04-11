@@ -35,6 +35,7 @@ import org.bouncycastle.asn1.isismtt.ocsp.CertHash;
 import org.bouncycastle.cert.ocsp.BasicOCSPResp;
 import org.bouncycastle.cert.ocsp.OCSPReq;
 import org.bouncycastle.cert.ocsp.OCSPResp;
+import org.bouncycastle.cert.ocsp.SingleResp;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -93,7 +94,8 @@ class OcspResponseGeneratorTest {
             .build()
             .gen(ocspReq, VALID_X509_EE_CERT);
         final BasicOCSPResp basicOcspResp = (BasicOCSPResp) ocspResp.getResponseObject();
-        final CertHash asn1CertHash = CertHash.getInstance(basicOcspResp.getExtension(id_isismtt_at_certHash).getParsedValue());
+        final SingleResp[] singeResponse = basicOcspResp.getResponses();
+        final CertHash asn1CertHash = CertHash.getInstance(singeResponse[0].getExtension(id_isismtt_at_certHash).getParsedValue());
         assertThat(new String(Hex.encode(asn1CertHash.getCertificateHash())))
             .isEqualTo("6cda0ef261c36bc05cc66e809ea1621e1dafa794a8c8a04e114e9114689d2ff7"); // sha256 hash over der encoded end-entity certificate file
     }
@@ -108,7 +110,8 @@ class OcspResponseGeneratorTest {
             .build()
             .gen(ocspReq, VALID_X509_EE_CERT);
         final BasicOCSPResp basicOcspResp = (BasicOCSPResp) ocspResp.getResponseObject();
-        final CertHash asn1CertHash = CertHash.getInstance(basicOcspResp.getExtension(id_isismtt_at_certHash).getParsedValue());
+        final SingleResp[] singeResponse = basicOcspResp.getResponses();
+        final CertHash asn1CertHash = CertHash.getInstance(singeResponse[0].getExtension(id_isismtt_at_certHash).getParsedValue());
         assertThat(new String(Hex.encode(asn1CertHash.getCertificateHash())))
             .isEqualTo("65785b5437ef3a7a7521ba3ac418c8b05c036eeca88e53688ff460676f5288ba"); // sha256 hash from string: "notAValidCertHash"
     }

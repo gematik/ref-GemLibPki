@@ -1,3 +1,8 @@
+# Release 0.6.1
+
+- BUGFIX: make certHash extension non-critical
+- BUGFIX: correct certHash extension to be part of single response instead of basic response
+
 # Release 0.6.0
 
 - add certHash extension in OCSP responses (enabled by default)
@@ -46,7 +51,7 @@
 # Release 0.2.0
 
 - accept several profiles/policies in certificates
-- change behavior of certficate checks (for [ext]KeyUsage) to fit gematik certificate profiles
+- change behaviour of certificate checks (for [ext]KeyUsage) to fit gematik certificate profiles
 - improve error logging in certificate checks
 - fix KeyUsage in cert profile EGK
 - rename enum CertificateProfiles to CertificateProfile
