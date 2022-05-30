@@ -28,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 public enum ErrorCode {
 
+    // technical  errors
     TE_1001(ErrorSeverity.ERROR, ErrorClassifier.TECHNICAL_ERROR, "TSL_INIT_ERROR",
         "Es liegt keine gültige TSL vor"),
     TE_1002(ErrorSeverity.ERROR, ErrorClassifier.TECHNICAL_ERROR, "TSL_CERT_EXTRACTION_ERROR",
@@ -39,6 +40,7 @@ public enum ErrorCode {
     TE_1027(ErrorSeverity.ERROR, ErrorClassifier.TECHNICAL_ERROR, "CA_CERT_MISSING",
         "CA kann nicht in den TSL-Informationen ermittelt werden."),
 
+    // security errors
     SE_1003(ErrorSeverity.ERROR, ErrorClassifier.SECURITY_ERROR, "MULTIPLE_TRUST_ANCHOR",
         "Mehr als ein markierter V-Anker gefunden"),
     SE_1007(ErrorSeverity.ERROR, ErrorClassifier.SECURITY_ERROR, "TSL_ID_INCORRECT",
@@ -58,8 +60,6 @@ public enum ErrorCode {
         "Zertifikats-Signatur ist mathematisch nicht gültig."),
     SE_1033(ErrorSeverity.ERROR, ErrorClassifier.SECURITY_ERROR, "CERT_TYPE_INFO_MISSING",
         "Kein Element PolicyIdentifier vorhanden."),
-    SE_1039(ErrorSeverity.WARNING, ErrorClassifier.SECURITY_ERROR, "NO_OCSP_CHECK",
-        "Warnung, dass Offline-Modus aktiviert ist und keine OCSP Statusabfrage durchgeführt wurde."),
     SE_1036(ErrorSeverity.ERROR, ErrorClassifier.SECURITY_ERROR, "CA_CERTIFICATE_REVOKED_IN_TSL",
         "Das Zertifikat ist ungültig. Es wurde nach der Sperrung der ausgebenden CA ausgestellt."),
     SE_1040(ErrorSeverity.ERROR, ErrorClassifier.SECURITY_ERROR, "CERTHASH_EXTENSION_MISSING",
@@ -68,6 +68,10 @@ public enum ErrorCode {
         "Der certHash in der OCSP-Response stimmt nicht mit dem certHash des vorliegenden Zertifikats überein."),
     SE_1061(ErrorSeverity.ERROR, ErrorClassifier.SECURITY_ERROR, "CERT_TYPE_CA_NOT_AUTHORIZED",
         "CA (laut TSL) nicht autorisiert für die Herausgabe dieses Zertifikatstyps."),
+
+    // security Warnings
+    SW_1039(ErrorSeverity.WARNING, ErrorClassifier.SECURITY_WARNING, "NO_OCSP_CHECK",
+        "Warnung, dass Offline-Modus aktiviert ist und keine OCSP Statusabfrage durchgeführt wurde."),
 
     // library internal errors
     UNKNOWN(ErrorSeverity.ERROR, ErrorClassifier.INTERNAL_ERROR, "INTERNAL_UNKNOWN_ERROR",

@@ -16,15 +16,14 @@
 
 package de.gematik.pki.ocsp;
 
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
 import de.gematik.pki.error.ErrorCode;
 import de.gematik.pki.exception.GemPkiException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.security.cert.X509Certificate;
 import java.util.Optional;
+import kong.unirest.HttpResponse;
+import kong.unirest.Unirest;
+import kong.unirest.UnirestException;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -62,8 +61,7 @@ public class OcspTransceiver {
                 OcspVerifier.builder()
                     .productType(productType)
                     .eeCert(x509EeCert)
-                    .ocspResponse(cached.get()
-                    )
+                    .ocspResponse(cached.get())
                     .build().verifyStatusGood();
             } else {
                 verifyOcspResponseOnline();
@@ -107,16 +105,18 @@ public class OcspTransceiver {
      * @throws GemPkiException
      */
     public static OCSPResp sendOcspRequestToUrl(final String ssp, final OCSPReq request) throws GemPkiException {
-        final HttpResponse<InputStream> httpResponse;
+        final HttpResponse<byte[]> httpResponse;
         try {
             log.info(
                 "Send OCSP Request for certificate serial number: " + request.getRequestList()[0].getCertID()
                     .getSerialNumber() + " to: "
                     + ssp);
             httpResponse = Unirest.post(ssp)
-                .header("Content-Type", "application/ocsp-request").body(request.getEncoded()).asBinary();
+                .header("Content-Type", "application/ocsp-request")
+                .body(request.getEncoded())
+                .asBytes();
             log.info("HttpStatus of OcspResponse: " + httpResponse.getStatus());
-            return new OCSPResp(httpResponse.getBody().readAllBytes());
+            return new OCSPResp(httpResponse.getBody());
         } catch (final UnirestException | IOException e) {
             throw new GemPkiException(ErrorCode.OCSP, "OCSP senden/empfangen fehlgeschlagen", e);
         }

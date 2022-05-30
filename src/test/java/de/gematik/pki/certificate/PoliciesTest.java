@@ -22,14 +22,14 @@ import de.gematik.pki.utils.CertificateProvider;
 import java.io.IOException;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 
 class PoliciesTest {
 
     @Test
     void getPolicyOids() throws IOException, CertificateEncodingException {
-        final X509Certificate policyOids = CertificateProvider
-            .getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem");
+        final X509Certificate policyOids = CertificateProvider.getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem");
         assertThat(new Policies(policyOids).getPolicyOids()).contains(CertificateType.SMC_B_AUT.getOid());
     }
 
@@ -40,17 +40,18 @@ class PoliciesTest {
             .hasMessageContaining("x509EeCert");
     }
 
+    @SneakyThrows
     @Test
     void getPolicyOidsMissing() throws IOException {
-        final X509Certificate missingPolicyId = CertificateProvider
-            .getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-policyId.pem");
-        assertThatThrownBy(() -> new Policies(missingPolicyId).getPolicyOids()).isInstanceOf(IllegalArgumentException.class);
+        final X509Certificate missingPolicyId = CertificateProvider.getX509Certificate(
+            "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-policyId.pem");
+        assertThatThrownBy(() -> new Policies(missingPolicyId)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void getPolicyOidsEmpty() throws CertificateEncodingException, IOException {
-        final X509Certificate emptyPolicyId = CertificateProvider
-            .getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-certificate-type.pem");
+        final X509Certificate emptyPolicyId = CertificateProvider.getX509Certificate(
+            "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-certificate-type.pem");
         assertThat(new Policies(emptyPolicyId).getPolicyOids()).isEmpty();
     }
 

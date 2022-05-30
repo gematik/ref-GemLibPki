@@ -95,46 +95,45 @@ class CertificateProfileVerificationTest {
         assertDoesNotThrow(() -> certificateProfileVerification.verifyKeyUsage());
     }
 
+    @SneakyThrows
     @Test
     void verifyKeyUsageMissingInCertificate() throws IOException {
         final X509Certificate missingKeyUsagex509EeCert = CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-keyusage.pem");
-        assertThatThrownBy(
-            () -> buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile,
-                missingKeyUsagex509EeCert)
-                .verifyKeyUsage())
+        final var verifier = buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile,
+            missingKeyUsagex509EeCert);
+        assertThatThrownBy(verifier::verifyKeyUsage)
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1016.name()); //WRONG_KEYUSAGE
     }
 
+    @SneakyThrows
     @Test
     void verifyKeyUsageInvalidInCertificate() throws IOException {
         final X509Certificate invalidKeyUsagex509EeCert = CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-keyusage.pem");
-        assertThatThrownBy(
-            () -> buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile,
-                invalidKeyUsagex509EeCert)
-                .verifyKeyUsage())
+        final var verifier = buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile, invalidKeyUsagex509EeCert);
+        assertThatThrownBy(verifier::verifyKeyUsage)
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1016.getErrorMessage(productType)); //WRONG_KEYUSAGE
     }
 
+    @SneakyThrows
     @Test
     void verifyNotAllKeyUsagesPresentInCert() {
-        assertThatThrownBy(
-            () -> buildCertificateProfileVerifier(CertificateProfile.C_HCI_AUT_RSA).verifyKeyUsage())
+        final var verifier = buildCertificateProfileVerifier(CertificateProfile.C_HCI_AUT_RSA);
+        assertThatThrownBy(verifier::verifyKeyUsage)
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1016.getErrorMessage(productType));
     }
 
+    @SneakyThrows
     @Test
     void verifyToManyKeyUsagesPresentInCert() throws IOException {
         final X509Certificate validHbaAutEcc = CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.HBA-CA13/GüntherOtís.pem");
-        assertThatThrownBy(
-            () -> buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, CertificateProfile.C_HCI_AUT_ECC,
-                validHbaAutEcc)
-                .verifyKeyUsage())
+        final var verifier = buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, CertificateProfile.C_HCI_AUT_ECC, validHbaAutEcc);
+        assertThatThrownBy(verifier::verifyKeyUsage)
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1016.getErrorMessage(productType));
     }
@@ -144,46 +143,44 @@ class CertificateProfileVerificationTest {
         assertDoesNotThrow(() -> certificateProfileVerification.verifyExtendedKeyUsage());
     }
 
+    @SneakyThrows
     @Test
     void verifyNotAllExtendedKeyUsagesPresentInCert() {
-        assertThatThrownBy(
-            () -> buildCertificateProfileVerifier(CertificateProfile.C_HP_AUT_ECC).verifyExtendedKeyUsage())
+        final var verifier = buildCertificateProfileVerifier(CertificateProfile.C_HP_AUT_ECC);
+        assertThatThrownBy(verifier::verifyExtendedKeyUsage)
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1017.getErrorMessage(productType));
     }
 
+    @SneakyThrows
     @Test
     void verifyToManyExtendedKeyUsagesPresentInCert() throws IOException {
         final X509Certificate validHbaAutEcc = CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.HBA-CA13/GüntherOtís.pem");
-        assertThatThrownBy(
-            () -> buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, CertificateProfile.C_HCI_AUT_ECC,
-                validHbaAutEcc)
-                .verifyExtendedKeyUsage())
+        final var verifier = buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, CertificateProfile.C_HCI_AUT_ECC, validHbaAutEcc);
+        assertThatThrownBy(verifier::verifyExtendedKeyUsage)
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1017.getErrorMessage(productType));
     }
 
+    @SneakyThrows
     @Test
     void verifyExtendedKeyUsageMissingInCertificate() throws IOException {
         final X509Certificate missingExtKeyUsagex509EeCert = CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-extKeyUsage.pem");
-        assertThatThrownBy(
-            () -> buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile,
-                missingExtKeyUsagex509EeCert)
-                .verifyExtendedKeyUsage())
+        final var verifier = buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile, missingExtKeyUsagex509EeCert);
+        assertThatThrownBy(verifier::verifyExtendedKeyUsage)
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1017.name()); //WRONG_EXT_KEYUSAGE
     }
 
+    @SneakyThrows
     @Test
     void verifyExtendedKeyUsageInvalidInCertificate() throws IOException {
         final X509Certificate invalidExtendedKeyUsageEeCert = CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-ext-keyusage.pem");
-        assertThatThrownBy(
-            () -> buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile,
-                invalidExtendedKeyUsageEeCert)
-                .verifyExtendedKeyUsage())
+        final var verifier = buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile, invalidExtendedKeyUsageEeCert);
+        assertThatThrownBy(verifier::verifyExtendedKeyUsage)
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1017.getErrorMessage(productType));
     }
@@ -196,50 +193,45 @@ class CertificateProfileVerificationTest {
             certificateProfile, eeMultipleCertTypes).verifyCertificateType());
     }
 
+    @SneakyThrows
     @Test
     void verifyCertificateProfileMissingPolicyId() throws IOException {
         final X509Certificate missingPolicyId = CertificateProvider
-            .getX509Certificate(
-                "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-policyId.pem");
-        assertThatThrownBy(
-            () -> buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile, missingPolicyId)
-                .verifyCertificateType())
+            .getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-policyId.pem");
+        final var verifier = buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile, missingPolicyId);
+        assertThatThrownBy(verifier::verifyCertificateType)
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1033.getErrorMessage(productType));
     }
 
+    @SneakyThrows
     @Test
     void verifyCertificateProfileMissingCertType() throws IOException {
         final X509Certificate missingCertType = CertificateProvider
-            .getX509Certificate(
-                "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-certificate-type.pem");
-        assertThatThrownBy(
-            () -> buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile, missingCertType)
-                .verifyCertificateType())
+            .getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-certificate-type.pem");
+        final var verifier = buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile, missingCertType);
+        assertThatThrownBy(verifier::verifyCertificateType)
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1033.getErrorMessage(productType));
     }
 
+    @SneakyThrows
     @Test
     void verifyCertificateProfileInvalidCertType() throws IOException {
         final X509Certificate invalidCertType = CertificateProvider
-            .getX509Certificate(
-                "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-certificate-type.pem");
-        assertThatThrownBy(
-            () -> buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile, invalidCertType)
-                .verifyCertificateType())
+            .getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-certificate-type.pem");
+        final var verifier = buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile, invalidCertType);
+        assertThatThrownBy(verifier::verifyCertificateType)
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1018.getErrorMessage(productType));
     }
 
+    @SneakyThrows
     @Test
     void verifyCertificateProfileWrongServiceInfoExtInTsl() {
         final String tslAltCaWrongServiceExtension = "tsls/defect/TSL_defect_altCA_wrong-srvInfoExt.xml";
-
-        assertThatThrownBy(
-            () -> buildCertificateProfileVerifier(tslAltCaWrongServiceExtension, certificateProfile,
-                validX509EeCertAltCa)
-                .verifyCertificateType())
+        final var verifier = buildCertificateProfileVerifier(tslAltCaWrongServiceExtension, certificateProfile, validX509EeCertAltCa);
+        assertThatThrownBy(verifier::verifyCertificateType)
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1061.getErrorMessage(productType));
     }

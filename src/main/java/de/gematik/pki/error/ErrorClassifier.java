@@ -28,6 +28,7 @@ public enum ErrorClassifier {
 
     TECHNICAL_ERROR("Technical Error"),
     SECURITY_ERROR("Security Error"),
+    SECURITY_WARNING("Security Warning"),
     INTERNAL_ERROR("Internal Error");
 
     private final String description;

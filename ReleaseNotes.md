@@ -1,3 +1,10 @@
+# Release 0.6.2
+
+- allow disabling of OCSP checks
+- add dependency checks for CVE's
+- refactor unit tests
+- update dependencies
+
 # Release 0.6.1
 
 - BUGFIX: make certHash extension non-critical

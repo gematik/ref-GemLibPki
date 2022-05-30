@@ -76,10 +76,10 @@ class OcspResponseGeneratorTest {
     @SneakyThrows
     @Test
     void useOcspRespInvalidAlgo() {
-        assertThatThrownBy(() -> OcspResponseGenerator.builder()
+        final var ocspResp = OcspResponseGenerator.builder()
             .signer(Objects.requireNonNull(P12Reader.getContentFromP12(Path.of("src/test/resources/certificates/ocsp/dsaCert.p12"), "00")))
-            .build()
-            .gen(ocspReq, VALID_X509_EE_CERT))
+            .build();
+        assertThatThrownBy(() -> ocspResp.gen(ocspReq, VALID_X509_EE_CERT))
             .hasMessage("Signature algorithm not supported: DSA")
             .isInstanceOf(GemPkiException.class);
     }
@@ -120,14 +120,12 @@ class OcspResponseGeneratorTest {
     @Test
     @DisplayName("Validate CertHash missing")
     void validateCertHashMissing() {
-        final OCSPResp ocspResp = OcspResponseGenerator.builder()
+        final BasicOCSPResp ocspResp = (BasicOCSPResp) OcspResponseGenerator.builder()
             .signer(OcspConstants.getOcspSignerEcc())
             .withCertHash(false)
             .build()
-            .gen(ocspReq, VALID_X509_EE_CERT);
-        final BasicOCSPResp basicOcspResp = (BasicOCSPResp) ocspResp.getResponseObject();
-        assertThatThrownBy(() -> CertHash.getInstance(basicOcspResp.getExtension(id_isismtt_at_certHash).getParsedValue()))
-            .isInstanceOf(NullPointerException.class);
+            .gen(ocspReq, VALID_X509_EE_CERT).getResponseObject();
+        assertThat(ocspResp.getExtension(id_isismtt_at_certHash)).isNull();
     }
 
     @Test

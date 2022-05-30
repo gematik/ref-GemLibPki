@@ -48,8 +48,8 @@ We are fully aware of the content and meaning of the test data. We never publish
 - error codes specified by gematik
 
 ### Build
-
-mvn clean install
+- use Java 11
+- mvn clean install
 
 ### Steps to perform certificate checks
 

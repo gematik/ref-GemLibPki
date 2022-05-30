@@ -5,7 +5,7 @@
 
     <groupId>de.gematik.pki</groupId>
     <artifactId>gemLibPki</artifactId>
-    <version>0.6.1</version>
+    <version>0.6.2</version>
     <packaging>jar</packaging>
     <description>gematik library PKI</description>
     <name>GemLibPki</name>
@@ -55,28 +55,30 @@
         <version.maven-resources-plugin>3.2.0</version.maven-resources-plugin>
         <version.maven-source-plugin>3.2.1</version.maven-source-plugin>
         <version.maven-surefire-plugin>3.0.0-M5</version.maven-surefire-plugin>
-        <version.lombok>1.18.22</version.lombok>
-        <version.bouncycastle.bcpkix>1.70</version.bouncycastle.bcpkix>
+        <version.lombok>1.18.24</version.lombok>
+        <version.bouncycastle.bcpkix>1.71</version.bouncycastle.bcpkix>
         <version.xades4j>2.0.0</version.xades4j>
         <version.xmlunit>2.9.0</version.xmlunit>
         <version.assertj>3.22.0</version.assertj>
         <version.junit-jupiter>5.8.2</version.junit-jupiter>
-        <version.unirest-java>1.4.9</version.unirest-java>
+        <version.unirest-java>3.13.8</version.unirest-java>
         <version.commons-lang3>3.12.0</version.commons-lang3>
         <version.dss-tsl-validation>5.8.d4j.1</version.dss-tsl-validation>
-        <version.wiremock-jre8>2.32.0</version.wiremock-jre8>
+        <version.wiremock-jre8>2.33.2</version.wiremock-jre8>
         <version.maven-site-plugin>3.9.1</version.maven-site-plugin>
         <version.maven-project-info-reports-plugin>3.1.1</version.maven-project-info-reports-plugin>
         <version.jacoco-maven-plugin>0.8.6</version.jacoco-maven-plugin>
         <version.sonar-maven-plugin>3.7.0.1746</version.sonar-maven-plugin>
         <version.nexus-staging-maven-plugin>1.6.7</version.nexus-staging-maven-plugin>
         <version.maven-gpg-plugin>1.6</version.maven-gpg-plugin>
-        <version.log4j>2.17.1</version.log4j>
+        <version.log4j>2.17.2</version.log4j>
+        <version.dependency-check-maven>7.1.0</version.dependency-check-maven>
 
         <!-- settings for upload to sonar server -->
         <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/target/site/jacoco/index.xml</sonar.coverage.jacoco.xmlReportPaths>
-        <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
+        <sonar.dependencyCheck.htmlReportPath>${project.basedir}/target/dependency-check-report.html</sonar.dependencyCheck.htmlReportPath>
         <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
+        <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
         <sonar.language>java</sonar.language>
     </properties>
 
@@ -94,7 +96,7 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.mashape.unirest</groupId>
+            <groupId>com.konghq</groupId>
             <artifactId>unirest-java</artifactId>
             <version>${version.unirest-java}</version>
         </dependency>
@@ -137,7 +139,7 @@
 
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk15on</artifactId>
+            <artifactId>bcpkix-jdk18on</artifactId>
             <version>${version.bouncycastle.bcpkix}</version>
         </dependency>
 
@@ -179,6 +181,18 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <version>${version.dependency-check-maven}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>

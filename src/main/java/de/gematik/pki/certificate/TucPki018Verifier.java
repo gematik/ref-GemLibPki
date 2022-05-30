@@ -55,20 +55,20 @@ public class TucPki018Verifier {
     protected final OcspRespCache ocspRespCache;
 
     /**
-     * Verify given end-entity certificate against TucPki18 (Technical Use Case 18 "Zertifikatsprüfung in der TI", specified by gematik). If there is no {@link
-     * GemPkiException} the verification process ends successfully.
+     * Verify given end-entity certificate against TucPki18 (Technical Use Case 18 "Zertifikatsprüfung in der TI", specified by gematik). If there is no
+     * {@link GemPkiException} the verification process ends successfully.
      *
      * @param x509EeCert end-entity certificate to check
      * @return the determined {@link Admission}
      * @throws GemPkiException if the certificate is invalid
      */
     public Admission performTucPki18Checks(@NonNull final X509Certificate x509EeCert) throws GemPkiException {
-        log.debug("TucPki018Checks including OCSP");
+        log.debug("TucPki018Checks...");
         final TspServiceSubset tspServiceSubset = new TspInformationProvider(tspServiceList, productType).getTspServiceSubset(x509EeCert);
         if (withOcspCheck) {
             doOcsp(x509EeCert, tspServiceSubset);
         } else {
-            throw new GemPkiException(productType, ErrorCode.SE_1039);
+            log.warn(ErrorCode.SW_1039.getErrorMessage(productType));
         }
         commonChecks(x509EeCert, tspServiceSubset);
         return tucPki018ProfileChecks(x509EeCert, tspServiceSubset);

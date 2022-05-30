@@ -89,7 +89,7 @@ class OcspVerifierTest {
 
     @Test
     void nonNullTests() {
-        assertThatThrownBy(() -> OcspVerifier.builder()
+        assertThatThrownBy(() -> OcspVerifier.builder() //NOSONAR
             .productType(null)
             .eeCert(VALID_X509_EE_CERT)
             .ocspResponse(genDefaultOcspResp())
@@ -97,7 +97,7 @@ class OcspVerifierTest {
             .performOcspChecks())
             .isInstanceOf(NullPointerException.class)
             .hasMessage("productType is marked non-null but is null");
-        assertThatThrownBy(() -> OcspVerifier.builder()
+        assertThatThrownBy(() -> OcspVerifier.builder() //NOSONAR
             .productType(PRODUCT_TYPE)
             .eeCert(null)
             .ocspResponse(genDefaultOcspResp())
@@ -105,12 +105,11 @@ class OcspVerifierTest {
             .performOcspChecks())
             .isInstanceOf(NullPointerException.class)
             .hasMessageContaining("eeCert");
-        assertThatThrownBy(
-            () -> OcspVerifier.builder()
-                .productType(PRODUCT_TYPE)
-                .eeCert(VALID_X509_EE_CERT)
-                .ocspResponse(null)
-                .build().verifyStatusGood())
+        assertThatThrownBy(() -> OcspVerifier.builder() //NOSONAR
+            .productType(PRODUCT_TYPE)
+            .eeCert(VALID_X509_EE_CERT)
+            .ocspResponse(null)
+            .build().verifyStatusGood())
             .isInstanceOf(NullPointerException.class)
             .hasMessageContaining("ocspResponse");
     }

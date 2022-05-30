@@ -6,10 +6,9 @@
 /doc/*.svg
 
 
-Jenkinsfile-MR-CI-SNAPSHOT
-Jenkinsfile_DeployGitHub
-Jenkinsfile_InternalRelease
-Jenkinsfile_PublishToMavenCentral
+Pipeline.CI.Jenkinsfile
+Pipeline.DeployGitHub.Jenkinsfile
+Pipeline.InternalRelease.Jenkinsfile
+Pipeline.PublishToMavenCentral.Jenkinsfile
 doc/development.txt
-releaseLog.md
 

@@ -105,6 +105,22 @@ class TucPki018VerifierTest {
         assertDoesNotThrow(() -> tucPki018Verifier.performTucPki18Checks(VALID_X509_EE_CERT));
     }
 
+    @SneakyThrows
+    @Test
+    void verifyPerformTucPki18ChecksWithoutOcsp() {
+        final List<TspService> tspServiceList = new TslInformationProvider(
+            TslReader.getTsl(ResourceReader.getFilePathFromResources(FILE_NAME_TSL_DEFAULT)).orElseThrow())
+            .getTspServices();
+        final TucPki018Verifier verifier = TucPki018Verifier.builder()
+            .productType(PRODUCT_TYPE_IDP)
+            .tspServiceList(tspServiceList)
+            .certificateProfiles(certificateProfiles)
+            .ocspRespCache(ocspRespCache)
+            .withOcspCheck(false)
+            .build();
+        assertDoesNotThrow(() -> verifier.performTucPki18Checks(VALID_X509_EE_CERT));
+    }
+
     @Test
     void verifyEgkAutEccCertValid() throws IOException {
         final X509Certificate eeCert = CertificateProvider.getX509Certificate("src/test/resources/certificates/GEM.EGK-CA10/JunaFuchs.pem");
@@ -187,27 +203,27 @@ class TucPki018VerifierTest {
         )).performTucPki18Checks(VALID_X509_EE_CERT));
     }
 
+    @SneakyThrows
     @Test
     void multipleCertificateProfiles_shouldThrowKeyUsageError() throws IOException {
         final X509Certificate eeWrongKeyUsage = CertificateProvider
             .getX509Certificate(
                 "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-keyusage.pem");
         configureOcspResponderMockForOcspRequest(eeWrongKeyUsage);
-        assertThatThrownBy(
-            () -> buildTucPki18Verifier(List.of(CertificateProfile.C_HCI_AUT_ECC, CertificateProfile.C_HP_AUT_ECC
-            )).performTucPki18Checks(eeWrongKeyUsage))
+        final var verifier = buildTucPki18Verifier(List.of(CertificateProfile.C_HCI_AUT_ECC, CertificateProfile.C_HP_AUT_ECC));
+        assertThatThrownBy(() -> verifier.performTucPki18Checks(eeWrongKeyUsage))
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1016.name());
     }
 
+    @SneakyThrows
     @Test
     void multipleCertificateProfiles_shouldThrowCertTypeError() throws IOException {
         final X509Certificate eeWrongKeyUsage = CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-certificate-type.pem");
         configureOcspResponderMockForOcspRequest(eeWrongKeyUsage);
-        assertThatThrownBy(
-            () -> buildTucPki18Verifier(List.of(CertificateProfile.C_HCI_AUT_ECC, CertificateProfile.C_HP_AUT_ECC
-            )).performTucPki18Checks(eeWrongKeyUsage))
+        final var verifier = buildTucPki18Verifier(List.of(CertificateProfile.C_HCI_AUT_ECC, CertificateProfile.C_HP_AUT_ECC));
+        assertThatThrownBy(() -> verifier.performTucPki18Checks(eeWrongKeyUsage))
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1018.name());
     }
@@ -234,10 +250,12 @@ class TucPki018VerifierTest {
         assertThatThrownBy(() -> tucPki018Verifier.commonChecks(null, null)).isInstanceOf(NullPointerException.class);
     }
 
+    @SneakyThrows
     @Test
     void verifyCertProfilesEmpty() {
         configureOcspResponderMockForOcspRequest(VALID_X509_EE_CERT);
-        assertThatThrownBy(() -> buildTucPki18Verifier(List.of()).performTucPki18Checks(VALID_X509_EE_CERT))
+        final var verifier = buildTucPki18Verifier(List.of());
+        assertThatThrownBy(() -> verifier.performTucPki18Checks(VALID_X509_EE_CERT))
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.UNKNOWN.name());
     }

@@ -61,6 +61,23 @@ class OcspTransceiverTest {
     }
 
     @Test
+    void verifyOcspStatusExpectedGoodFromCache() throws GemPkiException {
+        configureOcspResponderMockForOcspRequest();
+        final OCSPResp ocspResp = OcspResponseGenerator.builder()
+            .signer(OcspConstants.getOcspSignerRsa())
+            .build()
+            .gen(OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT), VALID_X509_EE_CERT);
+        final OcspRespCache cache = new OcspRespCache(10);
+        cache.saveResponse(VALID_X509_EE_CERT.getSerialNumber(), ocspResp);
+        assertDoesNotThrow(() ->
+            OcspTransceiver.builder().x509EeCert(VALID_X509_EE_CERT).x509IssuerCert(VALID_X509_ISSUER_CERT)
+                .ssp("http://invalid.url") //to see, if cached response is used
+                .productType(PRODUCT_TYPE)
+                .build()
+                .verifyOcspResponse(cache));
+    }
+
+    @Test
     void verifySspUrlInvalidThrowsGemPkiExceptionOnly() {
         assertThatThrownBy(
             () -> OcspTransceiver.builder().x509EeCert(VALID_X509_EE_CERT).x509IssuerCert(VALID_X509_ISSUER_CERT)

@@ -42,10 +42,9 @@ import xades4j.providers.impl.DirectKeyingDataProvider;
 public class TslSigner {
 
     static {
-        if (Security.getProvider("BC") == null) {
-
+        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
             Security.addProvider(new BouncyCastleProvider());
-            JCEMapper.setProviderId("BC");
+            JCEMapper.setProviderId(BouncyCastleProvider.PROVIDER_NAME);
         }
     }
 

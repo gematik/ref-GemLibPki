@@ -97,13 +97,13 @@ class CertificateCommonVerificationTest {
         assertDoesNotThrow(() -> certificateCommonVerification.verifySignature(validX509IssuerCert));
     }
 
+    @SneakyThrows
     @Test
     void verifySignatureNotValid() throws IOException {
         final X509Certificate invalidX509EeCert = CertificateProvider
             .getX509Certificate(Path.of("src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-signature.pem"));
-        assertThatThrownBy(
-            () -> buildCertificateCommonVerifier(FILE_NAME_TSL_ALT_CA, invalidX509EeCert)
-                .verifySignature(validX509IssuerCert))
+        final var verifier = buildCertificateCommonVerifier(FILE_NAME_TSL_ALT_CA, invalidX509EeCert);
+        assertThatThrownBy(() -> verifier.verifySignature(validX509IssuerCert))
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1024.getErrorMessage(PRODUCT_TYPE));
     }
@@ -115,24 +115,24 @@ class CertificateCommonVerificationTest {
             .hasMessageContaining("referenceDate");
     }
 
+    @SneakyThrows
     @Test
     void verifyValidityCertificateExpired() throws IOException {
         final X509Certificate expiredEeCert = CertificateProvider
             .getX509Certificate(Path.of("src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_expired.pem"));
-        assertThatThrownBy(
-            () -> buildCertificateCommonVerifier(FILE_NAME_TSL_DEFAULT, expiredEeCert)
-                .verifyValidity(DATETIME_TO_CHECK))
+        final var verifier = buildCertificateCommonVerifier(FILE_NAME_TSL_DEFAULT, expiredEeCert);
+        assertThatThrownBy(() -> verifier.verifyValidity(DATETIME_TO_CHECK))
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1021.name());
     }
 
+    @SneakyThrows
     @Test
     void verifyValidityCertificateNotYetValid() throws IOException {
         final X509Certificate notYetValidEeCert = CertificateProvider.getX509Certificate(
             Path.of("src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_not-yet-valid.pem"));
-        assertThatThrownBy(
-            () -> buildCertificateCommonVerifier(FILE_NAME_TSL_DEFAULT, notYetValidEeCert)
-                .verifyValidity(DATETIME_TO_CHECK))
+        final var verifier = buildCertificateCommonVerifier(FILE_NAME_TSL_DEFAULT, notYetValidEeCert);
+        assertThatThrownBy(() -> verifier.verifyValidity(DATETIME_TO_CHECK))
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1021.name());
     }
@@ -154,18 +154,18 @@ class CertificateCommonVerificationTest {
     @Test
     void verifyIssuerServiceStatusRevokedLater() {
         final String tslAltCaRevokedLater = "tsls/valid/TSL_altCA_revokedLater.xml";
-        assertDoesNotThrow(() -> buildCertificateCommonVerifier(tslAltCaRevokedLater, validX509EeCertAltCa)
-            .verifyIssuerServiceStatus());
+        assertDoesNotThrow(() -> buildCertificateCommonVerifier(tslAltCaRevokedLater, validX509EeCertAltCa).verifyIssuerServiceStatus());
     }
 
     /**
      * Timestamp "notBefore" of VALID_X509_EE_CERT_ALT_CA is after StatusStartingTime of TSPService (issuer of VALID_X509_EE_CERT_ALT_CA) in TSL
      * FILE_NAME_TSL_ALT_CA_REVOKED
      */
+    @SneakyThrows
     @Test
     void verifyIssuerServiceStatusRevoked() {
-        assertThatThrownBy(() -> buildCertificateCommonVerifier(FILE_NAME_TSL_ALT_CA_REVOKED, validX509EeCertAltCa)
-            .verifyIssuerServiceStatus())
+        final var verifier = buildCertificateCommonVerifier(FILE_NAME_TSL_ALT_CA_REVOKED, validX509EeCertAltCa);
+        assertThatThrownBy(verifier::verifyIssuerServiceStatus)
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1036.getErrorMessage(PRODUCT_TYPE));
     }

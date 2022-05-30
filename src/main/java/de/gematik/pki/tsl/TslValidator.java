@@ -43,9 +43,9 @@ import xades4j.verification.XadesVerifier;
 public class TslValidator {
 
     static {
-        if (Security.getProvider("BC") == null) {
+        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
             Security.addProvider(new BouncyCastleProvider());
-            JCEMapper.setProviderId("BC");
+            JCEMapper.setProviderId(BouncyCastleProvider.PROVIDER_NAME);
         }
     }
 
@@ -65,7 +65,8 @@ public class TslValidator {
                 return false;
             }
             return xvr.get().getXmlSignature().checkSignatureValue(xvr.get().getValidationCertificate());
-        } catch (final XAdES4jException | NoSuchAlgorithmException | XMLSignatureException | NoSuchProviderException | CertificateException | KeyStoreException e) {
+        } catch (final XAdES4jException | NoSuchAlgorithmException | XMLSignatureException | NoSuchProviderException | CertificateException |
+                       KeyStoreException e) {
             return false;
         }
     }
@@ -78,7 +79,7 @@ public class TslValidator {
         trustAnchorStore.setCertificateEntry(trustAnchor.getSubjectX500Principal().getName(), trustAnchor);
 
         final CertificateValidationProvider certValidator = PKIXCertificateValidationProvider.builder(trustAnchorStore)
-            .certPathBuilderProvider("BC")
+            .certPathBuilderProvider(BouncyCastleProvider.PROVIDER_NAME)
             .checkRevocation(false)
             .build();
 
