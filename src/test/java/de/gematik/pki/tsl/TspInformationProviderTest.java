@@ -16,6 +16,7 @@
 
 package de.gematik.pki.tsl;
 
+import static de.gematik.pki.TestConstants.FILE_NAME_TSL_DEFAULT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -33,7 +34,6 @@ import org.junit.jupiter.api.Test;
 
 class TspInformationProviderTest {
 
-    private static final String FILE_NAME_TSL_DEFAULT = "tsls/valid/TSL_default.xml";
     private static final String FILE_NAME_TSL_ALT_CA_BROKEN = "tsls/defect/TSL_defect_altCA_broken.xml";
     private String productType;
     private TspInformationProvider tspInformationProvider;
@@ -100,13 +100,13 @@ class TspInformationProviderTest {
     }
 
     @Test
-    void generateTspServiceSubsetServiceSupplyPointMissing() throws GemPkiException, IOException {
+    void generateTspServiceSubsetServiceSupplyPointMissing() throws IOException {
         final Optional<TrustStatusListType> tslAltCaMissingSsp = TslReader
             .getTsl(ResourceReader.getFilePathFromResources("tsls/defect/TSL_defect_altCA_missingSsp.xml"));
 
         assertThatThrownBy(() -> new TspInformationProvider(
             new TslInformationProvider(tslAltCaMissingSsp.orElseThrow()).getTspServices(),
-            productType).getTspServiceSubset(VALID_X509_EE_CERT_ALT_CA).getServiceSupplyPoint())
+            productType).getTspServiceSubset(VALID_X509_EE_CERT_ALT_CA))
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.TE_1026.getErrorMessage(productType));
     }

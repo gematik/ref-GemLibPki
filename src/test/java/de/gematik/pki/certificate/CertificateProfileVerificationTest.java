@@ -97,7 +97,7 @@ class CertificateProfileVerificationTest {
 
     @SneakyThrows
     @Test
-    void verifyKeyUsageMissingInCertificate() throws IOException {
+    void verifyKeyUsageMissingInCertificate() {
         final X509Certificate missingKeyUsagex509EeCert = CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-keyusage.pem");
         final var verifier = buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile,
@@ -109,7 +109,7 @@ class CertificateProfileVerificationTest {
 
     @SneakyThrows
     @Test
-    void verifyKeyUsageInvalidInCertificate() throws IOException {
+    void verifyKeyUsageInvalidInCertificate() {
         final X509Certificate invalidKeyUsagex509EeCert = CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-keyusage.pem");
         final var verifier = buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile, invalidKeyUsagex509EeCert);
@@ -129,7 +129,7 @@ class CertificateProfileVerificationTest {
 
     @SneakyThrows
     @Test
-    void verifyToManyKeyUsagesPresentInCert() throws IOException {
+    void verifyToManyKeyUsagesPresentInCert() {
         final X509Certificate validHbaAutEcc = CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.HBA-CA13/GüntherOtís.pem");
         final var verifier = buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, CertificateProfile.C_HCI_AUT_ECC, validHbaAutEcc);
@@ -154,7 +154,7 @@ class CertificateProfileVerificationTest {
 
     @SneakyThrows
     @Test
-    void verifyToManyExtendedKeyUsagesPresentInCert() throws IOException {
+    void verifyToManyExtendedKeyUsagesPresentInCert() {
         final X509Certificate validHbaAutEcc = CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.HBA-CA13/GüntherOtís.pem");
         final var verifier = buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, CertificateProfile.C_HCI_AUT_ECC, validHbaAutEcc);
@@ -165,7 +165,7 @@ class CertificateProfileVerificationTest {
 
     @SneakyThrows
     @Test
-    void verifyExtendedKeyUsageMissingInCertificate() throws IOException {
+    void verifyExtendedKeyUsageMissingInCertificate() {
         final X509Certificate missingExtKeyUsagex509EeCert = CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-extKeyUsage.pem");
         final var verifier = buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile, missingExtKeyUsagex509EeCert);
@@ -176,7 +176,7 @@ class CertificateProfileVerificationTest {
 
     @SneakyThrows
     @Test
-    void verifyExtendedKeyUsageInvalidInCertificate() throws IOException {
+    void verifyExtendedKeyUsageInvalidInCertificate() {
         final X509Certificate invalidExtendedKeyUsageEeCert = CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-ext-keyusage.pem");
         final var verifier = buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile, invalidExtendedKeyUsageEeCert);
@@ -195,7 +195,7 @@ class CertificateProfileVerificationTest {
 
     @SneakyThrows
     @Test
-    void verifyCertificateProfileMissingPolicyId() throws IOException {
+    void verifyCertificateProfileMissingPolicyId() {
         final X509Certificate missingPolicyId = CertificateProvider
             .getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-policyId.pem");
         final var verifier = buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile, missingPolicyId);
@@ -206,7 +206,7 @@ class CertificateProfileVerificationTest {
 
     @SneakyThrows
     @Test
-    void verifyCertificateProfileMissingCertType() throws IOException {
+    void verifyCertificateProfileMissingCertType() {
         final X509Certificate missingCertType = CertificateProvider
             .getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-certificate-type.pem");
         final var verifier = buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile, missingCertType);
@@ -217,7 +217,7 @@ class CertificateProfileVerificationTest {
 
     @SneakyThrows
     @Test
-    void verifyCertificateProfileInvalidCertType() throws IOException {
+    void verifyCertificateProfileInvalidCertType() {
         final X509Certificate invalidCertType = CertificateProvider
             .getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-certificate-type.pem");
         final var verifier = buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile, invalidCertType);

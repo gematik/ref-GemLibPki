@@ -30,7 +30,7 @@ We are fully aware of the content and meaning of the test data. We never publish
 - contains checks of all steps defined in TUC_PKI_018 „Zertifikatsprüfung in der TI“ specified in gematik document "
   Übergreifende Spezifikation PKI" (gemSpec_PKI)
 - OCSP requests are optional and activated by default
-- OCSP response are not analyzed beyond status GOOD (nor signature checking etc.)
+- OCSP response are not analyzed beyond status GOOD (no signature checks etc.)
 
 ##### TSL handling
 
@@ -54,12 +54,20 @@ We are fully aware of the content and meaning of the test data. We never publish
 ### Steps to perform certificate checks
 
 - instantiate a [TslReader](src/main/java/de/gematik/pki/tsl/TslReader.java) to read a TSL
-- use the result of the TslReader to instantiate
-  a [TslInformationProvider](src/main/java/de/gematik/pki/tsl/TslInformationProvider.java) and simply call its public
-  methods
+- use the result of the TslReader to instantiate a [TslInformationProvider](src/main/java/de/gematik/pki/tsl/TslInformationProvider.java) 
+and call its public methods
 - get TspServices from TslInformationProvider
-- instantiate a [TucPki018Verifier](src/main/java/de/gematik/pki/certificate/TucPki018Verifier.java) (via builder) and
-  simply call its public method performTucPki18Checks
+- instantiate a [TucPki018Verifier](src/main/java/de/gematik/pki/certificate/TucPki018Verifier.java) (via builder) and call its 
+public method performTucPki18Checks
+
+### Steps to perform tsl checks
+
+- instantiate a [TslReader](src/main/java/de/gematik/pki/tsl/TslReader.java) to read a TSL
+- use the result of the TslReader to instantiate a [TslInformationProvider](src/main/java/de/gematik/pki/tsl/TslInformationProvider.java)
+and call its public methods
+- get TspServices from TslInformationProvider
+- instantiate a [TucPki001Verifier](src/main/java/de/gematik/pki/tsl/TucPki001Verifier.java) (via builder) and call its 
+public method performTucPki001Checks
 
 ### ToDo
 

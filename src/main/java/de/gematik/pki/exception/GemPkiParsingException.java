@@ -17,7 +17,6 @@
 package de.gematik.pki.exception;
 
 import de.gematik.pki.certificate.CertificateProfile;
-import de.gematik.pki.error.ErrorCode;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -39,7 +38,7 @@ public class GemPkiParsingException extends GemPkiException {
             // first ErrorCode
             extractFirstError(errorMap)
                 .map(GemPkiException::getError)
-                .orElse(ErrorCode.UNKNOWN),
+                .orElseThrow(() -> new GemPkiRuntimeException("Please understand the api of this library.")),
             // all ErrorMessages
             errorMap.entrySet().stream()
                 .map(entry -> mapToErrorMessage(entry, productType))

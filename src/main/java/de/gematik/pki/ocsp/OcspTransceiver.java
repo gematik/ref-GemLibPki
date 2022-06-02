@@ -16,8 +16,8 @@
 
 package de.gematik.pki.ocsp;
 
-import de.gematik.pki.error.ErrorCode;
 import de.gematik.pki.exception.GemPkiException;
+import de.gematik.pki.exception.GemPkiRuntimeException;
 import java.io.IOException;
 import java.security.cert.X509Certificate;
 import java.util.Optional;
@@ -52,7 +52,7 @@ public class OcspTransceiver {
      * Verifies OCSP status of end-entity certificate. Sends OCSP request if OCSP response is not cached.
      *
      * @param ocspRespCache Cache for OCSP Responses
-     * @throws GemPkiException
+     * @throws GemPkiException during ocsp checks
      */
     public void verifyOcspResponse(final OcspRespCache ocspRespCache) throws GemPkiException {
         if (ocspRespCache != null) {
@@ -74,7 +74,7 @@ public class OcspTransceiver {
     /**
      * Verifies OCSP status of end-entity certificate by sending an OCSP request. Operates on member variables given by builder.
      *
-     * @throws GemPkiException
+     * @throws GemPkiException during ocsp checks
      */
     private void verifyOcspResponseOnline() throws GemPkiException {
         OcspVerifier.builder()
@@ -90,9 +90,8 @@ public class OcspTransceiver {
      *
      * @param request OCSP request to sent
      * @return received OCSP response
-     * @throws GemPkiException
      */
-    public OCSPResp sendOcspRequest(final OCSPReq request) throws GemPkiException {
+    public OCSPResp sendOcspRequest(final OCSPReq request) {
         return sendOcspRequestToUrl(ssp, request);
     }
 
@@ -102,23 +101,19 @@ public class OcspTransceiver {
      * @param ssp     SSP URL to sent to
      * @param request OCSP request to sent
      * @return received OCSP response
-     * @throws GemPkiException
      */
-    public static OCSPResp sendOcspRequestToUrl(final String ssp, final OCSPReq request) throws GemPkiException {
+    public static OCSPResp sendOcspRequestToUrl(final String ssp, final OCSPReq request) {
         final HttpResponse<byte[]> httpResponse;
         try {
-            log.info(
-                "Send OCSP Request for certificate serial number: " + request.getRequestList()[0].getCertID()
-                    .getSerialNumber() + " to: "
-                    + ssp);
+            log.info("Send OCSP Request for certificate serial number: " + request.getRequestList()[0].getCertID().getSerialNumber() + " to: " + ssp);
             httpResponse = Unirest.post(ssp)
                 .header("Content-Type", "application/ocsp-request")
                 .body(request.getEncoded())
                 .asBytes();
-            log.info("HttpStatus of OcspResponse: " + httpResponse.getStatus());
+            log.info("HttpStatus der OcspResponse: " + httpResponse.getStatus());
             return new OCSPResp(httpResponse.getBody());
         } catch (final UnirestException | IOException e) {
-            throw new GemPkiException(ErrorCode.OCSP, "OCSP senden/empfangen fehlgeschlagen", e);
+            throw new GemPkiRuntimeException("OCSP senden/empfangen fehlgeschlagen.", e);
         }
     }
 }

@@ -16,8 +16,7 @@
 
 package de.gematik.pki.utils;
 
-import de.gematik.pki.error.ErrorCode;
-import de.gematik.pki.exception.GemPkiException;
+import de.gematik.pki.exception.GemPkiRuntimeException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -44,9 +43,8 @@ public class P12Reader {
      * @param p12FileContent p12 as byte array
      * @param p12Password    password for p12
      * @return a {@link P12Container}
-     * @throws GemPkiException on any caught exception
      */
-    public static P12Container getContentFromP12(final byte[] p12FileContent, final String p12Password) throws GemPkiException {
+    public static P12Container getContentFromP12(final byte[] p12FileContent, final String p12Password) {
 
         final KeyStore p12;
         try {
@@ -60,7 +58,7 @@ public class P12Reader {
                 return P12Container.builder().certificate(certificate).privateKey(privateKey).build();
             }
         } catch (final KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException | IOException | CertificateException e) {
-            throw new GemPkiException(ErrorCode.CERTIFICATE_READ, "Cannot read p12 content.", e);
+            throw new GemPkiRuntimeException("Konnte .p12 Datei nicht verarbeiten.", e);
         }
         return null;
     }
@@ -71,13 +69,12 @@ public class P12Reader {
      * @param path        path to *.p12 file
      * @param p12Password password for p12
      * @return a {@link P12Container}
-     * @throws GemPkiException on any caught exception
      */
-    public static P12Container getContentFromP12(final Path path, final String p12Password) throws GemPkiException {
+    public static P12Container getContentFromP12(final Path path, final String p12Password) {
         try {
             return getContentFromP12(Files.readAllBytes(path), p12Password);
         } catch (final IOException e) {
-            throw new GemPkiException(ErrorCode.CERTIFICATE_READ, "Cannot read p12 file.", e);
+            throw new GemPkiRuntimeException("Konnte .p12 Datei nicht lesen: " + path, e);
         }
     }
 

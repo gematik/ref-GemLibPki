@@ -16,10 +16,16 @@
 
 package de.gematik.pki.exception;
 
-public class UnitTestException extends RuntimeException {
+/**
+ * {@link GemPkiRuntimeException} class.
+ */
+public class GemPkiRuntimeException extends RuntimeException {
 
-    public UnitTestException(final String message, final Exception e) {
-        super(message, e);
+    public GemPkiRuntimeException(final String message) {
+        super(message);
     }
 
+    public GemPkiRuntimeException(final String message, final Exception e) {
+        super(message, e);
+    }
 }

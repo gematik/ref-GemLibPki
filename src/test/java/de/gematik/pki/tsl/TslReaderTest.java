@@ -19,7 +19,7 @@ package de.gematik.pki.tsl;
 import static de.gematik.pki.utils.ResourceReader.getFilePathFromResources;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import de.gematik.pki.exception.GemPkiException;
+import de.gematik.pki.exception.GemPkiRuntimeException;
 import eu.europa.esig.trustedlist.jaxb.tsl.MultiLangStringType;
 import eu.europa.esig.trustedlist.jaxb.tsl.OtherTSLPointersType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
@@ -34,12 +34,12 @@ class TslReaderTest {
     TrustStatusListType tsl;
 
     @BeforeEach
-    void setup() throws GemPkiException, IOException {
+    void setup() throws IOException {
         tsl = TslReader.getTsl(getFilePathFromResources(FILE_NAME_TSL_DEFAULT)).orElseThrow();
     }
 
     @Test
-    void verifyGetTrustStatusListTypeIsPresent() throws GemPkiException, IOException {
+    void verifyGetTrustStatusListTypeIsPresent() throws IOException {
         assertThat(TslReader.getTsl(getFilePathFromResources(FILE_NAME_TSL_DEFAULT))).isPresent();
     }
 
@@ -78,9 +78,10 @@ class TslReaderTest {
 
     @Test
     void verifyGetTrustStatusListTypeFailed() {
-        assertThatThrownBy(() -> TslReader.getTsl(getFilePathFromResources(TSL_INVALID_XML)))
-            .isInstanceOf(GemPkiException.class)
-            .hasMessageContaining("Error reading TSL");
+        final var tslPath = getFilePathFromResources(TSL_INVALID_XML);
+        assertThatThrownBy(() -> TslReader.getTsl(tslPath))
+            .isInstanceOf(GemPkiRuntimeException.class)
+            .hasMessage("Lesen der TSL fehlgeschlagen.");
     }
 
     @Test

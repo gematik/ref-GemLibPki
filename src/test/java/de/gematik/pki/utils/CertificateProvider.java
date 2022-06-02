@@ -16,8 +16,8 @@
 
 package de.gematik.pki.utils;
 
+import de.gematik.pki.exception.GemPkiRuntimeException;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -42,16 +42,14 @@ public class CertificateProvider implements ArgumentsProvider, AnnotationConsume
     private static final String CERTIFICATE_SUBDIR = "/certificates/GEM.SMCB-CA10/";
 
     @Override
-    public Stream<? extends Arguments> provideArguments(final ExtensionContext extensionContext)
-        throws URISyntaxException {
+    public Stream<? extends Arguments> provideArguments(final ExtensionContext extensionContext) throws URISyntaxException {
 
         return listFilesUsingFileWalkAndVisitor(
-            Path.of(
-                getClass()
-                    .getProtectionDomain()
-                    .getCodeSource()
-                    .getLocation()
-                    .toURI())
+            Path.of(getClass()
+                .getProtectionDomain()
+                .getCodeSource()
+                .getLocation()
+                .toURI())
                 + CERTIFICATE_SUBDIR + (checkCertificateFilter() ? certPathSwitch : "unknown"))
             .map(Arguments::of);
     }
@@ -68,7 +66,7 @@ public class CertificateProvider implements ArgumentsProvider, AnnotationConsume
                             log.info("add: " + path.toAbsolutePath());
                             fileList.add(getX509Certificate(path.toAbsolutePath()));
                         } catch (final IOException e) {
-                            throw new RuntimeException(" : GEMLIBPKI - Test - Die Datei ist kein Zertifikat.", e);
+                            throw new GemPkiRuntimeException("Die Datei ist kein Zertifikat: " + path, e);
                         }
                     }
                     return FileVisitResult.CONTINUE;
@@ -76,7 +74,7 @@ public class CertificateProvider implements ArgumentsProvider, AnnotationConsume
                 }
             });
         } catch (final IOException io) {
-            throw new UncheckedIOException(" : GEMLIBPKI - Test - Bei der Ermittlung der Testzertifikate ist ein Fehler aufgetreten.", io);
+            throw new GemPkiRuntimeException("Bei der Ermittlung der Testzertifikate ist ein Fehler aufgetreten.", io);
         }
         return fileList.stream();
     }

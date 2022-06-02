@@ -20,6 +20,7 @@ import static de.gematik.pki.utils.Utils.calculateSha256;
 import static org.bouncycastle.internal.asn1.isismtt.ISISMTTObjectIdentifiers.id_isismtt_at_certHash;
 import de.gematik.pki.error.ErrorCode;
 import de.gematik.pki.exception.GemPkiException;
+import de.gematik.pki.exception.GemPkiRuntimeException;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
@@ -31,8 +32,8 @@ import org.bouncycastle.asn1.isismtt.ocsp.CertHash;
 import org.bouncycastle.cert.ocsp.*;
 
 /**
- * Entry point to access a verification of ocspresponses regarding standard process called TucPki006. This class works with parameterized variables (defined by
- * builder pattern) and with given variables provided by runtime (method parameters).
+ * Entry point to access a verification of ocsp responses regarding standard process called TucPki006. This class works with parameterized variables (defined by
+ * builder pattern) and with given variables provided during runtime (method parameters).
  */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
@@ -45,36 +46,35 @@ public class OcspVerifier {
     @NonNull
     final OCSPResp ocspResponse;
 
+    private static final String OCSP_ERROR = "OCSP Response Auswertung fehlgeschlagen.";
+
     public void performOcspChecks() throws GemPkiException {
         // TODO create new OCSP checks: OCSP_CHECK_REVOCATION_FAILED, OCSP_CHECK_REVOCATION_ERROR, OCSP_NOT_AVAILABLE...
         verifyCertHash();
         verifyStatusGood();
     }
 
-    /**
-     * @throws GemPkiException exception thrown if ocsp response cannot be evaluated
-     */
-    public void verifyStatusGood() throws GemPkiException {
+    public void verifyStatusGood() {
         if (ocspResponse.getStatus() != 0) {
-            throw new GemPkiException(ErrorCode.OCSP, "OCSP response status ist nicht 0, sondern: " + ocspResponse.getStatus());
+            throw new GemPkiRuntimeException("OCSP response status ist nicht 0, sondern: " + ocspResponse.getStatus());
         }
         final BasicOCSPResp basicResponse;
         try {
             basicResponse = (BasicOCSPResp) ocspResponse.getResponseObject();
         } catch (final OCSPException e) {
-            throw new GemPkiException(ErrorCode.OCSP, "OCSP response Auswertung fehlgeschlagen", e);
+            throw new GemPkiRuntimeException(OCSP_ERROR, e);
         }
         if (basicResponse != null) {
             final SingleResp[] responses = basicResponse.getResponses();
             if (responses.length != 1) {
-                throw new GemPkiException(ErrorCode.OCSP, "Mehr als eine OCSP Response erhalten: " + responses.length);
+                throw new GemPkiRuntimeException("Mehr als eine OCSP Response erhalten: " + responses.length);
             } else {
                 if (CertificateStatus.GOOD != responses[0].getCertStatus()) {
-                    throw new GemPkiException(ErrorCode.OCSP, "OCSP Response ist nicht GOOD, sondern: " + responses[0].getCertStatus());
+                    throw new GemPkiRuntimeException("OCSP Response ist nicht GOOD, sondern: " + responses[0].getCertStatus());
                 }
             }
         } else {
-            throw new GemPkiException(ErrorCode.OCSP, "Keine OCSP Response erhalten.");
+            throw new GemPkiRuntimeException("Keine OCSP Response erhalten.");
         }
 
     }
@@ -90,7 +90,7 @@ public class OcspVerifier {
         } catch (final NullPointerException e) {
             throw new GemPkiException(productType, ErrorCode.SE_1040);
         } catch (final CertificateEncodingException | OCSPException e) {
-            throw new GemPkiException(ErrorCode.OCSP, "OCSP Response Auswertung fehlgeschlagen", e);
+            throw new GemPkiRuntimeException(OCSP_ERROR, e);
         }
     }
 

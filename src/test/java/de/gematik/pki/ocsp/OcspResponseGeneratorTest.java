@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.bouncycastle.internal.asn1.isismtt.ISISMTTObjectIdentifiers.id_isismtt_at_certHash;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import de.gematik.pki.exception.GemPkiException;
+import de.gematik.pki.exception.GemPkiRuntimeException;
 import de.gematik.pki.utils.CertificateProvider;
 import de.gematik.pki.utils.P12Reader;
 import java.io.IOException;
@@ -47,7 +47,7 @@ class OcspResponseGeneratorTest {
     final X509Certificate VALID_X509_ISSUER_CERT = CertificateProvider.getX509Certificate("src/test/resources/certificates/GEM.RCA1_TEST-ONLY.pem");
     final OCSPReq ocspReq = OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
 
-    OcspResponseGeneratorTest() throws IOException, GemPkiException {
+    OcspResponseGeneratorTest() throws IOException {
     }
 
     @Test
@@ -80,8 +80,8 @@ class OcspResponseGeneratorTest {
             .signer(Objects.requireNonNull(P12Reader.getContentFromP12(Path.of("src/test/resources/certificates/ocsp/dsaCert.p12"), "00")))
             .build();
         assertThatThrownBy(() -> ocspResp.gen(ocspReq, VALID_X509_EE_CERT))
-            .hasMessage("Signature algorithm not supported: DSA")
-            .isInstanceOf(GemPkiException.class);
+            .isInstanceOf(GemPkiRuntimeException.class)
+            .hasMessage("Signaturalgorithmus nicht unterstützt: DSA");
     }
 
     @SneakyThrows

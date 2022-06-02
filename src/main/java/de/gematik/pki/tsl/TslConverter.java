@@ -20,8 +20,7 @@ import static de.gematik.pki.tsl.TslHelper.createDocBuilder;
 import static de.gematik.pki.tsl.TslHelper.createJaxbElement;
 import static de.gematik.pki.tsl.TslHelper.createMarshaller;
 import static de.gematik.pki.tsl.TslHelper.getTransformerFactory;
-import de.gematik.pki.error.ErrorCode;
-import de.gematik.pki.exception.GemPkiException;
+import de.gematik.pki.exception.GemPkiRuntimeException;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -49,33 +48,31 @@ import org.xml.sax.SAXException;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class TslConverter {
 
-    public static final String ERROR_READING_TSL = "Error reading TSL";
-    public static final String TSL_BYTES_NULL = "Input TSL ist null";
+    public static final String ERROR_READING_TSL = "Lesen der TSL fehlgeschlagen.";
+    public static final String TSL_BYTES_NULL = "TSL hat null bytes.";
 
     /**
      * Converts a tsl to a DOM document type
      *
      * @param tsl The tsl to convert
      * @return The tsl as a DOM Document
-     * @throws GemPkiException Exception thrown if tsl cannot be read
      */
-    public static Optional<Document> tslToDoc(@NonNull final TrustStatusListType tsl) throws GemPkiException {
+    public static Optional<Document> tslToDoc(@NonNull final TrustStatusListType tsl) {
         try {
             final Document doc = createDocBuilder().newDocument();
             doc.setXmlStandalone(true);
             createMarshaller().marshal(createJaxbElement(tsl), doc);
             return Optional.of(doc);
         } catch (final JAXBException | ParserConfigurationException e) {
-            throw new GemPkiException(ErrorCode.TSL_READ, "Conversion of TrustServiceStatusList to document failed.", e);
+            throw new GemPkiRuntimeException("Konvertieren der TrustServiceStatusList in einen Dokumententyp fehlgeschlagen.", e);
         }
     }
 
     /**
      * @param tslBytes A TSL as byte array
      * @return A TSL as Document
-     * @throws GemPkiException on any conversion error
      */
-    public static Optional<Document> bytesToDoc(final byte[] tslBytes) throws GemPkiException {
+    public static Optional<Document> bytesToDoc(final byte[] tslBytes) {
         Objects.requireNonNull(tslBytes, TSL_BYTES_NULL);
         try (final ByteArrayInputStream bais = new ByteArrayInputStream(tslBytes)) {
             final Document document = createDocBuilder().parse(bais);
@@ -83,31 +80,29 @@ public class TslConverter {
             document.normalize();
             return Optional.of(document);
         } catch (final ParserConfigurationException | SAXException | IOException e) {
-            throw new GemPkiException(ErrorCode.TSL_READ, ERROR_READING_TSL, e);
+            throw new GemPkiRuntimeException(ERROR_READING_TSL, e);
         }
     }
 
     /**
      * @param tslDoc A TSL as Document
      * @return A TSL as byte array
-     * @throws GemPkiException on any conversion error
      */
-    public static Optional<byte[]> docToBytes(@NonNull final Document tslDoc) throws GemPkiException {
+    public static Optional<byte[]> docToBytes(@NonNull final Document tslDoc) {
         final TransformerFactory tf = getTransformerFactory();
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             tf.newTransformer().transform(new DOMSource(tslDoc), new StreamResult(baos));
             return Optional.of(baos.toByteArray());
         } catch (final TransformerException | IOException e) {
-            throw new GemPkiException(ErrorCode.TSL_READ, ERROR_READING_TSL, e);
+            throw new GemPkiRuntimeException(ERROR_READING_TSL, e);
         }
     }
 
     /**
      * @param tslBytes A TSL as byte array
      * @return A TSL as TrustStatusListType
-     * @throws GemPkiException on any conversion error
      */
-    public static Optional<TrustStatusListType> bytesToTsl(final byte[] tslBytes) throws GemPkiException {
+    public static Optional<TrustStatusListType> bytesToTsl(final byte[] tslBytes) {
         Objects.requireNonNull(tslBytes, TSL_BYTES_NULL);
         final JAXBContext jaxbContext;
         try {
@@ -118,7 +113,7 @@ public class TslConverter {
                 unmarshaller.unmarshal(bytesToDoc(tslBytes).orElseThrow().getFirstChild(), TrustStatusListType.class);
             return Optional.of(jaxbElement.getValue());
         } catch (final JAXBException e) {
-            throw new GemPkiException(ErrorCode.TSL_READ, ERROR_READING_TSL, e);
+            throw new GemPkiRuntimeException(ERROR_READING_TSL, e);
         }
     }
 

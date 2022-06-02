@@ -16,7 +16,9 @@
 
 package de.gematik.pki.utils;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import de.gematik.pki.exception.GemPkiRuntimeException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,5 +36,13 @@ class CertReaderTest {
     void readExistingX509PemCert() throws IOException {
         final byte[] file = Files.readAllBytes(Path.of("src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem"));
         assertNotNull(CertReader.readX509(file));
+    }
+
+    @Test
+    void readInvalidCert() throws IOException {
+        final byte[] file = Files.readAllBytes(Path.of("src/test/resources/log4j2.xml"));
+        assertThatThrownBy(() -> CertReader.readX509(file))
+            .isInstanceOf(GemPkiRuntimeException.class)
+            .hasMessage("Konnte Zertifikat nicht lesen.");
     }
 }

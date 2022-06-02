@@ -38,7 +38,6 @@ import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-
 /**
  * Dieser Test arbeitet ausschließlich mit einem Zertifikatsprofil (SMCB). Andere Profile zu testen wäre vermutlich akademisch.
  */
@@ -99,7 +98,7 @@ class CertificateCommonVerificationTest {
 
     @SneakyThrows
     @Test
-    void verifySignatureNotValid() throws IOException {
+    void verifySignatureNotValid() {
         final X509Certificate invalidX509EeCert = CertificateProvider
             .getX509Certificate(Path.of("src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-signature.pem"));
         final var verifier = buildCertificateCommonVerifier(FILE_NAME_TSL_ALT_CA, invalidX509EeCert);
@@ -117,7 +116,7 @@ class CertificateCommonVerificationTest {
 
     @SneakyThrows
     @Test
-    void verifyValidityCertificateExpired() throws IOException {
+    void verifyValidityCertificateExpired() {
         final X509Certificate expiredEeCert = CertificateProvider
             .getX509Certificate(Path.of("src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_expired.pem"));
         final var verifier = buildCertificateCommonVerifier(FILE_NAME_TSL_DEFAULT, expiredEeCert);
@@ -128,7 +127,7 @@ class CertificateCommonVerificationTest {
 
     @SneakyThrows
     @Test
-    void verifyValidityCertificateNotYetValid() throws IOException {
+    void verifyValidityCertificateNotYetValid() {
         final X509Certificate notYetValidEeCert = CertificateProvider.getX509Certificate(
             Path.of("src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_not-yet-valid.pem"));
         final var verifier = buildCertificateCommonVerifier(FILE_NAME_TSL_DEFAULT, notYetValidEeCert);

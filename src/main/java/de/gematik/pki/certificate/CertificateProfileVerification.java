@@ -18,6 +18,7 @@ package de.gematik.pki.certificate;
 
 import de.gematik.pki.error.ErrorCode;
 import de.gematik.pki.exception.GemPkiException;
+import de.gematik.pki.exception.GemPkiRuntimeException;
 import de.gematik.pki.tsl.TspServiceSubset;
 import eu.europa.esig.trustedlist.jaxb.tsl.ExtensionType;
 import java.io.IOException;
@@ -114,7 +115,7 @@ public class CertificateProfileVerification {
         try {
             eeExtendedKeyUsagesOid = x509EeCert.getExtendedKeyUsage();
         } catch (final CertificateParsingException e) {
-            throw new GemPkiException(productType, ErrorCode.CERTIFICATE_READ, e);
+            throw new GemPkiRuntimeException("Fehler beim Lesen der ExtendedKeyUsages des Zertifikats: " + x509EeCert.getSubjectX500Principal().getName(), e);
         }
 
         final List<String> intendedExtendedKeyUsageOidList = getOidOfIntendedExtendedKeyUsagesFromCertificateProfile(

@@ -18,8 +18,7 @@ package de.gematik.pki.ocsp;
 
 import static de.gematik.pki.utils.Utils.calculateSha256;
 import static org.bouncycastle.internal.asn1.isismtt.ISISMTTObjectIdentifiers.id_isismtt_at_certHash;
-import de.gematik.pki.error.ErrorCode;
-import de.gematik.pki.exception.GemPkiException;
+import de.gematik.pki.exception.GemPkiRuntimeException;
 import de.gematik.pki.utils.P12Container;
 import java.io.IOException;
 import java.security.Security;
@@ -66,12 +65,12 @@ public class OcspResponseGenerator {
      * @param ocspReq OCSP request
      * @return OCSP response
      */
-    public OCSPResp gen(@NonNull final OCSPReq ocspReq, @NonNull final X509Certificate eeCert) throws GemPkiException {
+    public OCSPResp gen(@NonNull final OCSPReq ocspReq, @NonNull final X509Certificate eeCert) {
         Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
         try {
             return gen(ocspReq, eeCert, signer.getCertificate(), ZonedDateTime.now());
         } catch (final OperatorCreationException | IOException | OCSPException | CertificateEncodingException e) {
-            throw new GemPkiException(ErrorCode.UNKNOWN, "Ocsp response generation failed.", e);
+            throw new GemPkiRuntimeException("Generieren der OCSP Response fehlgeschlagen.", e);
         }
     }
 
@@ -83,9 +82,8 @@ public class OcspResponseGenerator {
      * @param dateTime               will be producedAt
      * @return OCSP response
      */
-    private OCSPResp gen(final OCSPReq ocspReq, final X509Certificate eeCert,
-        final X509Certificate ocspResponseSignerCert, final ZonedDateTime dateTime)
-        throws OperatorCreationException, IOException, OCSPException, CertificateEncodingException, GemPkiException {
+    private OCSPResp gen(final OCSPReq ocspReq, final X509Certificate eeCert, final X509Certificate ocspResponseSignerCert, final ZonedDateTime dateTime)
+        throws OperatorCreationException, IOException, OCSPException, CertificateEncodingException {
 
         final DigestCalculatorProvider digCalcProv = new BcDigestCalculatorProvider();
         final BasicOCSPRespBuilder basicBuilder = new BasicOCSPRespBuilder(
@@ -122,7 +120,7 @@ public class OcspResponseGenerator {
                 sigAlgo = "SHA256WITHECDSA";
                 break;
             default:
-                throw new GemPkiException(ErrorCode.UNKNOWN, "Signature algorithm not supported: " + signer.getPrivateKey().getAlgorithm());
+                throw new GemPkiRuntimeException("Signaturalgorithmus nicht unterstützt: " + signer.getPrivateKey().getAlgorithm());
         }
 
         final BasicOCSPResp resp = basicBuilder

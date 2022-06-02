@@ -17,13 +17,18 @@
 package de.gematik.pki.certificate;
 
 import static de.gematik.pki.TestConstants.FILE_NAME_TSL_DEFAULT;
+import static de.gematik.pki.TestConstants.LOCAL_SSP_DIR;
+import static de.gematik.pki.TestConstants.OCSP_HOST;
+import static de.gematik.pki.TestConstants.PRODUCT_TYPE;
+import static de.gematik.pki.utils.TestUtils.configureOcspResponderMockForOcspRequest;
+import static de.gematik.pki.utils.TestUtils.overwriteSspUrls;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import de.gematik.pki.common.OcspResponderMock;
 import de.gematik.pki.error.ErrorCode;
 import de.gematik.pki.exception.GemPkiException;
-import de.gematik.pki.ocsp.OcspRequestGenerator;
+import de.gematik.pki.exception.GemPkiRuntimeException;
 import de.gematik.pki.ocsp.OcspRespCache;
 import de.gematik.pki.tsl.TslInformationProvider;
 import de.gematik.pki.tsl.TslReader;
@@ -31,13 +36,10 @@ import de.gematik.pki.tsl.TspService;
 import de.gematik.pki.utils.CertificateProvider;
 import de.gematik.pki.utils.ResourceReader;
 import de.gematik.pki.utils.VariableSource;
-import eu.europa.esig.trustedlist.jaxb.tsl.AttributedNonEmptyURIType;
-import eu.europa.esig.trustedlist.jaxb.tsl.ServiceSupplyPointsType;
 import java.io.IOException;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import lombok.SneakyThrows;
-import org.bouncycastle.cert.ocsp.OCSPReq;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -50,10 +52,7 @@ class TucPki018VerifierTest {
     private static final CertificateProfile certificateProfile = CertificateProfile.C_HCI_AUT_ECC;
     private static final List<CertificateProfile> certificateProfiles = List.of(certificateProfile);
     private static final OcspRespCache ocspRespCache = new OcspRespCache(30);
-    private final static String LOCAL_SSP_DIR = "/services/ocsp";
-    private final static String OCSP_HOST = "http://localhost:";
     private static OcspResponderMock ocspResponderMock;
-    private final static String PRODUCT_TYPE_IDP = "IDP";
 
     @BeforeAll
     public static void start() throws Exception {
@@ -63,45 +62,25 @@ class TucPki018VerifierTest {
         tucPki018Verifier = buildTucPki18Verifier(certificateProfiles);
     }
 
-    @SneakyThrows
-    private static void configureOcspResponderMockForOcspRequest(final X509Certificate x509EeCert) {
-        final X509Certificate VALID_X509_ISSUER_CERT = CertificateProvider
-            .getX509Certificate("src/test/resources/certificates/GEM.RCA1_TEST-ONLY.pem");
-        final OCSPReq ocspReq = OcspRequestGenerator.generateSingleOcspRequest(x509EeCert,
-            VALID_X509_ISSUER_CERT);
-        ocspResponderMock.configureForOcspRequest(ocspReq, x509EeCert);
-    }
-
-    private static TucPki018Verifier buildTucPki18Verifier(final List<CertificateProfile> certificateProfiles)
-        throws GemPkiException, IOException {
+    private static TucPki018Verifier buildTucPki18Verifier(final List<CertificateProfile> certificateProfiles) throws IOException {
 
         final List<TspService> tspServiceList = new TslInformationProvider(
             TslReader.getTsl(ResourceReader.getFilePathFromResources(FILE_NAME_TSL_DEFAULT)).orElseThrow())
             .getTspServices();
 
-        overwriteSspUrls(tspServiceList);
+        overwriteSspUrls(tspServiceList, ocspResponderMock.getSspUrl());
 
         return TucPki018Verifier.builder()
-            .productType(PRODUCT_TYPE_IDP)
+            .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .certificateProfiles(certificateProfiles)
             .ocspRespCache(ocspRespCache)
             .build();
     }
 
-    @SneakyThrows
-    private static void overwriteSspUrls(final List<TspService> tspServiceList) {
-        final ServiceSupplyPointsType serviceSupplyPointsType = new ServiceSupplyPointsType();
-        final AttributedNonEmptyURIType newSspUrl = new AttributedNonEmptyURIType();
-        newSspUrl.setValue(ocspResponderMock.getSspUrl());
-        serviceSupplyPointsType.getServiceSupplyPoint().add(newSspUrl);
-        tspServiceList.forEach(tspService -> tspService.getTspServiceType().getServiceInformation()
-            .setServiceSupplyPoints(serviceSupplyPointsType));
-    }
-
     @Test
     void verifyPerformTucPki18ChecksValid() {
-        configureOcspResponderMockForOcspRequest(VALID_X509_EE_CERT);
+        configureOcspResponderMockForOcspRequest(VALID_X509_EE_CERT, ocspResponderMock);
         assertDoesNotThrow(() -> tucPki018Verifier.performTucPki18Checks(VALID_X509_EE_CERT));
     }
 
@@ -112,7 +91,7 @@ class TucPki018VerifierTest {
             TslReader.getTsl(ResourceReader.getFilePathFromResources(FILE_NAME_TSL_DEFAULT)).orElseThrow())
             .getTspServices();
         final TucPki018Verifier verifier = TucPki018Verifier.builder()
-            .productType(PRODUCT_TYPE_IDP)
+            .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .certificateProfiles(certificateProfiles)
             .ocspRespCache(ocspRespCache)
@@ -124,7 +103,7 @@ class TucPki018VerifierTest {
     @Test
     void verifyEgkAutEccCertValid() throws IOException {
         final X509Certificate eeCert = CertificateProvider.getX509Certificate("src/test/resources/certificates/GEM.EGK-CA10/JunaFuchs.pem");
-        configureOcspResponderMockForOcspRequest(eeCert);
+        configureOcspResponderMockForOcspRequest(eeCert, ocspResponderMock);
         assertDoesNotThrow(() -> buildTucPki18Verifier(List.of(CertificateProfile.C_CH_AUT_ECC))
             .performTucPki18Checks(eeCert));
     }
@@ -132,7 +111,7 @@ class TucPki018VerifierTest {
     @Test
     void verifyHbaAutEccCertValid() throws IOException {
         final X509Certificate eeCert = CertificateProvider.getX509Certificate("src/test/resources/certificates/GEM.HBA-CA13/GüntherOtís.pem");
-        configureOcspResponderMockForOcspRequest(eeCert);
+        configureOcspResponderMockForOcspRequest(eeCert, ocspResponderMock);
         assertDoesNotThrow(() -> buildTucPki18Verifier(List.of(CertificateProfile.C_HP_AUT_ECC))
             .performTucPki18Checks(eeCert));
     }
@@ -140,7 +119,7 @@ class TucPki018VerifierTest {
     @Test
     void verifySmcbAutRsaCertValid() throws IOException {
         final X509Certificate eeCert = CertificateProvider.getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA24-RSA/AschoffscheApotheke.pem");
-        configureOcspResponderMockForOcspRequest(eeCert);
+        configureOcspResponderMockForOcspRequest(eeCert, ocspResponderMock);
         assertDoesNotThrow(() -> buildTucPki18Verifier(List.of(CertificateProfile.C_HCI_AUT_RSA))
             .performTucPki18Checks(eeCert));
     }
@@ -148,7 +127,7 @@ class TucPki018VerifierTest {
     @Test
     void verifySigDCertValid() throws IOException {
         final X509Certificate eeCert = CertificateProvider.getX509Certificate("src/test/resources/certificates/GEM.KOMP-CA10/c.fd.sig_keyUsage_digiSig.pem");
-        configureOcspResponderMockForOcspRequest(eeCert);
+        configureOcspResponderMockForOcspRequest(eeCert, ocspResponderMock);
         assertDoesNotThrow(() -> buildTucPki18Verifier(List.of(CertificateProfile.C_FD_SIG))
             .performTucPki18Checks(eeCert));
     }
@@ -156,7 +135,7 @@ class TucPki018VerifierTest {
     @Test
     void verifySmcbOsigRsaCertValid() throws IOException {
         final X509Certificate eeCert = CertificateProvider.getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA24-RSA/c-hci-osig_apo.valid.crt");
-        configureOcspResponderMockForOcspRequest(eeCert);
+        configureOcspResponderMockForOcspRequest(eeCert, ocspResponderMock);
         assertDoesNotThrow(() -> buildTucPki18Verifier(List.of(CertificateProfile.C_HCI_OSIG))
             .performTucPki18Checks(eeCert));
     }
@@ -164,7 +143,7 @@ class TucPki018VerifierTest {
     @Test
     void verifyFdOsigRsaCertValid() throws IOException {
         final X509Certificate eeCert = CertificateProvider.getX509Certificate("src/test/resources/certificates/GEM.KOMP-CA50/erzpecc.pem");
-        configureOcspResponderMockForOcspRequest(eeCert);
+        configureOcspResponderMockForOcspRequest(eeCert, ocspResponderMock);
         assertDoesNotThrow(() -> buildTucPki18Verifier(List.of(CertificateProfile.C_FD_OSIG))
             .performTucPki18Checks(eeCert));
     }
@@ -172,7 +151,7 @@ class TucPki018VerifierTest {
     @Test
     void verifyFdOsigEccCertValid() throws IOException {
         final X509Certificate eeCert = CertificateProvider.getX509Certificate("src/test/resources/certificates/GEM.KOMP-CA54/erzprsa.pem");
-        configureOcspResponderMockForOcspRequest(eeCert);
+        configureOcspResponderMockForOcspRequest(eeCert, ocspResponderMock);
         assertDoesNotThrow(() -> buildTucPki18Verifier(List.of(CertificateProfile.C_FD_OSIG))
             .performTucPki18Checks(eeCert));
     }
@@ -180,7 +159,7 @@ class TucPki018VerifierTest {
     @Test
     void verifyProfessionOidsValid() throws IOException, GemPkiException {
         final X509Certificate eeCert = CertificateProvider.getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA24-RSA/c-hci-osig_apo.valid.crt");
-        configureOcspResponderMockForOcspRequest(eeCert);
+        configureOcspResponderMockForOcspRequest(eeCert, ocspResponderMock);
         assertThat(buildTucPki18Verifier(List.of(CertificateProfile.C_HCI_OSIG))
             .performTucPki18Checks(eeCert).getProfessionOids()).contains(Role.OID_OEFFENTLICHE_APOTHEKE.getProfessionOid());
     }
@@ -189,7 +168,7 @@ class TucPki018VerifierTest {
     void verifyNotEveryKeyUsagePresent() throws IOException {
         final X509Certificate ASCHOFFSCHE_APOTHEKE_PEM = CertificateProvider
             .getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA24-RSA/AschoffscheApotheke.pem");
-        configureOcspResponderMockForOcspRequest(ASCHOFFSCHE_APOTHEKE_PEM);
+        configureOcspResponderMockForOcspRequest(ASCHOFFSCHE_APOTHEKE_PEM, ocspResponderMock);
         assertThatThrownBy(() -> tucPki018Verifier.performTucPki18Checks(ASCHOFFSCHE_APOTHEKE_PEM))
             .isInstanceOf(GemPkiException.class)
             .hasMessageContaining(ErrorCode.SE_1016.name());
@@ -197,7 +176,7 @@ class TucPki018VerifierTest {
 
     @Test
     void multipleCertificateProfiles_shouldSelectCorrectOne() {
-        configureOcspResponderMockForOcspRequest(VALID_X509_EE_CERT);
+        configureOcspResponderMockForOcspRequest(VALID_X509_EE_CERT, ocspResponderMock);
         assertDoesNotThrow(() -> buildTucPki18Verifier(List.of(
             CertificateProfile.C_TSL_SIG_ECC, CertificateProfile.C_HCI_AUT_RSA, CertificateProfile.C_HCI_AUT_ECC
         )).performTucPki18Checks(VALID_X509_EE_CERT));
@@ -205,11 +184,11 @@ class TucPki018VerifierTest {
 
     @SneakyThrows
     @Test
-    void multipleCertificateProfiles_shouldThrowKeyUsageError() throws IOException {
+    void multipleCertificateProfiles_shouldThrowKeyUsageError() {
         final X509Certificate eeWrongKeyUsage = CertificateProvider
             .getX509Certificate(
                 "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-keyusage.pem");
-        configureOcspResponderMockForOcspRequest(eeWrongKeyUsage);
+        configureOcspResponderMockForOcspRequest(eeWrongKeyUsage, ocspResponderMock);
         final var verifier = buildTucPki18Verifier(List.of(CertificateProfile.C_HCI_AUT_ECC, CertificateProfile.C_HP_AUT_ECC));
         assertThatThrownBy(() -> verifier.performTucPki18Checks(eeWrongKeyUsage))
             .isInstanceOf(GemPkiException.class)
@@ -218,10 +197,10 @@ class TucPki018VerifierTest {
 
     @SneakyThrows
     @Test
-    void multipleCertificateProfiles_shouldThrowCertTypeError() throws IOException {
+    void multipleCertificateProfiles_shouldThrowCertTypeError() {
         final X509Certificate eeWrongKeyUsage = CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-certificate-type.pem");
-        configureOcspResponderMockForOcspRequest(eeWrongKeyUsage);
+        configureOcspResponderMockForOcspRequest(eeWrongKeyUsage, ocspResponderMock);
         final var verifier = buildTucPki18Verifier(List.of(CertificateProfile.C_HCI_AUT_ECC, CertificateProfile.C_HP_AUT_ECC));
         assertThatThrownBy(() -> verifier.performTucPki18Checks(eeWrongKeyUsage))
             .isInstanceOf(GemPkiException.class)
@@ -245,7 +224,6 @@ class TucPki018VerifierTest {
     @Test
     void nonNullTests() {
         assertThatThrownBy(() -> tucPki018Verifier.tucPki018ProfileChecks(null, null)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> tucPki018Verifier.doOcsp(null, null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> tucPki018Verifier.tucPki018ChecksForProfile(null, null, null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> tucPki018Verifier.commonChecks(null, null)).isInstanceOf(NullPointerException.class);
     }
@@ -253,18 +231,18 @@ class TucPki018VerifierTest {
     @SneakyThrows
     @Test
     void verifyCertProfilesEmpty() {
-        configureOcspResponderMockForOcspRequest(VALID_X509_EE_CERT);
+        configureOcspResponderMockForOcspRequest(VALID_X509_EE_CERT, ocspResponderMock);
         final var verifier = buildTucPki18Verifier(List.of());
         assertThatThrownBy(() -> verifier.performTucPki18Checks(VALID_X509_EE_CERT))
-            .isInstanceOf(GemPkiException.class)
-            .hasMessageContaining(ErrorCode.UNKNOWN.name());
+            .isInstanceOf(GemPkiRuntimeException.class)
+            .hasMessage("Liste der konfigurierten Zertifikatsprofile ist leer.");
     }
 
     @ParameterizedTest
     @ArgumentsSource(CertificateProvider.class)
     @VariableSource(value = "valid")
     void verifyPerformTucPki18ChecksValid(final X509Certificate cert) {
-        configureOcspResponderMockForOcspRequest(cert);
+        configureOcspResponderMockForOcspRequest(cert, ocspResponderMock);
         assertDoesNotThrow(() -> tucPki018Verifier.performTucPki18Checks(cert));
     }
 
@@ -272,7 +250,7 @@ class TucPki018VerifierTest {
     @ArgumentsSource(CertificateProvider.class)
     @VariableSource(value = "invalid")
     void verifyPerformTucPki18ChecksInvalid(final X509Certificate cert) {
-        configureOcspResponderMockForOcspRequest(cert);
+        configureOcspResponderMockForOcspRequest(cert, ocspResponderMock);
         assertThatThrownBy(() -> tucPki018Verifier.performTucPki18Checks(cert))
             .as("Test invalid certificates")
             .isInstanceOf(GemPkiException.class);

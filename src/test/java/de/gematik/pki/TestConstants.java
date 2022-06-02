@@ -19,7 +19,10 @@ package de.gematik.pki;
 public class TestConstants {
 
     public static final String PRODUCT_TYPE = "Unittest";
+    // TODO why many TSLs (TSL-test.xml)
     public static final String FILE_NAME_TSL_DEFAULT = "tsls/valid/TSL_default.xml";
     public static final String FILE_NAME_TSL_ALT_CA = "tsls/valid/TSL_altCA.xml";
+    public final static String LOCAL_SSP_DIR = "/services/ocsp";
+    public final static String OCSP_HOST = "http://localhost:";
 
 }

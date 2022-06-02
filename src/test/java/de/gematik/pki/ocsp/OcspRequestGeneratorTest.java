@@ -18,7 +18,6 @@ package de.gematik.pki.ocsp;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import de.gematik.pki.exception.GemPkiException;
 import de.gematik.pki.utils.CertificateProvider;
 import java.io.IOException;
 import java.security.cert.X509Certificate;
@@ -38,8 +37,7 @@ class OcspRequestGeneratorTest {
     }
 
     @Test
-    void verifyGenerateOCSPRequest()
-        throws GemPkiException {
+    void verifyGenerateOCSPRequest() {
         final OCSPReq ocspReq = OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
         assertThat(ocspReq).isNotNull();
         assertThat(ocspReq.getRequestList()).hasSize(1);

@@ -16,8 +16,7 @@
 
 package de.gematik.pki.tsl;
 
-import de.gematik.pki.error.ErrorCode;
-import de.gematik.pki.exception.GemPkiException;
+import de.gematik.pki.exception.GemPkiRuntimeException;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.nio.file.Path;
 import javax.xml.bind.JAXBException;
@@ -36,22 +35,22 @@ import org.w3c.dom.Document;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class TslWriter {
 
-    public static final String STATUS_LIST_TO_FILE_FAILED = "Write of TrustServiceStatusList to file failed.";
+    public static final String STATUS_LIST_TO_FILE_FAILED = "Schreiben der TSL in eine Datei fehlgeschlagen.";
 
-    public static void write(@NonNull final TrustStatusListType tsl, @NonNull final Path tslFilePath) throws GemPkiException {
+    public static void write(@NonNull final TrustStatusListType tsl, @NonNull final Path tslFilePath) {
         try {
             TslHelper.createMarshaller().marshal(TslHelper.createJaxbElement(tsl), tslFilePath.toFile());
         } catch (final JAXBException e) {
-            throw new GemPkiException(ErrorCode.UNKNOWN, STATUS_LIST_TO_FILE_FAILED, e);
+            throw new GemPkiRuntimeException(STATUS_LIST_TO_FILE_FAILED, e);
         }
     }
 
-    public static void write(@NonNull final Document tsl, @NonNull final Path filePath) throws GemPkiException {
+    public static void write(@NonNull final Document tsl, @NonNull final Path filePath) {
         final TransformerFactory tf = TslHelper.getTransformerFactory();
         try {
             tf.newTransformer().transform(new DOMSource(tsl.getDocumentElement()), new StreamResult(filePath.toFile()));
         } catch (final TransformerException e) {
-            throw new GemPkiException(ErrorCode.UNKNOWN, STATUS_LIST_TO_FILE_FAILED, e);
+            throw new GemPkiRuntimeException(STATUS_LIST_TO_FILE_FAILED, e);
         }
     }
 }

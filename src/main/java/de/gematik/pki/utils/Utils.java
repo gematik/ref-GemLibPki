@@ -16,22 +16,22 @@
 
 package de.gematik.pki.utils;
 
-import de.gematik.pki.error.ErrorCode;
-import de.gematik.pki.exception.GemPkiException;
+import de.gematik.pki.exception.GemPkiRuntimeException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.bouncycastle.crypto.digests.SHA256Digest;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class Utils {
 
-    public static byte[] calculateSha256(final byte[] byteArray) throws GemPkiException {
+    public static byte[] calculateSha256(final byte[] byteArray) {
         try {
-            final MessageDigest digest = MessageDigest.getInstance("SHA-256"); //NOSONAR
+            final MessageDigest digest = MessageDigest.getInstance(new SHA256Digest().getAlgorithmName());
             return digest.digest(byteArray);
         } catch (final NoSuchAlgorithmException e) {
-            throw new GemPkiException(ErrorCode.UNKNOWN, "Signature algorithm not supported.", e);
+            throw new GemPkiRuntimeException("Signaturalgorithmus nicht unterstützt.", e);
         }
     }
 

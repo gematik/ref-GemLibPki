@@ -22,7 +22,6 @@ import de.gematik.pki.utils.CertificateProvider;
 import java.io.IOException;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
-import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 
 class PoliciesTest {
@@ -40,7 +39,7 @@ class PoliciesTest {
             .hasMessageContaining("x509EeCert");
     }
 
-    @SneakyThrows
+
     @Test
     void getPolicyOidsMissing() throws IOException {
         final X509Certificate missingPolicyId = CertificateProvider.getX509Certificate(

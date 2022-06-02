@@ -16,8 +16,7 @@
 
 package de.gematik.pki.ocsp;
 
-import de.gematik.pki.error.ErrorCode;
-import de.gematik.pki.exception.GemPkiException;
+import de.gematik.pki.exception.GemPkiRuntimeException;
 import java.security.Security;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
@@ -46,10 +45,9 @@ public class OcspRequestGenerator {
      * @param x509EeCert     end-entity certificate
      * @param x509IssuerCert issuer of end-entity certificate
      * @return OCSP request for a single certificate
-     * @throws GemPkiException if the ocsp request cannot be generated
      */
     public static OCSPReq generateSingleOcspRequest(@NonNull final X509Certificate x509EeCert,
-        @NonNull final X509Certificate x509IssuerCert) throws GemPkiException {
+        @NonNull final X509Certificate x509IssuerCert) {
         Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
         final JcaDigestCalculatorProviderBuilder digestCalculatorProviderBuilder = new JcaDigestCalculatorProviderBuilder();
         final DigestCalculatorProvider digestCalculatorProvider;
@@ -64,7 +62,7 @@ public class OcspRequestGenerator {
             gen.addRequest(id);
             return gen.build();
         } catch (final OperatorCreationException | CertificateEncodingException | OCSPException e) {
-            throw new GemPkiException(ErrorCode.OCSP, "OCSP request Erzeugung fehlgeschlagen", e);
+            throw new GemPkiRuntimeException("Generieren des OCSP Requests fehlgeschlagen.", e);
         }
     }
 

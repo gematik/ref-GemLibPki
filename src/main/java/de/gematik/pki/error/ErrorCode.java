@@ -71,17 +71,7 @@ public enum ErrorCode {
 
     // security Warnings
     SW_1039(ErrorSeverity.WARNING, ErrorClassifier.SECURITY_WARNING, "NO_OCSP_CHECK",
-        "Warnung, dass Offline-Modus aktiviert ist und keine OCSP Statusabfrage durchgeführt wurde."),
-
-    // library internal errors
-    UNKNOWN(ErrorSeverity.ERROR, ErrorClassifier.INTERNAL_ERROR, "INTERNAL_UNKNOWN_ERROR",
-        "Ein interner, unbekannter Fehler ist aufgetreten."),
-    OCSP(ErrorSeverity.ERROR, ErrorClassifier.INTERNAL_ERROR, "INTERNAL_GENERAL_OCSP_ERROR",
-        "Ein interner, allgemeiner OCSP Fehler ist aufgetreten."),
-    CERTIFICATE_READ(ErrorSeverity.ERROR, ErrorClassifier.INTERNAL_ERROR, "EE_CERTIFICATE_READ_ERROR",
-        "Es ist ein Fehler beim Lesen des EndEntity Zertifikats aufgetreten."),
-    TSL_READ(ErrorSeverity.ERROR, ErrorClassifier.INTERNAL_ERROR, "TSL_READ_ERROR",
-        "Es ist ein Fehler beim Lesen der TSL aufgetreten.");
+        "Warnung, dass Offline-Modus aktiviert ist und keine OCSP Statusabfrage durchgeführt wurde.");
 
     private final ErrorSeverity errorSeverity;
     private final ErrorClassifier errorClassifier;

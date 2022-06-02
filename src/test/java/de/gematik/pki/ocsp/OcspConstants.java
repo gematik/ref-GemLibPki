@@ -16,8 +16,6 @@
 
 package de.gematik.pki.ocsp;
 
-import de.gematik.pki.exception.GemPkiException;
-import de.gematik.pki.exception.UnitTestException;
 import de.gematik.pki.utils.P12Container;
 import de.gematik.pki.utils.P12Reader;
 import java.nio.file.Path;
@@ -35,12 +33,8 @@ public class OcspConstants {
     private static final P12Container ocspSignerEcc;
 
     static {
-        try {
-            ocspSignerRsa = P12Reader.getContentFromP12(P12_OCSP_RESPONSE_SIGNER_RSA, P12_PASSWORD);
-            ocspSignerEcc = P12Reader.getContentFromP12(P12_OCSP_RESPONSE_SIGNER_ECC, P12_PASSWORD);
-        } catch (final GemPkiException e) {
-            throw new UnitTestException("Could not read p12 file.", e);
-        }
+        ocspSignerRsa = P12Reader.getContentFromP12(P12_OCSP_RESPONSE_SIGNER_RSA, P12_PASSWORD);
+        ocspSignerEcc = P12Reader.getContentFromP12(P12_OCSP_RESPONSE_SIGNER_ECC, P12_PASSWORD);
     }
 
 }

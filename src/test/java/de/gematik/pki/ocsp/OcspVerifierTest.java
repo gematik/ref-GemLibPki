@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import de.gematik.pki.error.ErrorCode;
 import de.gematik.pki.exception.GemPkiException;
-import de.gematik.pki.exception.UnitTestException;
 import de.gematik.pki.utils.CertificateProvider;
 import java.io.IOException;
 import java.security.cert.X509Certificate;
@@ -37,7 +36,7 @@ class OcspVerifierTest {
     private static OCSPReq ocspReq;
 
     @BeforeAll
-    public static void start() throws IOException, GemPkiException {
+    public static void start() throws IOException {
         VALID_X509_EE_CERT = CertificateProvider
             .getX509Certificate("src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem");
         VALID_X509_ISSUER_CERT = CertificateProvider
@@ -71,7 +70,7 @@ class OcspVerifierTest {
     }
 
     @Test
-    void verifyCertHashMissing() throws GemPkiException {
+    void verifyCertHashMissing() {
         final OCSPResp ocspRespLocal = OcspResponseGenerator.builder()
             .signer(OcspConstants.getOcspSignerRsa())
             .withCertHash(false)
@@ -115,14 +114,10 @@ class OcspVerifierTest {
     }
 
     private static OCSPResp genDefaultOcspResp() {
-        try {
-            return OcspResponseGenerator.builder().
-                signer(OcspConstants.getOcspSignerRsa())
-                .build()
-                .gen(ocspReq, VALID_X509_EE_CERT);
-        } catch (final GemPkiException e) {
-            throw new UnitTestException("Error in generating ocsp response in unit test.", e);
-        }
+        return OcspResponseGenerator.builder().
+            signer(OcspConstants.getOcspSignerRsa())
+            .build()
+            .gen(ocspReq, VALID_X509_EE_CERT);
     }
 
     private OcspVerifier genDefaultOcspVerifier() {

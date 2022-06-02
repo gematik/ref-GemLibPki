@@ -19,7 +19,6 @@ package de.gematik.pki.tsl;
 import static de.gematik.pki.utils.ResourceReader.getFilePathFromResources;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import de.gematik.pki.exception.GemPkiException;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -43,7 +42,7 @@ class TslModifierTest {
     TrustStatusListType tsl;
 
     @BeforeEach
-    void setup() throws GemPkiException, IOException {
+    void setup() throws IOException {
         tsl = TslReader.getTsl(getFilePathFromResources(FILE_NAME_TSL)).orElseThrow();
     }
 
@@ -76,7 +75,7 @@ class TslModifierTest {
     }
 
     @Test
-    void modifySequenceNr() throws GemPkiException {
+    void modifySequenceNr() {
         final Path destFileName = Path.of("target/TSL-test_modifiedSequenceNr.xml");
         final int newSequenceNr = 4732;
         TslModifier.modifySequenceNr(tsl, newSequenceNr);
@@ -125,7 +124,7 @@ class TslModifierTest {
     }
 
     @Test
-    void modifyTslDownloadUrls() throws GemPkiException {
+    void modifyTslDownloadUrls() {
         final Path path = Path.of("target/TSL-test_modifiedTslDownloadUrls.xml");
         final String tslDnlUrlPrimary = "http://download-primary/myNewTsl.xml";
         final String tslDnlUrlBackup = "http://download-backup/myNewTsl.xml";
@@ -141,7 +140,7 @@ class TslModifierTest {
      * Actually a test of TslModifier and TslReader. TslModifier writes a non gematik oid, TslReader cannot work with such a TSL.
      */
     @Test
-    void modifyTslDownloadUrlsUnknownOidBackup() throws GemPkiException {
+    void modifyTslDownloadUrlsUnknownOidBackup() {
         final Path destFilePath = Path.of("target/TSL-test_modifiedTslDownloadUrls.xml");
         final String tslDnlUrlPrimary = "http://download-primary/myNewTsl.xml";
         final String tslDnlUrlBackup = "http://download-backup/myNewTsl.xml";
@@ -157,7 +156,7 @@ class TslModifierTest {
     }
 
     @Test
-    void modifyTslDownloadUrlPrimary() throws GemPkiException {
+    void modifyTslDownloadUrlPrimary() {
         final Path path = Path.of("target/TSL-test_modifiedTslDownloadUrlPrimary.xml");
         final String tslDnlUrlPrimary = "http://download-primary-only/myNewTsl.xml";
 
@@ -168,7 +167,7 @@ class TslModifierTest {
     }
 
     @Test
-    void modifyTslDownloadUrlbackup() throws GemPkiException {
+    void modifyTslDownloadUrlbackup() {
         final Path path = Path.of("target/TSL-test_modifiedTslDownloadUrlBackup.xml");
         final String tslDnlUrlBackup = "http://download-backup-only/myNewTsl.xml";
 

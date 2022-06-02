@@ -1,3 +1,14 @@
+# Release 0.7.1
+
+- rename TucPki001Verifier builder member tspServiceList to currentTrustedServices for clarity
+
+# Release 0.7.0
+
+- API change: rename method doOcsp() to doOcspIfConfigured() in [TucPki018Verifier](src/main/java/de/gematik/pki/certificate/TucPki018Verifier.java)
+- API change: rework exception handling
+- add class [TucPki001Verifier](src/main/java/de/gematik/pki/tsl/TucPki001Verifier.java) for checks of tsl.
+  The only check at the moment is the ocsp status of the tsl signing certificate.
+
 # Release 0.6.2
 
 - allow disabling of OCSP checks

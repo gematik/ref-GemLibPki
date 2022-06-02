@@ -20,7 +20,7 @@ import de.gematik.pki.error.ErrorCode;
 import lombok.Getter;
 
 /**
- * {@link GemPkiException} class.
+ * {@link GemPkiException} class. Mandatory for all constructors: an {@link ErrorCode} has to be parameterized.
  */
 @Getter
 public class GemPkiException extends Exception {
@@ -41,9 +41,5 @@ public class GemPkiException extends Exception {
         super(message, e);
         this.error = error;
     }
-
-    public GemPkiException(final ErrorCode error, final String message) {
-        super(message);
-        this.error = error;
-    }
+    
 }

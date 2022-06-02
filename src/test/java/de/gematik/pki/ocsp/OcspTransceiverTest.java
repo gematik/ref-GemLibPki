@@ -16,13 +16,14 @@
 
 package de.gematik.pki.ocsp;
 
+import static de.gematik.pki.TestConstants.LOCAL_SSP_DIR;
+import static de.gematik.pki.TestConstants.OCSP_HOST;
 import static de.gematik.pki.TestConstants.PRODUCT_TYPE;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import de.gematik.pki.common.OcspResponderMock;
-import de.gematik.pki.error.ErrorCode;
-import de.gematik.pki.exception.GemPkiException;
+import de.gematik.pki.exception.GemPkiRuntimeException;
 import de.gematik.pki.utils.CertificateProvider;
 import java.security.cert.X509Certificate;
 import lombok.SneakyThrows;
@@ -33,8 +34,6 @@ import org.junit.jupiter.api.Test;
 
 class OcspTransceiverTest {
 
-    private static final String LOCAL_SSP_DIR = "/services/ocsp";
-    private static final String OCSP_HOST = "http://localhost:";
     private static X509Certificate VALID_X509_EE_CERT;
     private static X509Certificate VALID_X509_ISSUER_CERT;
     private static OcspResponderMock ocspResponderMock;
@@ -50,7 +49,7 @@ class OcspTransceiverTest {
     }
 
     @Test
-    void verifyOcspStatusExpectedGood() throws GemPkiException {
+    void verifyOcspStatusExpectedGood() {
         configureOcspResponderMockForOcspRequest();
         assertDoesNotThrow(() ->
             OcspTransceiver.builder().x509EeCert(VALID_X509_EE_CERT).x509IssuerCert(VALID_X509_ISSUER_CERT)
@@ -61,7 +60,7 @@ class OcspTransceiverTest {
     }
 
     @Test
-    void verifyOcspStatusExpectedGoodFromCache() throws GemPkiException {
+    void verifyOcspStatusExpectedGoodFromCache() {
         configureOcspResponderMockForOcspRequest();
         final OCSPResp ocspResp = OcspResponseGenerator.builder()
             .signer(OcspConstants.getOcspSignerRsa())
@@ -79,18 +78,17 @@ class OcspTransceiverTest {
 
     @Test
     void verifySspUrlInvalidThrowsGemPkiExceptionOnly() {
-        assertThatThrownBy(
-            () -> OcspTransceiver.builder().x509EeCert(VALID_X509_EE_CERT).x509IssuerCert(VALID_X509_ISSUER_CERT)
-                .ssp("http://no/wiremock/started")
-                .productType(PRODUCT_TYPE)
-                .build()
-                .verifyOcspResponse(null))
-            .isInstanceOf(GemPkiException.class)
-            .hasMessageContaining("OCSP senden/empfangen fehlgeschlagen");
+        final var builder = OcspTransceiver.builder().x509EeCert(VALID_X509_EE_CERT).x509IssuerCert(VALID_X509_ISSUER_CERT)
+            .ssp("https://no/wiremock/started")
+            .productType(PRODUCT_TYPE)
+            .build();
+        assertThatThrownBy(() -> builder.verifyOcspResponse(null))
+            .isInstanceOf(GemPkiRuntimeException.class)
+            .hasMessage("OCSP senden/empfangen fehlgeschlagen.");
     }
 
     @Test
-    void sendOcspRequestReceiveOcspResponseGood() throws GemPkiException {
+    void sendOcspRequestReceiveOcspResponseGood() {
         final OCSPReq ocspReq = configureOcspResponderMockForOcspRequest();
         final OCSPResp ocspRespRx = OcspTransceiver.builder()
             .x509EeCert(VALID_X509_EE_CERT)
@@ -111,7 +109,7 @@ class OcspTransceiverTest {
     }
 
     @Test
-    void sendOcspRequestReceiveOcspResponseGoodStatic() throws GemPkiException {
+    void sendOcspRequestReceiveOcspResponseGoodStatic() {
         final OCSPReq ocspReq = configureOcspResponderMockForOcspRequest();
         final OCSPResp ocspRespRx = OcspTransceiver.sendOcspRequestToUrl(ocspResponderMock.getSspUrl(), ocspReq);
 
@@ -127,8 +125,8 @@ class OcspTransceiverTest {
         final OCSPReq ocspReq = configureOcspResponderMockForOcspRequest();
 
         assertThatThrownBy(() -> OcspTransceiver.sendOcspRequestToUrl("http://127.0.0.1:4545/unreachable", ocspReq))
-            .isInstanceOf(GemPkiException.class)
-            .hasMessageContaining(ErrorCode.OCSP.name());
+            .isInstanceOf(GemPkiRuntimeException.class)
+            .hasMessage("OCSP senden/empfangen fehlgeschlagen.");
     }
 
     /**
@@ -138,15 +136,13 @@ class OcspTransceiverTest {
     @Test
     void sendOcspRequestUnknownEndpoint() {
         final OCSPReq ocspReq = configureOcspResponderMockForOcspRequest();
-
-        assertThatThrownBy(() -> OcspTransceiver.sendOcspRequestToUrl(ocspResponderMock.getSspUrl() + "unknownEndpoint", ocspReq))
-            .isInstanceOf(GemPkiException.class)
-            .hasMessageContaining(ErrorCode.OCSP.name());
+        final String ssp = ocspResponderMock.getSspUrl() + "unknownEndpoint";
+        assertThatThrownBy(() -> OcspTransceiver.sendOcspRequestToUrl(ssp, ocspReq))
+            .isInstanceOf(GemPkiRuntimeException.class)
+            .hasMessage("OCSP senden/empfangen fehlgeschlagen.");
     }
 
-
-    private OCSPReq configureOcspResponderMockForOcspRequest()
-        throws GemPkiException {
+    private OCSPReq configureOcspResponderMockForOcspRequest() {
         final OCSPReq ocspReq = OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT,
             VALID_X509_ISSUER_CERT);
         ocspResponderMock.configureForOcspRequest(ocspReq, VALID_X509_EE_CERT);

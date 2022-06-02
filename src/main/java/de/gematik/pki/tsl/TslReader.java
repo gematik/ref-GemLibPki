@@ -17,7 +17,6 @@
 package de.gematik.pki.tsl;
 
 import static de.gematik.pki.tsl.TslHelper.tslDownloadUrlMatchesOid;
-import de.gematik.pki.exception.GemPkiException;
 import eu.europa.esig.trustedlist.jaxb.tsl.NextUpdateType;
 import eu.europa.esig.trustedlist.jaxb.tsl.OtherTSLPointersType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
@@ -41,9 +40,9 @@ public class TslReader {
     /**
      * @param tslPath File path to TSL
      * @return A TSL as Document
-     * @throws GemPkiException on any conversion error
+     * @throws IOException on any conversion error
      */
-    public static Optional<Document> getTslAsDoc(@NonNull final Path tslPath) throws GemPkiException, IOException {
+    public static Optional<Document> getTslAsDoc(@NonNull final Path tslPath) throws IOException {
         return TslConverter.bytesToDoc(Files.readAllBytes(tslPath));
     }
 
@@ -53,7 +52,7 @@ public class TslReader {
      * @param tslPath file name
      * @return a TrustServiceStatusList contains issuer certificates among other things
      */
-    public static Optional<TrustStatusListType> getTsl(@NonNull final Path tslPath) throws GemPkiException, IOException {
+    public static Optional<TrustStatusListType> getTsl(@NonNull final Path tslPath) throws IOException {
         return TslConverter.bytesToTsl(Files.readAllBytes(tslPath));
     }
 
@@ -132,5 +131,5 @@ public class TslReader {
             .orElseThrow(() -> new IllegalArgumentException("TSL enthaelt nicht OID: " + oid))
             .getTSLLocation();
     }
-    
+
 }

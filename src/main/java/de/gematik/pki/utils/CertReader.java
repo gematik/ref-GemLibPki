@@ -16,12 +16,16 @@
 
 package de.gematik.pki.utils;
 
+import de.gematik.pki.exception.GemPkiRuntimeException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CertReader {
 
     public static X509Certificate readX509(final byte[] file) {
@@ -31,8 +35,8 @@ public class CertReader {
                 return (X509Certificate) fact.generateCertificate(inStream);
             }
         } catch (final CertificateException | IOException e) {
-            throw new RuntimeException(e);
+            throw new GemPkiRuntimeException("Konnte Zertifikat nicht lesen.", e);
         }
     }
-    
+
 }

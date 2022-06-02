@@ -19,6 +19,7 @@ package de.gematik.pki.certificate;
 import de.gematik.pki.error.ErrorCode;
 import de.gematik.pki.exception.GemPkiException;
 import de.gematik.pki.exception.GemPkiParsingException;
+import de.gematik.pki.exception.GemPkiRuntimeException;
 import de.gematik.pki.ocsp.OcspRespCache;
 import de.gematik.pki.ocsp.OcspTransceiver;
 import de.gematik.pki.tsl.TspInformationProvider;
@@ -65,13 +66,23 @@ public class TucPki018Verifier {
     public Admission performTucPki18Checks(@NonNull final X509Certificate x509EeCert) throws GemPkiException {
         log.debug("TucPki018Checks...");
         final TspServiceSubset tspServiceSubset = new TspInformationProvider(tspServiceList, productType).getTspServiceSubset(x509EeCert);
+        doOcspIfConfigured(x509EeCert, tspServiceSubset);
+        commonChecks(x509EeCert, tspServiceSubset);
+        return tucPki018ProfileChecks(x509EeCert, tspServiceSubset);
+    }
+
+    protected void doOcspIfConfigured(final X509Certificate x509EeCert, final TspServiceSubset tspServiceSubset) throws GemPkiException {
         if (withOcspCheck) {
-            doOcsp(x509EeCert, tspServiceSubset);
+            OcspTransceiver.builder()
+                .productType(productType)
+                .x509EeCert(x509EeCert)
+                .x509IssuerCert(tspServiceSubset.getX509IssuerCert())
+                .ssp(tspServiceSubset.getServiceSupplyPoint())
+                .build()
+                .verifyOcspResponse(ocspRespCache);
         } else {
             log.warn(ErrorCode.SW_1039.getErrorMessage(productType));
         }
-        commonChecks(x509EeCert, tspServiceSubset);
-        return tucPki018ProfileChecks(x509EeCert, tspServiceSubset);
     }
 
     /**
@@ -85,41 +96,24 @@ public class TucPki018Verifier {
     protected Admission tucPki018ProfileChecks(@NonNull final X509Certificate x509EeCert, @NonNull final TspServiceSubset tspServiceSubset)
         throws GemPkiException {
         if (certificateProfiles.isEmpty()) {
-            throw new GemPkiException(productType, ErrorCode.UNKNOWN);
+            throw new GemPkiRuntimeException("Liste der konfigurierten Zertifikatsprofile ist leer.");
         }
 
         final EnumMap<CertificateProfile, GemPkiException> errors = new EnumMap<>(CertificateProfile.class);
         for (final CertificateProfile certificateProfile : certificateProfiles) {
             try {
                 tucPki018ChecksForProfile(x509EeCert, certificateProfile, tspServiceSubset);
-                log.debug("Übergebenes Zertifikat wurde erfolgreich gegen das Zertifikatsprofil {} getestet.",
-                    certificateProfile);
+                log.debug("Übergebenes Zertifikat wurde erfolgreich gegen das Zertifikatsprofil {} getestet.", certificateProfile);
                 log.debug("Rolle(n): {}", new Admission(x509EeCert).getProfessionItems());
                 return new Admission(x509EeCert);
-            } catch (final RuntimeException | CertificateEncodingException | IOException e) {
-                errors.put(certificateProfile, new GemPkiException(productType, ErrorCode.UNKNOWN, e));
+            } catch (final CertificateEncodingException | IOException e) {
+                throw new GemPkiRuntimeException("Fehler bei der Verarbeitung der Admission des Zertifikats: " +
+                    x509EeCert.getSubjectX500Principal().getName(), e);
             } catch (final GemPkiException e) {
                 errors.put(certificateProfile, e);
             }
         }
         throw new GemPkiParsingException(productType, errors);
-    }
-
-    /**
-     * This method will perform TucPki006 checks (not complete yet).
-     *
-     * @param x509EeCert       end-entity certificate to check
-     * @param tspServiceSubset the issuing certificates as trust store
-     * @throws GemPkiException if OCSP verification fails
-     */
-    protected void doOcsp(@NonNull final X509Certificate x509EeCert, @NonNull final TspServiceSubset tspServiceSubset) throws GemPkiException {
-        OcspTransceiver.builder()
-            .x509EeCert(x509EeCert)
-            .x509IssuerCert(tspServiceSubset.getX509IssuerCert())
-            .ssp(tspServiceSubset.getServiceSupplyPoint())
-            .productType(productType)
-            .build()
-            .verifyOcspResponse(ocspRespCache);
     }
 
     /**
