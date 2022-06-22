@@ -14,7 +14,7 @@
     </Appenders>
 
     <Loggers>
-        <logger name="de.gematik.pki" level="${l4j.level}" additivity="{l4j.additivity}">
+        <logger name="de.gematik.pki.gemlibpki" level="${l4j.level}" additivity="{l4j.additivity}">
             <AppenderRef ref="CONSOLE"/>
         </logger>
     </Loggers>

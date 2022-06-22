@@ -11,14 +11,15 @@ Please see [liability limitation](https://fachportal.gematik.de/default-titlegru
 
 Specifications are published at [Gematik Fachportal](https://fachportal.gematik.de/).
 
-[Link to Maven Repository](https://mvnrepository.com/artifact/de.gematik.pki/gemLibPki)
+[Link to Maven Repository](https://mvnrepository.com/artifact/de.gematik.pki.gemlibpki/gemLibPki)
 
-### Version
+### Versioning
 
-Versions below 1.0.0 are not feature complete.
+Versions below 1.0.0 are considered incomplete. Api changes are possible and probable.
 
 ### Remark
-Cryptographic private keys used in this project are solely used in test resources for the purpose of unit tests. 
+
+Cryptographic private keys used in this project are solely used in test resources for the purpose of unit tests.
 We are fully aware of the content and meaning of the test data. We never publish productive data.
 
 ### Content
@@ -40,7 +41,7 @@ We are fully aware of the content and meaning of the test data. We never publish
 
 - signed OCSP responses can be generated, but always with status GOOD
 - OCSP response status and certHash values are validated. OCSP validation can be disabled via builder parameter `withOcspCheck` of 
-[TucPki018Verifier](src/main/java/de/gematik/pki/certificate/TucPki018Verifier.java).
+[TucPki018Verifier](src/main/java/de/gematik/pki/gemlibpki/certificate/TucPki018Verifier.java).
 - OCSP responses are generated with certHash extension by default.
 
 ##### Error codes
@@ -48,25 +49,29 @@ We are fully aware of the content and meaning of the test data. We never publish
 - error codes specified by gematik
 
 ### Build
-- use Java 11
-- mvn clean install
+
+The lib is developed and tested with **OpenJDK 17** + **Apache Maven 3.8.6**
+
+Build with :
+
+    mvn clean install
 
 ### Steps to perform certificate checks
 
-- instantiate a [TslReader](src/main/java/de/gematik/pki/tsl/TslReader.java) to read a TSL
-- use the result of the TslReader to instantiate a [TslInformationProvider](src/main/java/de/gematik/pki/tsl/TslInformationProvider.java) 
+- instantiate a [TslReader](src/main/java/de/gematik/pki/gemlibpki/tsl/TslReader.java) to read a TSL
+- use the result of the TslReader to instantiate a [TslInformationProvider](src/main/java/de/gematik/pki/gemlibpki/tsl/TslInformationProvider.java) 
 and call its public methods
 - get TspServices from TslInformationProvider
-- instantiate a [TucPki018Verifier](src/main/java/de/gematik/pki/certificate/TucPki018Verifier.java) (via builder) and call its 
+- instantiate a [TucPki018Verifier](src/main/java/de/gematik/pki/gemlibpki/certificate/TucPki018Verifier.java) (via builder) and call its 
 public method performTucPki18Checks
 
 ### Steps to perform tsl checks
 
-- instantiate a [TslReader](src/main/java/de/gematik/pki/tsl/TslReader.java) to read a TSL
-- use the result of the TslReader to instantiate a [TslInformationProvider](src/main/java/de/gematik/pki/tsl/TslInformationProvider.java)
+- instantiate a [TslReader](src/main/java/de/gematik/pki/gemlibpki/tsl/TslReader.java) to read a TSL
+- use the result of the TslReader to instantiate a [TslInformationProvider](src/main/java/de/gematik/pki/gemlibpki/tsl/TslInformationProvider.java)
 and call its public methods
 - get TspServices from TslInformationProvider
-- instantiate a [TucPki001Verifier](src/main/java/de/gematik/pki/tsl/TucPki001Verifier.java) (via builder) and call its 
+- instantiate a [TucPki001Verifier](src/main/java/de/gematik/pki/gemlibpki/tsl/TucPki001Verifier.java) (via builder) and call its 
 public method performTucPki001Checks
 
 ### ToDo

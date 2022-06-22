@@ -3,9 +3,9 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>de.gematik.pki</groupId>
+    <groupId>de.gematik.pki.gemlibpki</groupId>
     <artifactId>gemLibPki</artifactId>
-    <version>0.7.1</version>
+    <version>0.8.0</version>
     <packaging>jar</packaging>
     <description>gematik library PKI</description>
     <name>GemLibPki</name>
@@ -47,18 +47,18 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.encoding>${project.build.sourceEncoding}</maven.compiler.encoding>
-        <version.java>11</version.java>
+        <version.java>17</version.java>
 
         <!-- dependencies -->
-        <version.assertj>3.22.0</version.assertj>
-        <version.bouncycastle.bcpkix>1.71</version.bouncycastle.bcpkix>
+        <version.assertj>3.23.1</version.assertj>
+        <version.bouncycastle>1.71</version.bouncycastle>
         <version.commons-lang3>3.12.0</version.commons-lang3>
-        <version.dependency-check-maven>7.1.0</version.dependency-check-maven>
-        <version.dss-tsl-validation>5.8.d4j.1</version.dss-tsl-validation>
+        <version.dependency-check-maven>7.1.1</version.dependency-check-maven>
+        <version.dss-tsl-validation>5.9.d4j.1</version.dss-tsl-validation>
         <version.junit-jupiter>5.8.2</version.junit-jupiter>
         <version.log4j>2.17.2</version.log4j>
         <version.lombok>1.18.24</version.lombok>
-        <version.unirest-java>3.13.8</version.unirest-java>
+        <version.unirest-java>3.13.10</version.unirest-java>
         <version.wiremock-jre8>2.33.2</version.wiremock-jre8>
         <version.xades4j>2.0.0</version.xades4j>
         <version.xmlunit>2.9.0</version.xmlunit>
@@ -68,13 +68,15 @@
         <version.maven-clean-plugin>3.2.0</version.maven-clean-plugin>
         <version.maven-compiler-plugin>3.10.1</version.maven-compiler-plugin>
         <version.maven-gpg-plugin>3.0.1</version.maven-gpg-plugin>
-        <version.maven-jar-plugin>3.2.0</version.maven-jar-plugin>
+        <version.maven-jar-plugin>3.2.2</version.maven-jar-plugin>
         <version.maven-javadoc-plugin>3.4.0</version.maven-javadoc-plugin>
         <version.maven-resources-plugin>3.2.0</version.maven-resources-plugin>
         <version.maven-source-plugin>3.2.1</version.maven-source-plugin>
-        <version.maven-surefire-plugin>3.0.0-M6</version.maven-surefire-plugin>
+        <version.maven-surefire-plugin>3.0.0-M7</version.maven-surefire-plugin>
         <version.nexus-staging-maven-plugin>1.6.13</version.nexus-staging-maven-plugin>
         <version.sonar-maven-plugin>3.9.1.2184</version.sonar-maven-plugin>
+        <version.spotless-maven-plugin>2.22.8</version.spotless-maven-plugin>
+        <version.spotless.google-java-format>1.15.0</version.spotless.google-java-format>
 
         <!-- settings for upload to sonar server -->
         <sonar.coverage.jacoco.xmlReportPaths>${project.reporting.outputDirectory}/jacoco/index.xml</sonar.coverage.jacoco.xmlReportPaths>
@@ -142,7 +144,7 @@
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk18on</artifactId>
-            <version>${version.bouncycastle.bcpkix}</version>
+            <version>${version.bouncycastle}</version>
         </dependency>
 
         <dependency>
@@ -283,6 +285,33 @@
                 <version>${version.sonar-maven-plugin}</version>
             </plugin>
 
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>${version.spotless-maven-plugin}</version>
+                <configuration>
+                    <formats>
+                        <format>
+                            <includes>
+                                <include>.gitignore</include>
+                            </includes>
+                            <trimTrailingWhitespace/>
+                            <endWithNewline/>
+                            <indent>
+                                <spaces>true</spaces>
+                                <spacesPerTab>2</spacesPerTab>
+                            </indent>
+                        </format>
+                    </formats>
+                    <java>
+                        <googleJavaFormat>
+                            <version>${version.spotless.google-java-format}</version>
+                            <style>GOOGLE</style>
+                            <reflowLongStrings>true</reflowLongStrings>
+                        </googleJavaFormat>
+                    </java>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 

@@ -1,6 +1,16 @@
+# Release 0.8.0
+
+- API change: move whole package from de.gematik.pki to de.gematik.pki.gemlibpki
+- usage of BouncyCastle as crypto provider enforced in every class/method that deals with brainpool curves
+- switch code formatting to google java formatter
+- switch to OpenJDK 17
+- update dependencies
+- update maven plugins
+- multiple small bug fixes and improvements
+
 # Release 0.7.1
 
-- rename TucPki001Verifier builder member tspServiceList to currentTrustedServices for clarity
+- API change: rename TucPki001Verifier builder member tspServiceList to currentTrustedServices for clarity
 
 # Release 0.7.0
 
