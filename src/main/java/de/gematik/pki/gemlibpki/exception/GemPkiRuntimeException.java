@@ -16,10 +16,12 @@
 
 package de.gematik.pki.gemlibpki.exception;
 
+import java.io.Serial;
+
 /** {@link GemPkiRuntimeException} class. */
 public class GemPkiRuntimeException extends RuntimeException {
 
-  private static final long serialVersionUID = 2308412157734345439L;
+  @Serial private static final long serialVersionUID = 2308412157734345439L;
 
   public GemPkiRuntimeException(final String message) {
     super(message);

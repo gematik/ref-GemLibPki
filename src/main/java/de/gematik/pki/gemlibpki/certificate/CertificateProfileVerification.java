@@ -27,7 +27,6 @@ import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.NonNull;
@@ -123,7 +122,7 @@ public final class CertificateProfileVerification {
                 eeOid ->
                     intendedExtendedKeyUsageOidList.stream()
                         .anyMatch(intOid -> intOid.equals(eeOid)))
-            .collect(Collectors.toList());
+            .toList();
     if (filteredList.isEmpty()
         || eeExtendedKeyUsagesOid.size() != intendedExtendedKeyUsageOidList.size()) {
       log.debug(ErrorCode.SE_1017.getErrorMessage(productType));
@@ -141,7 +140,7 @@ public final class CertificateProfileVerification {
       final CertificateProfile certificateProfile) {
     return CertificateProfile.valueOf(certificateProfile.name()).getExtKeyUsages().stream()
         .map(ExtendedKeyUsage::getOid)
-        .collect(Collectors.toList());
+        .toList();
   }
   // ####################  End ExtendedKeyUsage
   // ########################################################
@@ -192,9 +191,9 @@ public final class CertificateProfileVerification {
     for (final ExtensionType extensionType : tspServiceSubset.getExtensions()) {
       final List<Object> content = extensionType.getContent();
       for (final Object object : content) {
-        if (object instanceof Node) {
-          final String node = ((Node) object).getFirstChild().getNodeValue();
-          if (certificateTypeOidList.contains(node.trim())) {
+        if (object instanceof Node node) {
+          node = ((Node) object).getFirstChild();
+          if (certificateTypeOidList.contains(node.getNodeValue().trim())) {
             return;
           }
         }

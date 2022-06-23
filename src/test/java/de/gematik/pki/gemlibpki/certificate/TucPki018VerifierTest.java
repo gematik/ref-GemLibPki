@@ -16,10 +16,7 @@
 
 package de.gematik.pki.gemlibpki.certificate;
 
-import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_DEFAULT;
-import static de.gematik.pki.gemlibpki.TestConstants.LOCAL_SSP_DIR;
-import static de.gematik.pki.gemlibpki.TestConstants.OCSP_HOST;
-import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
+import static de.gematik.pki.gemlibpki.TestConstants.*;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.configureOcspResponderMockForOcspRequest;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.overwriteSspUrls;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,7 +51,7 @@ class TucPki018VerifierTest {
   private static OcspResponderMock ocspResponderMock;
 
   @BeforeAll
-  public static void start() throws Exception {
+  public static void start() {
     ocspResponderMock = new OcspResponderMock(LOCAL_SSP_DIR, OCSP_HOST);
     VALID_X509_EE_CERT =
         CertificateProvider.getX509Certificate(

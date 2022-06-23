@@ -48,7 +48,7 @@ public class TucPki001Verifier {
   @NonNull protected final String productType;
   @NonNull protected final List<TspService> currentTrustedServices;
   @NonNull protected final TrustStatusListType tslToCheck;
-  @Builder.Default protected final boolean withOcspCheck = true; // NOSONAR
+  @Builder.Default protected final boolean withOcspCheck = true;
   protected final OcspRespCache ocspRespCache;
 
   public void performTucPki001Checks() throws GemPkiException {

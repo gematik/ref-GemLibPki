@@ -17,6 +17,7 @@
 package de.gematik.pki.gemlibpki.exception;
 
 import de.gematik.pki.gemlibpki.error.ErrorCode;
+import java.io.Serial;
 import lombok.Getter;
 
 /**
@@ -26,7 +27,7 @@ import lombok.Getter;
 @Getter
 public class GemPkiException extends Exception {
 
-  private static final long serialVersionUID = 6802689240697358373L;
+  @Serial private static final long serialVersionUID = 6802689240697358373L;
   private final ErrorCode error;
 
   public GemPkiException(final String productType, final ErrorCode error) {

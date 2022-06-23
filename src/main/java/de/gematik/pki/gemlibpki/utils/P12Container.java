@@ -16,6 +16,7 @@
 
 package de.gematik.pki.gemlibpki.utils;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
@@ -28,7 +29,7 @@ import lombok.NonNull;
 @Builder
 public class P12Container implements Serializable {
 
-  private static final long serialVersionUID = 8263843224383604223L;
+  @Serial private static final long serialVersionUID = 8263843224383604223L;
   @NonNull private final X509Certificate certificate;
   @NonNull private final PrivateKey privateKey;
 }

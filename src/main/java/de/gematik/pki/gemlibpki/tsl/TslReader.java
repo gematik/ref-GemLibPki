@@ -22,7 +22,6 @@ import de.gematik.pki.gemlibpki.utils.Utils;
 import eu.europa.esig.trustedlist.jaxb.tsl.NextUpdateType;
 import eu.europa.esig.trustedlist.jaxb.tsl.OtherTSLPointersType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.time.ZonedDateTime;
 import java.util.Optional;
@@ -41,7 +40,6 @@ public final class TslReader {
   /**
    * @param tslPath File path to TSL
    * @return A TSL as Document
-   * @throws IOException on any conversion error
    */
   public static Optional<Document> getTslAsDoc(@NonNull final Path tslPath) {
     return TslConverter.bytesToDoc(Utils.readContent(tslPath));

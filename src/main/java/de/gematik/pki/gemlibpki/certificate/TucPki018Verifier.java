@@ -49,7 +49,7 @@ public class TucPki018Verifier {
   @NonNull protected final String productType;
   @NonNull protected final List<TspService> tspServiceList;
   @NonNull protected final List<CertificateProfile> certificateProfiles;
-  @Builder.Default protected final boolean withOcspCheck = true; // NOSONAR
+  @Builder.Default protected final boolean withOcspCheck = true;
   protected final OcspRespCache ocspRespCache;
 
   /**

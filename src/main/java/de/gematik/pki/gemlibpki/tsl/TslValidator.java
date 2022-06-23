@@ -49,7 +49,6 @@ public final class TslValidator {
    * @param tsl the tsl to check
    * @param trustAnchor the tsl trust anchor certificate (issuer of signing certificate)
    * @return true if signature is valid, otherwise false
-   * @throws IOException if files cannot be read
    */
   public static boolean checkSignature(
       @NonNull final Document tsl, @NonNull final X509Certificate trustAnchor) {
@@ -66,7 +65,7 @@ public final class TslValidator {
         | CertificateException
         | KeyStoreException e) {
       return false;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new GemPkiRuntimeException("TSL signature verification failed.", e);
     }
   }

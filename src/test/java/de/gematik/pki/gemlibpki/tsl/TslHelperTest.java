@@ -25,8 +25,10 @@ class TslHelperTest {
   @Test
   void nonNullTests() {
     assertThatThrownBy(() -> TslHelper.tslDownloadUrlMatchesOid(null))
+        .hasMessage("oid is marked non-null but is null")
         .isInstanceOf(NullPointerException.class);
     assertThatThrownBy(() -> TslHelper.createJaxbElement(null))
+        .hasMessage("trustServiceStatusList is marked non-null but is null")
         .isInstanceOf(NullPointerException.class);
   }
 }

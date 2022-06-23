@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>de.gematik.pki.gemlibpki</groupId>
     <artifactId>gemLibPki</artifactId>
-    <version>0.8.0</version>
+    <version>0.8.1</version>
     <packaging>jar</packaging>
     <description>gematik library PKI</description>
     <name>GemLibPki</name>
@@ -24,7 +24,7 @@
 
     <organization>
         <name>gematik GmbH</name>
-        <url>http://www.gematik.de</url>
+        <url>https://www.gematik.de</url>
     </organization>
 
     <licenses>
@@ -79,8 +79,10 @@
         <version.spotless.google-java-format>1.15.0</version.spotless.google-java-format>
 
         <!-- settings for upload to sonar server -->
-        <sonar.coverage.jacoco.xmlReportPaths>${project.reporting.outputDirectory}/jacoco/index.xml</sonar.coverage.jacoco.xmlReportPaths>
-        <sonar.dependencyCheck.htmlReportPath>${project.build.outputDirectory}/dependency-check-report.html</sonar.dependencyCheck.htmlReportPath>
+        <sonar.coverage.jacoco.xmlReportPaths>${project.reporting.outputDirectory}/jacoco/index.xml
+        </sonar.coverage.jacoco.xmlReportPaths>
+        <sonar.dependencyCheck.htmlReportPath>${project.build.outputDirectory}/dependency-check-report.html
+        </sonar.dependencyCheck.htmlReportPath>
         <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
         <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
         <sonar.language>java</sonar.language>

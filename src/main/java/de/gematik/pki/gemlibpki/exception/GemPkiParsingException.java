@@ -17,6 +17,7 @@
 package de.gematik.pki.gemlibpki.exception;
 
 import de.gematik.pki.gemlibpki.certificate.CertificateProfile;
+import java.io.Serial;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -25,7 +26,7 @@ import java.util.stream.Collectors;
 /** Utility class for {@link GemPkiException}. */
 public class GemPkiParsingException extends GemPkiException {
 
-  private static final long serialVersionUID = -7856481365407564745L;
+  @Serial private static final long serialVersionUID = -7856481365407564745L;
 
   /**
    * Constructor to build a message.

@@ -42,7 +42,7 @@ public final class TslSigner {
    * Signs a given tsl
    *
    * @param tsl The tsl to sign
-   * @param signer {@link P12Container} with x509certificate an key (RSA/ECC) for signature
+   * @param signer {@link P12Container} with x509certificate a key (RSA/ECC) for signature
    * @throws XAdES4jException during signature process or signer reading errors
    */
   public static void sign(final Document tsl, final P12Container signer) throws XAdES4jException {

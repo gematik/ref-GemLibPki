@@ -31,11 +31,11 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Utils {
 
-  public static byte[] readContent(Path path) {
+  public static byte[] readContent(final Path path) {
 
     try {
       return Files.readAllBytes(path);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new GemPkiRuntimeException("Cannot read path: " + path, e);
     }
   }

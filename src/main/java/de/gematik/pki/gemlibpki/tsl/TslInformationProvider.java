@@ -19,7 +19,6 @@ package de.gematik.pki.gemlibpki.tsl;
 import eu.europa.esig.trustedlist.jaxb.tsl.TSPType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 
 /** Class to provide {@link TspService}. */
@@ -45,7 +44,7 @@ public class TslInformationProvider {
                             stiFilterList.contains(
                                 c.getServiceInformation().getServiceTypeIdentifier())))
         .map(TspService::new)
-        .collect(Collectors.toList());
+        .toList();
   }
 
   /**
@@ -57,7 +56,7 @@ public class TslInformationProvider {
     return trustServiceStatusList.getTrustServiceProviderList().getTrustServiceProvider().stream()
         .flatMap(f -> f.getTSPServices().getTSPService().stream())
         .map(TspService::new)
-        .collect(Collectors.toList());
+        .toList();
   }
 
   public List<TspService> getTspServicesForTsp(final String tsp, final List<String> stiFilterList) {
@@ -65,12 +64,12 @@ public class TslInformationProvider {
         trustServiceStatusList.getTrustServiceProviderList().getTrustServiceProvider().stream()
             .filter(
                 c -> tsp.contains(c.getTSPInformation().getTSPName().getName().get(0).getValue()))
-            .collect(Collectors.toList());
+            .toList();
 
     return tspTypes.stream()
         .flatMap(f -> f.getTSPServices().getTSPService().stream())
         .filter(c -> stiFilterList.contains(c.getServiceInformation().getServiceTypeIdentifier()))
         .map(TspService::new)
-        .collect(Collectors.toList());
+        .toList();
   }
 }

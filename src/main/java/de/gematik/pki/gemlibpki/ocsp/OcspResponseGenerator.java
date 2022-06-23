@@ -57,8 +57,8 @@ public class OcspResponseGenerator {
   }
 
   @NonNull private final P12Container signer;
-  @Builder.Default private final boolean withCertHash = true; // NOSONAR
-  @Builder.Default private final boolean validCertHash = true; // NOSONAR
+  @Builder.Default private final boolean withCertHash = true;
+  @Builder.Default private final boolean validCertHash = true;
 
   /**
    * Create OCSP response from given OCSP request. producedAt is now (UTC).
@@ -122,18 +122,12 @@ public class OcspResponseGenerator {
     final X509CertificateHolder[] chain = {
       new X509CertificateHolder(ocspResponseSignerCert.getEncoded())
     };
-    final String sigAlgo;
-    switch (signer.getPrivateKey().getAlgorithm()) {
-      case "RSA":
-        sigAlgo = "SHA256withRSA";
-        break;
-      case "EC":
-        sigAlgo = "SHA256WITHECDSA";
-        break;
-      default:
-        throw new GemPkiRuntimeException(
-            "Signaturalgorithmus nicht unterstützt: " + signer.getPrivateKey().getAlgorithm());
-    }
+    final String sigAlgo = switch (signer.getPrivateKey().getAlgorithm()) {
+      case "RSA" -> "SHA256withRSA";
+      case "EC" -> "SHA256WITHECDSA";
+      default -> throw new GemPkiRuntimeException(
+              "Signaturalgorithmus nicht unterstützt: " + signer.getPrivateKey().getAlgorithm());
+    };
     final BasicOCSPResp resp =
         basicBuilder.build(
             new JcaContentSignerBuilder(sigAlgo)

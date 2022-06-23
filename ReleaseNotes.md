@@ -1,3 +1,8 @@
+# Release 0.8.1
+
+- change language specific code (>Java 11)
+- fix small issues
+
 # Release 0.8.0
 
 - API change: move whole package from de.gematik.pki to de.gematik.pki.gemlibpki
@@ -14,7 +19,8 @@
 
 # Release 0.7.0
 
-- API change: rename method doOcsp() to doOcspIfConfigured() in [TucPki018Verifier](src/main/java/de/gematik/pki/certificate/TucPki018Verifier.java)
+- API change: rename method doOcsp() to doOcspIfConfigured()
+  in [TucPki018Verifier](src/main/java/de/gematik/pki/certificate/TucPki018Verifier.java)
 - API change: rework exception handling
 - add class [TucPki001Verifier](src/main/java/de/gematik/pki/tsl/TucPki001Verifier.java) for checks of tsl.
   The only check at the moment is the ocsp status of the tsl signing certificate.
@@ -43,7 +49,8 @@
 
 # Release 0.5.2
 
-- set AccessLevel from private to protected for class TucPki018Verifier to make it extendable https://github.com/gematik/ref-GemLibPki/pull/2
+- set AccessLevel from private to protected for class TucPki018Verifier to make it
+  extendable https://github.com/gematik/ref-GemLibPki/pull/2
 - raise code coverage
 
 # Release 0.5.1
@@ -55,7 +62,8 @@
 # Release 0.5.0
 
 - API change: Main method for certificate checks "performTucPki18Checks(..)" in
-  class [TucPki018Verifier](src/main/java/de/gematik/pki/certificate/TucPki018Verifier.java) returns Admission instead of CertficateType.
+  class [TucPki018Verifier](src/main/java/de/gematik/pki/certificate/TucPki018Verifier.java) returns Admission instead
+  of CertficateType.
 - add methods for TSL handling: read, write, modify, sign+validate (RSA/ECC)
 - OCSP request implemented, active by default
 - additional CertificateProfiles implemented

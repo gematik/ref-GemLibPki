@@ -74,7 +74,7 @@ public class Admission {
   /**
    * Reading profession items
    *
-   * @return Non duplicate list of profession items of the first profession info of the first
+   * @return Non-duplicate list of profession items of the first profession info of the first
    *     admission in the certificate
    */
   public Set<String> getProfessionItems() {
@@ -90,7 +90,7 @@ public class Admission {
   /**
    * Reading profession oid's
    *
-   * @return Non duplicate list of profession oid's of the first profession info of the first
+   * @return Non-duplicate list of profession oid's of the first profession info of the first
    *     admission in the certificate
    */
   public Set<String> getProfessionOids() {

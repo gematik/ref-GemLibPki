@@ -54,7 +54,7 @@ final class TslHelper {
   static DocumentBuilder createDocBuilder() throws ParserConfigurationException {
     final DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     dbf.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-    dbf.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, ""); // compliant
+    dbf.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
     dbf.setNamespaceAware(true); // very important
     return dbf.newDocumentBuilder();
   }

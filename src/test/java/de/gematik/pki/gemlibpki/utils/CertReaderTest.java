@@ -32,7 +32,7 @@ class CertReaderTest {
     final byte[] file =
         Utils.readContent(
             Path.of("src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.der"));
-    assertThat(CertReader.readX509(file).getSubjectDN().getName())
+    assertThat(CertReader.readX509(file).getSubjectX500Principal().getName())
         .contains("Zahnarztpraxis Dr. med.Gunther");
   }
 
@@ -42,7 +42,7 @@ class CertReaderTest {
     assertThat(
             CertReader.readX509(
                     Path.of("src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.der"))
-                .getSubjectDN()
+                .getSubjectX500Principal()
                 .getName())
         .contains("Zahnarztpraxis Dr. med.Gunther");
   }
@@ -53,7 +53,7 @@ class CertReaderTest {
     final byte[] file =
         Utils.readContent(
             Path.of("src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem"));
-    assertThat(CertReader.readX509(file).getSubjectDN().getName())
+    assertThat(CertReader.readX509(file).getSubjectX500Principal().getName())
         .contains("Zahnarztpraxis Dr. med.Gunther");
   }
 
@@ -81,7 +81,7 @@ class CertReaderTest {
     assertThat(
             CertReader.getX509FromP12(
                     Path.of("src/test/resources/certificates/ocsp/eccOcspSigner.p12"), "00")
-                .getSubjectDN()
+                .getSubjectX500Principal()
                 .getName())
         .contains("OCSP Signer 09 ecc TEST-ONLY");
   }
