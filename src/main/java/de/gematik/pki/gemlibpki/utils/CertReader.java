@@ -31,10 +31,16 @@ import lombok.NonNull;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class CertReader {
 
-  public static X509Certificate readX509(final byte[] file) {
+  /**
+   * Reads X.509 from byte[]
+   *
+   * @param bytes byte[] representation of X.509 certificate
+   * @return X509Certificate
+   */
+  public static X509Certificate readX509(final byte[] bytes) {
     try {
       final CertificateFactory fact = CertificateFactory.getInstance("X.509");
-      try (final ByteArrayInputStream inStream = new ByteArrayInputStream(file)) {
+      try (final ByteArrayInputStream inStream = new ByteArrayInputStream(bytes)) {
         return (X509Certificate) fact.generateCertificate(inStream);
       }
     } catch (final CertificateException | IOException e) {
@@ -42,13 +48,26 @@ public final class CertReader {
     }
   }
 
-  public static X509Certificate readX509(final Path path) {
-    return readX509(Utils.readContent(path));
+  /**
+   * Reads X.509 from the path
+   *
+   * @param path the local file path of X.509 certificate
+   * @return X509Certificate
+   */
+  public static X509Certificate readX509(@NonNull final Path path) {
+    return readX509(GemlibPkiUtils.readContent(path));
   }
 
+  /**
+   * Reads X.509 from the P12 located under the path
+   *
+   * @param path the local file path of P12
+   * @return X509Certificate
+   */
   public static X509Certificate getX509FromP12(
       @NonNull final Path path, @NonNull final String password) {
-    return Objects.requireNonNull(P12Reader.getContentFromP12(Utils.readContent(path), password))
+    return Objects.requireNonNull(
+            P12Reader.getContentFromP12(GemlibPkiUtils.readContent(path), password))
         .getCertificate();
   }
 }

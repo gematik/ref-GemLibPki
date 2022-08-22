@@ -16,6 +16,23 @@
 
 package de.gematik.pki.gemlibpki.certificate;
 
+import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_EGK_AUT;
+import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_FD_OSIG;
+import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_FD_SIG;
+import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_HBA_AUT;
+import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_NONE;
+import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_SMC_B_AUT;
+import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_SMC_B_ENC;
+import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_SMC_B_OSIG;
+import static de.gematik.pki.gemlibpki.certificate.ExtendedKeyUsage.EXT_KEYUSAGE_ID_KP_CLIENTAUTH;
+import static de.gematik.pki.gemlibpki.certificate.ExtendedKeyUsage.EXT_KEYUSAGE_ID_KP_EMAILPROTECTION;
+import static de.gematik.pki.gemlibpki.certificate.ExtendedKeyUsage.EXT_KEYUSAGE_ID_TSL_KP_TSLSIGNING;
+import static de.gematik.pki.gemlibpki.certificate.KeyUsage.KEYUSAGE_DATA_ENCIPHERMENT;
+import static de.gematik.pki.gemlibpki.certificate.KeyUsage.KEYUSAGE_DIGITAL_SIGNATURE;
+import static de.gematik.pki.gemlibpki.certificate.KeyUsage.KEYUSAGE_KEY_AGREEMENT;
+import static de.gematik.pki.gemlibpki.certificate.KeyUsage.KEYUSAGE_KEY_ENCIPHERMENT;
+import static de.gematik.pki.gemlibpki.certificate.KeyUsage.KEYUSAGE_NON_REPUDIATION;
+
 import java.util.List;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -24,58 +41,57 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Getter
 public enum CertificateProfile {
-  C_CH_AUT_RSA(
-      CertificateType.EGK_AUT,
-      List.of(KeyUsage.DIGITAL_SIGNATURE, KeyUsage.KEY_ENCIPHERMENT),
-      List.of(ExtendedKeyUsage.ID_KP_CLIENTAUTH),
+  CERT_PROFILE_C_CH_AUT_RSA(
+      CERT_TYPE_EGK_AUT,
+      List.of(KEYUSAGE_DIGITAL_SIGNATURE, KEYUSAGE_KEY_ENCIPHERMENT),
+      List.of(EXT_KEYUSAGE_ID_KP_CLIENTAUTH),
       false),
-  C_CH_AUT_ECC(
-      CertificateType.EGK_AUT,
-      List.of(KeyUsage.DIGITAL_SIGNATURE),
-      List.of(ExtendedKeyUsage.ID_KP_CLIENTAUTH),
+  CERT_PROFILE_C_CH_AUT_ECC(
+      CERT_TYPE_EGK_AUT,
+      List.of(KEYUSAGE_DIGITAL_SIGNATURE),
+      List.of(EXT_KEYUSAGE_ID_KP_CLIENTAUTH),
       false),
 
-  C_HP_AUT_RSA(
-      CertificateType.HBA_AUT,
-      List.of(KeyUsage.DIGITAL_SIGNATURE, KeyUsage.KEY_ENCIPHERMENT),
-      List.of(ExtendedKeyUsage.ID_KP_CLIENTAUTH, ExtendedKeyUsage.ID_KP_EMAILPROTECTION),
+  CERT_PROFILE_C_HP_AUT_RSA(
+      CERT_TYPE_HBA_AUT,
+      List.of(KEYUSAGE_DIGITAL_SIGNATURE, KEYUSAGE_KEY_ENCIPHERMENT),
+      List.of(EXT_KEYUSAGE_ID_KP_CLIENTAUTH, EXT_KEYUSAGE_ID_KP_EMAILPROTECTION),
       true),
-  C_HP_AUT_ECC(
-      CertificateType.HBA_AUT,
-      List.of(KeyUsage.DIGITAL_SIGNATURE, KeyUsage.KEY_AGREEMENT),
-      List.of(ExtendedKeyUsage.ID_KP_CLIENTAUTH, ExtendedKeyUsage.ID_KP_EMAILPROTECTION),
-      true),
-
-  C_HCI_AUT_RSA(
-      CertificateType.SMC_B_AUT,
-      List.of(KeyUsage.DIGITAL_SIGNATURE, KeyUsage.KEY_ENCIPHERMENT),
-      List.of(ExtendedKeyUsage.ID_KP_CLIENTAUTH),
-      true),
-  C_HCI_AUT_ECC(
-      CertificateType.SMC_B_AUT,
-      List.of(KeyUsage.DIGITAL_SIGNATURE),
-      List.of(ExtendedKeyUsage.ID_KP_CLIENTAUTH),
+  CERT_PROFILE_C_HP_AUT_ECC(
+      CERT_TYPE_HBA_AUT,
+      List.of(KEYUSAGE_DIGITAL_SIGNATURE, KEYUSAGE_KEY_AGREEMENT),
+      List.of(EXT_KEYUSAGE_ID_KP_CLIENTAUTH, EXT_KEYUSAGE_ID_KP_EMAILPROTECTION),
       true),
 
-  C_HCI_ENC_RSA(
-      CertificateType.SMC_B_ENC,
-      List.of(KeyUsage.KEY_ENCIPHERMENT, KeyUsage.DATA_ENCIPHERMENT),
+  CERT_PROFILE_C_HCI_AUT_RSA(
+      CERT_TYPE_SMC_B_AUT,
+      List.of(KEYUSAGE_DIGITAL_SIGNATURE, KEYUSAGE_KEY_ENCIPHERMENT),
+      List.of(EXT_KEYUSAGE_ID_KP_CLIENTAUTH),
+      true),
+  CERT_PROFILE_C_HCI_AUT_ECC(
+      CERT_TYPE_SMC_B_AUT,
+      List.of(KEYUSAGE_DIGITAL_SIGNATURE),
+      List.of(EXT_KEYUSAGE_ID_KP_CLIENTAUTH),
+      true),
+
+  CERT_PROFILE_C_HCI_ENC_RSA(
+      CERT_TYPE_SMC_B_ENC,
+      List.of(KEYUSAGE_KEY_ENCIPHERMENT, KEYUSAGE_DATA_ENCIPHERMENT),
       List.of(),
       false),
-  C_HCI_ENC_ECC(CertificateType.SMC_B_ENC, List.of(KeyUsage.KEY_AGREEMENT), List.of(), false),
+  C_HCI_ENC_ECC(CERT_TYPE_SMC_B_ENC, List.of(KEYUSAGE_KEY_AGREEMENT), List.of(), false),
 
-  C_HCI_OSIG(CertificateType.SMC_B_OSIG, List.of(KeyUsage.NON_REPUDIATION), List.of(), false),
+  CERT_PROFILE_C_HCI_OSIG(
+      CERT_TYPE_SMC_B_OSIG, List.of(KEYUSAGE_NON_REPUDIATION), List.of(), false),
 
-  C_FD_SIG(CertificateType.FD_SIG, List.of(KeyUsage.DIGITAL_SIGNATURE), List.of(), false),
-  C_FD_OSIG(CertificateType.FD_OSIG, List.of(KeyUsage.NON_REPUDIATION), List.of(), false),
+  CERT_PROFILE_C_FD_SIG(CERT_TYPE_FD_SIG, List.of(KEYUSAGE_DIGITAL_SIGNATURE), List.of(), false),
+  CERT_PROFILE_C_FD_OSIG(CERT_TYPE_FD_OSIG, List.of(KEYUSAGE_NON_REPUDIATION), List.of(), false),
 
-  C_TSL_SIG_RSA(
-      CertificateType.NONE,
-      List.of(KeyUsage.NON_REPUDIATION),
-      List.of(ExtendedKeyUsage.ID_TSL_KP_TSLSIGNING),
-      true),
-
-  C_TSL_SIG_ECC(CertificateType.NONE, C_TSL_SIG_RSA.keyUsages, C_TSL_SIG_RSA.extKeyUsages, true);
+  CERT_PROFILE_C_TSL_SIG(
+      CERT_TYPE_NONE,
+      List.of(KEYUSAGE_NON_REPUDIATION),
+      List.of(EXT_KEYUSAGE_ID_TSL_KP_TSLSIGNING),
+      true);
 
   private final CertificateType certificateType;
   private final List<KeyUsage> keyUsages;

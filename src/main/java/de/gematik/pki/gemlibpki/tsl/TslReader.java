@@ -16,9 +16,9 @@
 
 package de.gematik.pki.gemlibpki.tsl;
 
-import static de.gematik.pki.gemlibpki.tsl.TslHelper.tslDownloadUrlMatchesOid;
+import static de.gematik.pki.gemlibpki.tsl.TslUtils.tslDownloadUrlMatchesOid;
 
-import de.gematik.pki.gemlibpki.utils.Utils;
+import de.gematik.pki.gemlibpki.utils.GemlibPkiUtils;
 import eu.europa.esig.trustedlist.jaxb.tsl.NextUpdateType;
 import eu.europa.esig.trustedlist.jaxb.tsl.OtherTSLPointersType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
@@ -42,7 +42,7 @@ public final class TslReader {
    * @return A TSL as Document
    */
   public static Optional<Document> getTslAsDoc(@NonNull final Path tslPath) {
-    return TslConverter.bytesToDoc(Utils.readContent(tslPath));
+    return TslConverter.bytesToDoc(GemlibPkiUtils.readContent(tslPath));
   }
 
   /**
@@ -52,7 +52,7 @@ public final class TslReader {
    * @return a TrustServiceStatusList contains issuer certificates among other things
    */
   public static Optional<TrustStatusListType> getTsl(@NonNull final Path tslPath) {
-    return TslConverter.bytesToTsl(Utils.readContent(tslPath));
+    return TslConverter.bytesToTsl(GemlibPkiUtils.readContent(tslPath));
   }
 
   /**

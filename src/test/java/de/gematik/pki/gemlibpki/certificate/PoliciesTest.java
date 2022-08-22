@@ -33,14 +33,14 @@ class PoliciesTest {
         CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem");
     assertThat(new Policies(policyOids).getPolicyOids())
-        .contains(CertificateType.SMC_B_AUT.getOid());
+        .contains(CertificateType.CERT_TYPE_SMC_B_AUT.getOid());
   }
 
   @Test
   void policiesCertNull() {
     assertThatThrownBy(() -> new Policies(null))
         .isInstanceOf(NullPointerException.class)
-        .hasMessageContaining("x509EeCert");
+        .hasMessage("x509EeCert is marked non-null but is null");
   }
 
   @Test

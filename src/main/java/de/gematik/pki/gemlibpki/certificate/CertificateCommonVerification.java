@@ -16,7 +16,7 @@
 
 package de.gematik.pki.gemlibpki.certificate;
 
-import static de.gematik.pki.gemlibpki.utils.Utils.setBcProvider;
+import static de.gematik.pki.gemlibpki.utils.GemlibPkiUtils.setBouncyCastleProvider;
 
 import de.gematik.pki.gemlibpki.error.ErrorCode;
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
@@ -47,6 +47,22 @@ public final class CertificateCommonVerification {
   @NonNull private final TspServiceSubset tspServiceSubset;
   @NonNull private final X509Certificate x509EeCert;
 
+  /**
+   * Perform verifications of validity, signature and issue service status
+   *
+   * @throws GemPkiException
+   */
+  public void verifyAll() throws GemPkiException {
+    verifyValidity();
+    verifySignature(tspServiceSubset.getX509IssuerCert());
+    verifyIssuerServiceStatus();
+  }
+
+  /**
+   * Verify validity period of parameterized end-entity certificate against current date.
+   *
+   * @throws GemPkiException
+   */
   public void verifyValidity() throws GemPkiException {
     verifyValidity(ZonedDateTime.now());
   }
@@ -58,15 +74,17 @@ public final class CertificateCommonVerification {
    * @throws GemPkiException if certificate is not valid in time
    */
   public void verifyValidity(@NonNull final ZonedDateTime referenceDate) throws GemPkiException {
+
     final boolean isValidBeforeReferenceDate =
         x509EeCert.getNotBefore().toInstant().atZone(ZoneOffset.UTC).isAfter(referenceDate);
     final boolean isValidAfterReferenceDate =
         x509EeCert.getNotAfter().toInstant().atZone(ZoneOffset.UTC).isBefore(referenceDate);
+
     if (isValidBeforeReferenceDate || isValidAfterReferenceDate) {
       log.debug(
           "Das Referenzdatum {} liegt nicht innerhalb des Gültigkeitsbereichs des Zertifikates.",
           referenceDate);
-      throw new GemPkiException(productType, ErrorCode.SE_1021); // CERTIFICATE_NOT_VALID_TIME
+      throw new GemPkiException(productType, ErrorCode.SE_1021_CERTIFICATE_NOT_VALID_TIME);
     }
   }
 
@@ -80,17 +98,16 @@ public final class CertificateCommonVerification {
   public void verifySignature(@NonNull final X509Certificate x509IssuerCert)
       throws GemPkiException {
 
-    setBcProvider();
+    setBouncyCastleProvider();
     try {
       x509EeCert.verify(x509IssuerCert.getPublicKey());
       log.debug("Signaturprüfung von {} erfolgreich", x509EeCert.getSubjectX500Principal());
     } catch (final GeneralSecurityException verifyFailed) {
       throw new GemPkiException(
-          productType, ErrorCode.SE_1024, verifyFailed); // CERTIFICATE_NOT_VALID_MATH
+          productType, ErrorCode.SE_1024_CERTIFICATE_NOT_VALID_MATH, verifyFailed);
     }
   }
-  // ####################  Start issuer checks
-  // #########################################################
+  // ####################  Start issuer checks ######################
 
   /**
    * Verify issuer service status from tsl file. The status determines if an end-entity certificate
@@ -103,10 +120,9 @@ public final class CertificateCommonVerification {
       final ZonedDateTime statusStartingTime = tspServiceSubset.getStatusStartingTime();
       if (statusStartingTime.isBefore(
           x509EeCert.getNotBefore().toInstant().atZone(ZoneOffset.UTC))) {
-        throw new GemPkiException(productType, ErrorCode.SE_1036);
+        throw new GemPkiException(productType, ErrorCode.SE_1036_CA_CERTIFICATE_REVOKED_IN_TSL);
       }
     }
   }
-  // ####################  End issuer checks
-  // ########################################################
+  // ####################  End issuer checks ########################
 }

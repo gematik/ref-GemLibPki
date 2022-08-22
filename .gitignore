@@ -6,9 +6,10 @@
 /doc/*.svg
 
 
+doc/development.txt
+LICENSE_HEADER
 Pipeline.CI.Jenkinsfile
 Pipeline.DeployGitHub.Jenkinsfile
 Pipeline.InternalRelease.Jenkinsfile
 Pipeline.PublishToMavenCentral.Jenkinsfile
-doc/development.txt
 

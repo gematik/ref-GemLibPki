@@ -16,25 +16,34 @@
 
 package de.gematik.pki.gemlibpki.tsl;
 
-import static de.gematik.pki.gemlibpki.utils.Utils.setBcProvider;
-import static javax.xml.crypto.dsig.XMLSignature.XMLNS;
+import static de.gematik.pki.gemlibpki.utils.GemlibPkiUtils.setBouncyCastleProvider;
 import static org.apache.xml.security.signature.XMLSignature.ALGO_ID_SIGNATURE_RSA_SHA256_MGF1;
 
+import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.utils.P12Container;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import xades4j.XAdES4jException;
 import xades4j.algorithms.EnvelopedSignatureTransform;
 import xades4j.algorithms.ExclusiveCanonicalXMLWithoutComments;
-import xades4j.production.*;
+import xades4j.production.BasicSignatureOptions;
+import xades4j.production.DataObjectReference;
+import xades4j.production.SignatureAlgorithms;
+import xades4j.production.SignedDataObjects;
+import xades4j.production.XadesBesSigningProfile;
+import xades4j.production.XadesSigner;
 import xades4j.properties.DataObjectDesc;
 import xades4j.properties.DataObjectFormatProperty;
 import xades4j.providers.KeyingDataProvider;
 import xades4j.providers.impl.DirectKeyingDataProvider;
+import xades4j.utils.XadesProfileResolutionException;
 
 /** Class for signing tsl DOM Document structures */
+@Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class TslSigner {
 
@@ -42,36 +51,43 @@ public final class TslSigner {
    * Signs a given tsl
    *
    * @param tsl The tsl to sign
-   * @param signer {@link P12Container} with x509certificate a key (RSA/ECC) for signature
-   * @throws XAdES4jException during signature process or signer reading errors
+   * @param tslSigner {@link P12Container} with x509certificate a key (RSA/ECC) for signature
    */
-  public static void sign(final Document tsl, final P12Container signer) throws XAdES4jException {
-    setBcProvider();
+  public static void sign(@NonNull final Document tsl, @NonNull final P12Container tslSigner) {
+    setBouncyCastleProvider();
     final Element elemToSign = getTslWithoutSignature(tsl);
     final KeyingDataProvider kdp =
-        new DirectKeyingDataProvider(signer.getCertificate(), signer.getPrivateKey());
-    final XadesSigner xSigner =
-        new XadesBesSigningProfile(kdp)
-            .withSignatureAlgorithms(
-                new SignatureAlgorithms()
-                    .withSignatureAlgorithm("RSA", ALGO_ID_SIGNATURE_RSA_SHA256_MGF1)
-                    .withCanonicalizationAlgorithmForSignature(
-                        new ExclusiveCanonicalXMLWithoutComments())
-                    .withCanonicalizationAlgorithmForTimeStampProperties(
-                        new ExclusiveCanonicalXMLWithoutComments()))
-            .withBasicSignatureOptions(
-                new BasicSignatureOptions().includeIssuerSerial(false).includeSubjectName(false))
-            .newSigner();
-    final DataObjectDesc dod =
-        new DataObjectReference("")
-            .withTransform(new EnvelopedSignatureTransform())
-            .withTransform(new ExclusiveCanonicalXMLWithoutComments())
-            .withDataObjectFormat(new DataObjectFormatProperty("text/xml", ""));
-    xSigner.sign(new SignedDataObjects(dod), elemToSign);
+        new DirectKeyingDataProvider(tslSigner.getCertificate(), tslSigner.getPrivateKey());
+    final XadesSigner xSigner;
+    try {
+      xSigner =
+          new XadesBesSigningProfile(kdp)
+              .withSignatureAlgorithms(
+                  new SignatureAlgorithms()
+                      .withSignatureAlgorithm("RSA", ALGO_ID_SIGNATURE_RSA_SHA256_MGF1)
+                      .withCanonicalizationAlgorithmForSignature(
+                          new ExclusiveCanonicalXMLWithoutComments())
+                      .withCanonicalizationAlgorithmForTimeStampProperties(
+                          new ExclusiveCanonicalXMLWithoutComments()))
+              .withBasicSignatureOptions(
+                  new BasicSignatureOptions().includeIssuerSerial(false).includeSubjectName(false))
+              .newSigner();
+
+      final DataObjectDesc dod =
+          new DataObjectReference("")
+              .withTransform(new EnvelopedSignatureTransform())
+              .withTransform(new ExclusiveCanonicalXMLWithoutComments())
+              .withDataObjectFormat(new DataObjectFormatProperty("text/xml", ""));
+      xSigner.sign(new SignedDataObjects(dod), elemToSign);
+    } catch (final XadesProfileResolutionException e) {
+      throw new GemPkiRuntimeException("Fehler beim erstellen des XAdES Profil Objektes.", e);
+    } catch (final XAdES4jException e) {
+      throw new GemPkiRuntimeException("Fehler bei erstellen der XAdES Signatur.", e);
+    }
   }
 
   private static Element getTslWithoutSignature(final Document tsl) {
-    final Element signature = (Element) tsl.getElementsByTagNameNS(XMLNS, "Signature").item(0);
+    final Element signature = TslUtils.getSignature(tsl);
     if (signature != null) {
       final Element elemToSign = (Element) signature.getParentNode();
       elemToSign.removeChild(signature);

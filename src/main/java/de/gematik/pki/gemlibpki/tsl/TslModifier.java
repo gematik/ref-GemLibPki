@@ -16,9 +16,17 @@
 
 package de.gematik.pki.gemlibpki.tsl;
 
-import static de.gematik.pki.gemlibpki.tsl.TslHelper.tslDownloadUrlMatchesOid;
+import static de.gematik.pki.gemlibpki.tsl.TslUtils.tslDownloadUrlMatchesOid;
 
-import eu.europa.esig.trustedlist.jaxb.tsl.*;
+import eu.europa.esig.trustedlist.jaxb.tsl.AdditionalInformationType;
+import eu.europa.esig.trustedlist.jaxb.tsl.AttributedNonEmptyURIType;
+import eu.europa.esig.trustedlist.jaxb.tsl.MultiLangStringType;
+import eu.europa.esig.trustedlist.jaxb.tsl.NextUpdateType;
+import eu.europa.esig.trustedlist.jaxb.tsl.OtherTSLPointerType;
+import eu.europa.esig.trustedlist.jaxb.tsl.OtherTSLPointersType;
+import eu.europa.esig.trustedlist.jaxb.tsl.ServiceSupplyPointsType;
+import eu.europa.esig.trustedlist.jaxb.tsl.TSPServiceInformationType;
+import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.math.BigInteger;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -48,8 +56,10 @@ public final class TslModifier {
       @NonNull final TrustStatusListType tsl,
       @NonNull final String tspName,
       @NonNull final String newSsp) {
+
     final AttributedNonEmptyURIType newSspXml = new AttributedNonEmptyURIType();
     newSspXml.setValue(newSsp);
+
     final ServiceSupplyPointsType newSspType = new ServiceSupplyPointsType();
     newSspType.getServiceSupplyPoint().add(newSspXml);
 
@@ -57,19 +67,21 @@ public final class TslModifier {
         .getTrustServiceProvider()
         .forEach(
             tsp -> {
-              if (tsp.getTSPInformation()
-                  .getTSPName()
-                  .getName()
-                  .get(0)
-                  .getValue()
-                  .contains(tspName)) {
+              final String tslTspName =
+                  tsp.getTSPInformation().getTSPName().getName().get(0).getValue();
+
+              if (tslTspName.contains(tspName)) {
+
                 tsp.getTSPServices()
                     .getTSPService()
                     .forEach(
                         service -> {
-                          if (TslConstants.STI_CA_LIST.contains(
-                              service.getServiceInformation().getServiceTypeIdentifier())) {
-                            service.getServiceInformation().setServiceSupplyPoints(newSspType);
+                          final TSPServiceInformationType infoType =
+                              service.getServiceInformation();
+                          final String identifier = infoType.getServiceTypeIdentifier();
+
+                          if (TslConstants.STI_CA_LIST.contains(identifier)) {
+                            infoType.setServiceSupplyPoints(newSspType);
                           }
                         });
               }

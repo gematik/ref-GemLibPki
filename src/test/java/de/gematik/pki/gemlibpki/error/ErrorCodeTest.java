@@ -24,6 +24,6 @@ class ErrorCodeTest {
 
   @Test
   void getErrorMessage() {
-    assertDoesNotThrow(() -> ErrorCode.SE_1016.getErrorSeverity().getDescription());
+    assertDoesNotThrow(() -> ErrorCode.SE_1016_WRONG_KEYUSAGE.getErrorSeverity().getDescription());
   }
 }

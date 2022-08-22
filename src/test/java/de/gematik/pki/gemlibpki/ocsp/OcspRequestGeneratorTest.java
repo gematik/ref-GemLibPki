@@ -18,8 +18,12 @@ package de.gematik.pki.gemlibpki.ocsp;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import de.gematik.pki.gemlibpki.utils.CertificateProvider;
+import de.gematik.pki.gemlibpki.utils.TestUtils;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.security.cert.X509Certificate;
 import org.bouncycastle.cert.ocsp.OCSPReq;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,9 +45,12 @@ class OcspRequestGeneratorTest {
   }
 
   @Test
-  void verifyGenerateOCSPRequest() {
+  void verifyGenerateOcspRequest() {
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
+
+    assertDoesNotThrow(() -> writeOcspReqToFile(ocspReq));
+
     assertThat(ocspReq).isNotNull();
     assertThat(ocspReq.getRequestList()).hasSize(1);
   }
@@ -52,10 +59,16 @@ class OcspRequestGeneratorTest {
   void nonNullTests() {
     assertThatThrownBy(
             () -> OcspRequestGenerator.generateSingleOcspRequest(null, VALID_X509_ISSUER_CERT))
-        .isInstanceOf(NullPointerException.class);
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("x509EeCert is marked non-null but is null");
 
     assertThatThrownBy(
             () -> OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, null))
-        .isInstanceOf(NullPointerException.class);
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("x509IssuerCert is marked non-null but is null");
+  }
+
+  private static void writeOcspReqToFile(final OCSPReq ocspReq) throws IOException {
+    Files.write(TestUtils.createLogFileInTarget("ocspRequest"), ocspReq.getEncoded());
   }
 }

@@ -16,15 +16,25 @@
 
 package de.gematik.pki.gemlibpki.tsl;
 
+import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_TSL_CA8;
+import static de.gematik.pki.gemlibpki.utils.ResourceReader.getFilePathFromResources;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
+import org.w3c.dom.Document;
 
 class TslValidatorTest {
 
   @Test
   void nonNullCheck() {
-    assertThatThrownBy(() -> TslValidator.checkSignature(null, null))
-        .isInstanceOf(NullPointerException.class);
+    assertThatThrownBy(() -> TslValidator.checkSignature(null, VALID_ISSUER_CERT_TSL_CA8))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("tsl is marked non-null but is null");
+    final Document tslAsDoc =
+        TslReader.getTslAsDoc(getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT)).orElseThrow();
+    assertThatThrownBy(() -> TslValidator.checkSignature(tslAsDoc, null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("trustAnchor is marked non-null but is null");
   }
 }

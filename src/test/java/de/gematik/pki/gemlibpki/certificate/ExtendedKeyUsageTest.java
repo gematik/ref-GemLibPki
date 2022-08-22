@@ -24,6 +24,6 @@ class ExtendedKeyUsageTest {
 
   @Test
   void getValue() {
-    assertDoesNotThrow(ExtendedKeyUsage.ID_KP_CLIENTAUTH::getValue);
+    assertDoesNotThrow(ExtendedKeyUsage.EXT_KEYUSAGE_ID_KP_CLIENTAUTH::getValue);
   }
 }

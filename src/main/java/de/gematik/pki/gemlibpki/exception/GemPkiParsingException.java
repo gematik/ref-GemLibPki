@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 
 /** Utility class for {@link GemPkiException}. */
 public class GemPkiParsingException extends GemPkiException {
@@ -35,7 +36,8 @@ public class GemPkiParsingException extends GemPkiException {
    * @param errorMap the error map
    */
   public GemPkiParsingException(
-      final String productType, final Map<CertificateProfile, GemPkiException> errorMap) {
+      @NonNull final String productType,
+      @NonNull final Map<CertificateProfile, GemPkiException> errorMap) {
     super(
         // first ErrorCode
         extractFirstError(errorMap)
@@ -47,7 +49,7 @@ public class GemPkiParsingException extends GemPkiException {
             .map(entry -> mapToErrorMessage(entry, productType))
             .collect(Collectors.joining()),
         // rootCause
-        extractFirstError(errorMap).orElse(null));
+        extractFirstError(errorMap).orElseThrow());
   }
 
   /**

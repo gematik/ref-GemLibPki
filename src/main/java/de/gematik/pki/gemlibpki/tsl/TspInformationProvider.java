@@ -58,7 +58,7 @@ public class TspInformationProvider {
    * @return true when aki matches ski otherwise false
    */
   private static boolean verifyAkiMatchesSki(
-      final X509Certificate x509EeCert, @NonNull final X509Certificate x509IssuerCert) {
+      final X509Certificate x509EeCert, final X509Certificate x509IssuerCert) {
     final byte[] subjectKeyIdentifier =
         x509IssuerCert.getExtensionValue(Extension.subjectKeyIdentifier.getId());
     final Optional<ASN1OctetString> skiAsOctet =
@@ -91,7 +91,7 @@ public class TspInformationProvider {
       log.debug(
           "Octets des AUTHORITY_KEY_IDENTIFIER konnten in {} nicht gefunden werden.",
           x509EeCert.getSubjectX500Principal());
-      log.trace(e.toString());
+      log.trace("{}", e.toString());
       return false;
     }
     final AuthorityKeyIdentifier authKeyIdentifier =
@@ -123,7 +123,7 @@ public class TspInformationProvider {
    * @return information subset of a TspService {@link TspServiceSubset}
    * @throws GemPkiException exception thrown if certificate cannot be found
    */
-  public TspServiceSubset getTspServiceSubset(@NonNull final X509Certificate x509EeCert)
+  public TspServiceSubset getIssuerTspServiceSubset(@NonNull final X509Certificate x509EeCert)
       throws GemPkiException {
     Optional<X509Certificate> foundX509IssuerCert = Optional.empty();
 
@@ -137,9 +137,11 @@ public class TspInformationProvider {
                 .getDigitalId()) {
           final X509Certificate x509IssuerCert =
               getX509CertificateFromByteArray(dit.getX509Certificate());
+
           if (x509EeCert
               .getIssuerX500Principal()
               .equals(x509IssuerCert.getSubjectX500Principal())) {
+
             if (verifyAkiMatchesSki(x509EeCert, x509IssuerCert)) {
               return TspServiceSubset.builder()
                   .x509IssuerCert(x509IssuerCert)
@@ -172,9 +174,9 @@ public class TspInformationProvider {
     }
 
     if (foundX509IssuerCert.isEmpty()) {
-      throw new GemPkiException(productType, ErrorCode.TE_1027);
+      throw new GemPkiException(productType, ErrorCode.TE_1027_CA_CERT_MISSING);
     } else {
-      throw new GemPkiException(productType, ErrorCode.SE_1023);
+      throw new GemPkiException(productType, ErrorCode.SE_1023_AUTHORITYKEYID_DIFFERENT);
     }
   }
 
@@ -191,7 +193,7 @@ public class TspInformationProvider {
       final CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
       return (X509Certificate) certFactory.generateCertificate(in);
     } catch (final CertificateException | IOException e) {
-      throw new GemPkiException(productType, ErrorCode.TE_1002, e);
+      throw new GemPkiException(productType, ErrorCode.TE_1002_TSL_CERT_EXTRACTION_ERROR, e);
     }
   }
 
@@ -204,19 +206,22 @@ public class TspInformationProvider {
    */
   private String getFirstServiceSupplyPointFromTspService(final TspService tspService)
       throws GemPkiException {
+
     final Optional<ServiceSupplyPointsType> serviceSupplyPointsType =
         Optional.ofNullable(
             tspService.getTspServiceType().getServiceInformation().getServiceSupplyPoints());
+
     if (serviceSupplyPointsType.isEmpty()) {
-      throw new GemPkiException(productType, ErrorCode.TE_1026);
+      throw new GemPkiException(productType, ErrorCode.TE_1026_SERVICESUPPLYPOINT_MISSING);
     }
     final String firstServiceSupplyPoint =
         serviceSupplyPointsType.get().getServiceSupplyPoint().get(0).getValue();
+
     if (firstServiceSupplyPoint.isBlank()) {
-      throw new GemPkiException(productType, ErrorCode.TE_1026);
-    } else {
-      log.debug("Der erste ServiceSupplyPoint wurde ermittelt {}", firstServiceSupplyPoint);
-      return firstServiceSupplyPoint;
+      throw new GemPkiException(productType, ErrorCode.TE_1026_SERVICESUPPLYPOINT_MISSING);
     }
+
+    log.debug("Der erste ServiceSupplyPoint wurde ermittelt {}", firstServiceSupplyPoint);
+    return firstServiceSupplyPoint;
   }
 }

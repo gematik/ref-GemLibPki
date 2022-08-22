@@ -16,12 +16,13 @@
 
 package de.gematik.pki.gemlibpki.tsl;
 
+import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
 import static de.gematik.pki.gemlibpki.utils.ResourceReader.getFilePathFromResources;
 import static de.gematik.pki.gemlibpki.utils.XmlCompare.documentsAreEqual;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import de.gematik.pki.gemlibpki.utils.Utils;
+import de.gematik.pki.gemlibpki.utils.GemlibPkiUtils;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -29,7 +30,7 @@ import org.w3c.dom.Document;
 
 class TslConverterTest {
 
-  private static final Path TSL_PATH = getFilePathFromResources("tsls/valid/TSL-test.xml");
+  private static final Path TSL_PATH = getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT);
 
   @Test
   void tslToDoc() {
@@ -39,7 +40,7 @@ class TslConverterTest {
 
   @Test
   void bytesToDoc() {
-    final byte[] tslBytes = Utils.readContent(TSL_PATH);
+    final byte[] tslBytes = GemlibPkiUtils.readContent(TSL_PATH);
     assertThat(documentsAreEqual(TslConverter.bytesToDoc(tslBytes).orElseThrow(), TSL_PATH))
         .isTrue();
   }
@@ -52,7 +53,7 @@ class TslConverterTest {
 
   @Test
   void bytesToTsl() {
-    final byte[] tslBytes = Utils.readContent(TSL_PATH);
+    final byte[] tslBytes = GemlibPkiUtils.readContent(TSL_PATH);
     assertThat(
             documentsAreEqual(
                 TslConverter.bytesToTsl(tslBytes).orElseThrow(),
@@ -62,8 +63,11 @@ class TslConverterTest {
 
   @Test
   void nonNullTests() {
-    assertThatThrownBy(() -> TslConverter.tslToDoc(null)).isInstanceOf(NullPointerException.class);
+    assertThatThrownBy(() -> TslConverter.tslToDoc(null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("tsl is marked non-null but is null");
     assertThatThrownBy(() -> TslConverter.docToBytes(null))
-        .isInstanceOf(NullPointerException.class);
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("tslDoc is marked non-null but is null");
   }
 }

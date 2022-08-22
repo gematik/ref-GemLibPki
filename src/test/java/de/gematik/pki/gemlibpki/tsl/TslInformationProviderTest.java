@@ -16,25 +16,25 @@
 
 package de.gematik.pki.gemlibpki.tsl;
 
+import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
+import static de.gematik.pki.gemlibpki.TestConstants.GEMATIK_TEST_TSP_NAME;
+import static de.gematik.pki.gemlibpki.tsl.TslConstants.STI_CA_LIST;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import de.gematik.pki.gemlibpki.utils.ResourceReader;
-import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
+import de.gematik.pki.gemlibpki.utils.TestUtils;
 import java.util.Collections;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class TslInformationProviderTest {
 
-  private static final String FILE_NAME_TSL_DEFAULT = "tsls/valid/TSL-test.xml";
   private TslInformationProvider tslInformationProvider;
 
   @BeforeEach
   void setUp() {
-    final Optional<TrustStatusListType> tsl =
-        TslReader.getTsl(ResourceReader.getFilePathFromResources(FILE_NAME_TSL_DEFAULT));
-    tslInformationProvider = new TslInformationProvider(tsl.orElseThrow());
+    tslInformationProvider =
+        new TslInformationProvider(TestUtils.getTsl(FILE_NAME_TSL_ECC_DEFAULT));
   }
 
   @Test
@@ -42,11 +42,26 @@ class TslInformationProviderTest {
     assertThat(
             tslInformationProvider.getFilteredTspServices(
                 Collections.singletonList(TslConstants.STI_PKC)))
-        .hasSize(83);
+        .hasSize(136);
   }
 
   @Test
   void readAllTspServices_providerSizeShouldBeCorrect() {
-    assertThat(tslInformationProvider.getTspServices()).hasSize(152);
+    assertThat(tslInformationProvider.getTspServices()).hasSize(266);
+  }
+
+  @Test
+  void nonNull() {
+    assertThatThrownBy(() -> tslInformationProvider.getFilteredTspServices(null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("stiFilterList is marked non-null but is null");
+
+    assertThatThrownBy(() -> tslInformationProvider.getTspServicesForTsp(null, STI_CA_LIST))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("tsp is marked non-null but is null");
+    assertThatThrownBy(
+            () -> tslInformationProvider.getTspServicesForTsp(GEMATIK_TEST_TSP_NAME, null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("stiFilterList is marked non-null but is null");
   }
 }

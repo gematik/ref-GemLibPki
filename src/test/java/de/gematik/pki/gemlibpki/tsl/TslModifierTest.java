@@ -16,15 +16,16 @@
 
 package de.gematik.pki.gemlibpki.tsl;
 
-import static de.gematik.pki.gemlibpki.utils.ResourceReader.getFilePathFromResources;
+import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
+import static de.gematik.pki.gemlibpki.TestConstants.GEMATIK_TEST_TSP_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import de.gematik.pki.gemlibpki.utils.TestUtils;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -39,24 +40,21 @@ import org.junit.jupiter.api.Test;
 
 class TslModifierTest {
 
-  private static final String FILE_NAME_TSL = "tsls/valid/TSL-test.xml";
   TrustStatusListType tsl;
 
   @BeforeEach
   void setup() {
-    tsl = TslReader.getTsl(getFilePathFromResources(FILE_NAME_TSL)).orElseThrow();
+    tsl = TestUtils.getTsl(FILE_NAME_TSL_ECC_DEFAULT);
   }
 
   @Test
   void modifyAllSspsOfOneTsp() throws IOException {
     final Path destFilePath = Path.of("target/TSL-test_modifiedSsp.xml");
-    final String gematikTestTspName =
-        "gematik Gesellschaft für Telematikanwendungen der Gesundheitskarte mbH";
-    final int modifiedSspAmountexpected = 15;
+    final int modifiedSspAmountexpected = 29;
     final String newSsp = "http://my.new-service-supply-point:8080/ocsp";
     final String newSspElement = "<ServiceSupplyPoint>" + newSsp + "</ServiceSupplyPoint>";
 
-    TslModifier.modifySspForCAsOfTsp(tsl, gematikTestTspName, newSsp);
+    TslModifier.modifySspForCAsOfTsp(tsl, GEMATIK_TEST_TSP_NAME, newSsp);
     final TslInformationProvider tslInformationProvider = new TslInformationProvider(tsl);
 
     // get sample and compare
@@ -65,7 +63,7 @@ class TslModifierTest {
 
     assertThat(
             tslInformationProvider
-                .getTspServicesForTsp(gematikTestTspName, TslConstants.STI_CA_LIST)
+                .getTspServicesForTsp(GEMATIK_TEST_TSP_NAME, TslConstants.STI_CA_LIST)
                 .get(sampleTspServiceIdx)
                 .getTspServiceType()
                 .getServiceInformation()
@@ -93,9 +91,10 @@ class TslModifierTest {
   void modifyNextUpdate() throws DatatypeConfigurationException {
     final Path path = Path.of("target/TSL-test_modifiedNextUpdate.xml");
     // 2028-12-24T17:30:00
-    final LocalDateTime nextUpdateLdt = LocalDateTime.of(2028, Month.DECEMBER, 24, 17, 30, 0);
+
     // 2028-12-24T17:30:00Z
-    final ZonedDateTime nextUpdateZdtUtc = ZonedDateTime.of(nextUpdateLdt, ZoneOffset.UTC);
+    final ZonedDateTime nextUpdateZdtUtc =
+        ZonedDateTime.of(2028, Month.DECEMBER.getValue(), 24, 17, 30, 0, 0, ZoneOffset.UTC);
 
     TslModifier.modifyNextUpdate(tsl, nextUpdateZdtUtc);
     TslWriter.write(tsl, path);
@@ -105,8 +104,8 @@ class TslModifierTest {
   @Test
   void modifyIssueDate() throws DatatypeConfigurationException {
     final Path path = Path.of("target/TSL-test_modifiedIssueDate.xml");
-    final LocalDateTime issueDateLdt = LocalDateTime.of(2027, Month.APRIL, 30, 3, 42, 0);
-    final ZonedDateTime issueDateZdUtc = ZonedDateTime.of(issueDateLdt, ZoneOffset.UTC);
+    final ZonedDateTime issueDateZdUtc =
+        ZonedDateTime.of(2027, Month.APRIL.getValue(), 30, 3, 42, 0, 0, ZoneOffset.UTC);
 
     TslModifier.modifyIssueDate(tsl, issueDateZdUtc);
     TslWriter.write(tsl, path);
@@ -213,30 +212,37 @@ class TslModifierTest {
             () ->
                 TslModifier.modifySspForCAsOfTsp(
                     null, "gematik", "http://my.new-service-supply-point:8080/ocsp"))
-        .isInstanceOf(NullPointerException.class);
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("tsl is marked non-null but is null");
 
     AssertionsForClassTypes.assertThatThrownBy(
             () ->
                 TslModifier.modifySspForCAsOfTsp(
                     tsl, null, "http://my.new-service-supply-point:8080/ocsp"))
-        .isInstanceOf(NullPointerException.class);
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("tspName is marked non-null but is null");
 
     AssertionsForClassTypes.assertThatThrownBy(
             () -> TslModifier.modifySspForCAsOfTsp(tsl, "gematik", null))
-        .isInstanceOf(NullPointerException.class);
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("newSsp is marked non-null but is null");
 
     AssertionsForClassTypes.assertThatThrownBy(() -> TslModifier.modifySequenceNr(null, 42))
-        .isInstanceOf(NullPointerException.class);
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("tsl is marked non-null but is null");
 
     AssertionsForClassTypes.assertThatThrownBy(
             () -> TslModifier.modifyNextUpdate(null, ZonedDateTime.now()))
-        .isInstanceOf(NullPointerException.class);
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("tsl is marked non-null but is null");
 
     AssertionsForClassTypes.assertThatThrownBy(() -> TslModifier.modifyNextUpdate(tsl, null))
-        .isInstanceOf(NullPointerException.class);
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("zdt is marked non-null but is null");
 
     AssertionsForClassTypes.assertThatThrownBy(() -> TslModifier.generateTslId(42, null))
-        .isInstanceOf(NullPointerException.class);
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("issueDate is marked non-null but is null");
 
     AssertionsForClassTypes.assertThatThrownBy(
             () ->
@@ -247,40 +253,50 @@ class TslModifierTest {
                         "foo",
                         TslConstants.TSL_DOWNLOAD_URL_OID_BACKUP,
                         "bar")))
-        .isInstanceOf(NullPointerException.class);
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("tsl is marked non-null but is null");
 
     AssertionsForClassTypes.assertThatThrownBy(() -> TslModifier.setOtherTSLPointers(tsl, null))
-        .isInstanceOf(NullPointerException.class);
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("tslPointerValues is marked non-null but is null");
 
     AssertionsForClassTypes.assertThatThrownBy(
             () -> TslModifier.modifyTslDownloadUrlPrimary(null, "foo"))
-        .isInstanceOf(NullPointerException.class);
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("tsl is marked non-null but is null");
 
     AssertionsForClassTypes.assertThatThrownBy(
             () -> TslModifier.modifyTslDownloadUrlPrimary(tsl, null))
-        .isInstanceOf(NullPointerException.class);
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("url is marked non-null but is null");
 
     AssertionsForClassTypes.assertThatThrownBy(
             () -> TslModifier.modifyTslDownloadUrlBackup(null, "foo"))
-        .isInstanceOf(NullPointerException.class);
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("tsl is marked non-null but is null");
 
     AssertionsForClassTypes.assertThatThrownBy(
             () -> TslModifier.modifyTslDownloadUrlBackup(tsl, null))
-        .isInstanceOf(NullPointerException.class);
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("url is marked non-null but is null");
 
     AssertionsForClassTypes.assertThatThrownBy(
             () -> TslModifier.modifyIssueDate(null, ZonedDateTime.now()))
-        .isInstanceOf(NullPointerException.class);
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("tsl is marked non-null but is null");
 
     AssertionsForClassTypes.assertThatThrownBy(() -> TslModifier.modifyIssueDate(tsl, null))
-        .isInstanceOf(NullPointerException.class);
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("zdt is marked non-null but is null");
 
     AssertionsForClassTypes.assertThatThrownBy(
             () -> TslModifier.modifyIssueDateAndRelatedNextUpdate(null, ZonedDateTime.now(), 42))
-        .isInstanceOf(NullPointerException.class);
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("tsl is marked non-null but is null");
 
     AssertionsForClassTypes.assertThatThrownBy(
             () -> TslModifier.modifyIssueDateAndRelatedNextUpdate(tsl, null, 42))
-        .isInstanceOf(NullPointerException.class);
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("issueDate is marked non-null but is null");
   }
 }

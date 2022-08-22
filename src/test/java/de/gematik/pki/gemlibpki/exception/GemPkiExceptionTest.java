@@ -16,6 +16,7 @@
 
 package de.gematik.pki.gemlibpki.exception;
 
+import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import de.gematik.pki.gemlibpki.error.ErrorCode;
@@ -27,13 +28,11 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 @TestInstance(Lifecycle.PER_CLASS)
 class GemPkiExceptionTest {
 
-  private String productType;
   private String compType;
 
   @BeforeAll
   void setupFixture() {
-    productType = "IDP";
-    compType = productType + ":PKI";
+    compType = PRODUCT_TYPE + ":PKI";
   }
 
   @Test
@@ -41,10 +40,10 @@ class GemPkiExceptionTest {
 
     assertThatThrownBy(
             () -> {
-              throw new GemPkiException(productType, ErrorCode.SE_1003);
+              throw new GemPkiException(PRODUCT_TYPE, ErrorCode.SE_1003_MULTIPLE_TRUST_ANCHOR);
             })
         .isInstanceOf(GemPkiException.class)
-        .hasMessageContaining(ErrorCode.SE_1003.getErrorMessage(productType));
+        .hasMessage(ErrorCode.SE_1003_MULTIPLE_TRUST_ANCHOR.getErrorMessage(PRODUCT_TYPE));
   }
 
   @Test
@@ -52,9 +51,48 @@ class GemPkiExceptionTest {
 
     assertThatThrownBy(
             () -> {
-              throw new GemPkiException(productType, ErrorCode.SE_1003);
+              throw new GemPkiException(PRODUCT_TYPE, ErrorCode.SE_1003_MULTIPLE_TRUST_ANCHOR);
             })
         .isInstanceOf(GemPkiException.class)
         .hasMessageContaining(compType);
+  }
+
+  @Test
+  void nonNullTests() {
+    assertThatThrownBy(() -> new GemPkiException(null, ErrorCode.SE_1003_MULTIPLE_TRUST_ANCHOR))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("productType is marked non-null but is null");
+    assertThatThrownBy(() -> new GemPkiException(PRODUCT_TYPE, null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage(
+            "Cannot invoke \"de.gematik.pki.gemlibpki.error.ErrorCode.getErrorMessage(String)\""
+                + " because \"error\" is null");
+
+    final Exception exception = new Exception();
+    assertThatThrownBy(
+            () -> new GemPkiException(null, ErrorCode.SE_1003_MULTIPLE_TRUST_ANCHOR, exception))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("productType is marked non-null but is null");
+    assertThatThrownBy(() -> new GemPkiException(PRODUCT_TYPE, null, exception))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage(
+            "Cannot invoke \"de.gematik.pki.gemlibpki.error.ErrorCode.getErrorMessage(String)\""
+                + " because \"error\" is null");
+    assertThatThrownBy(
+            () -> new GemPkiException(PRODUCT_TYPE, ErrorCode.SE_1003_MULTIPLE_TRUST_ANCHOR, null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("exception is marked non-null but is null");
+
+    assertThatThrownBy(() -> new GemPkiException(null, "blub", exception))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("error is marked non-null but is null");
+    assertThatThrownBy(
+            () -> new GemPkiException(ErrorCode.SE_1003_MULTIPLE_TRUST_ANCHOR, null, exception))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("message is marked non-null but is null");
+    assertThatThrownBy(
+            () -> new GemPkiException(ErrorCode.SE_1003_MULTIPLE_TRUST_ANCHOR, "blub", null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("exception is marked non-null but is null");
   }
 }

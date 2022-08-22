@@ -63,7 +63,7 @@ public class CertificateProvider implements ArgumentsProvider, AnnotationConsume
             public FileVisitResult visitFile(final Path path, final BasicFileAttributes attrs) {
 
               if (!Files.isDirectory(path) && checkCertificateFilter()) {
-                log.info("add: " + path.toAbsolutePath());
+                log.info("add: {}", path.toAbsolutePath());
                 fileList.add(getX509Certificate(path.toAbsolutePath()));
               }
               return FileVisitResult.CONTINUE;
@@ -77,7 +77,7 @@ public class CertificateProvider implements ArgumentsProvider, AnnotationConsume
   }
 
   public static X509Certificate getX509Certificate(final Path path) {
-    return CertReader.readX509(Utils.readContent(path));
+    return CertReader.readX509(GemlibPkiUtils.readContent(path));
   }
 
   public static X509Certificate getX509Certificate(final String path) {

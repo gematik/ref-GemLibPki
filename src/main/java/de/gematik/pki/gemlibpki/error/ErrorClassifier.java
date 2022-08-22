@@ -24,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 public enum ErrorClassifier {
   TECHNICAL_ERROR("Technical Error"),
+  TECHNICAL_WARNING("Technical Warning"),
   SECURITY_ERROR("Security Error"),
   SECURITY_WARNING("Security Warning"),
   INTERNAL_ERROR("Internal Error");

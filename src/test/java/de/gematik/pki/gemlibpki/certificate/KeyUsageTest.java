@@ -24,6 +24,6 @@ class KeyUsageTest {
 
   @Test
   void getDescription() {
-    assertDoesNotThrow(KeyUsage.KEY_ENCIPHERMENT::getDescription);
+    assertDoesNotThrow(KeyUsage.KEYUSAGE_KEY_ENCIPHERMENT::getDescription);
   }
 }

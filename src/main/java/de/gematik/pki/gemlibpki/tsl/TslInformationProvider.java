@@ -19,6 +19,7 @@ package de.gematik.pki.gemlibpki.tsl;
 import eu.europa.esig.trustedlist.jaxb.tsl.TSPType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.util.List;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 /** Class to provide {@link TspService}. */
@@ -33,7 +34,7 @@ public class TslInformationProvider {
    * @param stiFilterList list with ServiceTypeIdentifiers to filter on
    * @return list with {@link TspService}
    */
-  public List<TspService> getFilteredTspServices(final List<String> stiFilterList) {
+  public List<TspService> getFilteredTspServices(@NonNull final List<String> stiFilterList) {
 
     return trustServiceStatusList.getTrustServiceProviderList().getTrustServiceProvider().stream()
         .flatMap(
@@ -59,7 +60,13 @@ public class TslInformationProvider {
         .toList();
   }
 
-  public List<TspService> getTspServicesForTsp(final String tsp, final List<String> stiFilterList) {
+  /**
+   * @param tsp trust service provider of the TSL to get services from
+   * @param stiFilterList list of URIs with service type identifiers to look for
+   * @return list of trusted services
+   */
+  public List<TspService> getTspServicesForTsp(
+      @NonNull final String tsp, @NonNull final List<String> stiFilterList) {
     final List<TSPType> tspTypes =
         trustServiceStatusList.getTrustServiceProviderList().getTrustServiceProvider().stream()
             .filter(

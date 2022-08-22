@@ -16,18 +16,21 @@
 
 package de.gematik.pki.gemlibpki.certificate;
 
-import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_DEFAULT;
+import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
+import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_HCI_AUT_ECC;
+import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_HCI_AUT_RSA;
+import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_HP_AUT_ECC;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import de.gematik.pki.gemlibpki.error.ErrorCode;
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.tsl.TslInformationProvider;
-import de.gematik.pki.gemlibpki.tsl.TslReader;
 import de.gematik.pki.gemlibpki.tsl.TspInformationProvider;
 import de.gematik.pki.gemlibpki.tsl.TspServiceSubset;
 import de.gematik.pki.gemlibpki.utils.CertificateProvider;
 import de.gematik.pki.gemlibpki.utils.ResourceReader;
+import de.gematik.pki.gemlibpki.utils.TestUtils;
 import java.security.cert.X509Certificate;
 import lombok.NonNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,7 +38,7 @@ import org.junit.jupiter.api.Test;
 
 class CertificateProfileVerificationTest {
 
-  private final CertificateProfile certificateProfile = CertificateProfile.C_HCI_AUT_ECC;
+  private final CertificateProfile certificateProfile = CERT_PROFILE_C_HCI_AUT_ECC;
   private String productType;
   private CertificateProfileVerification certificateProfileVerification;
   private X509Certificate validX509EeCert;
@@ -58,7 +61,7 @@ class CertificateProfileVerificationTest {
   private CertificateProfileVerification buildCertificateProfileVerifier(
       final CertificateProfile certificateProfile) throws GemPkiException {
     return buildCertificateProfileVerifier(
-        FILE_NAME_TSL_DEFAULT, certificateProfile, validX509EeCert);
+        FILE_NAME_TSL_ECC_DEFAULT, certificateProfile, validX509EeCert);
   }
 
   private CertificateProfileVerification buildCertificateProfileVerifier(
@@ -69,27 +72,24 @@ class CertificateProfileVerificationTest {
 
     final TspServiceSubset tspServiceSubset =
         new TspInformationProvider(
-                new TslInformationProvider(
-                        TslReader.getTsl(ResourceReader.getFilePathFromResources(tslFilename))
-                            .orElseThrow())
-                    .getTspServices(),
+                new TslInformationProvider(TestUtils.getTsl(tslFilename)).getTspServices(),
                 productType)
-            .getTspServiceSubset(x509EeCert);
+            .getIssuerTspServiceSubset(x509EeCert);
 
     return CertificateProfileVerification.builder()
         .productType(productType)
-        .tspServiceSubset(tspServiceSubset)
-        .certificateProfile(certificateProfile)
         .x509EeCert(x509EeCert)
+        .certificateProfile(certificateProfile)
+        .tspServiceSubset(tspServiceSubset)
         .build();
   }
 
   @Test
   void verifyCertificateProfileNull() {
     assertThatThrownBy(
-            () -> buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, null, validX509EeCert))
+            () -> buildCertificateProfileVerifier(FILE_NAME_TSL_ECC_DEFAULT, null, validX509EeCert))
         .isInstanceOf(NullPointerException.class)
-        .hasMessageContaining("certificateProfile");
+        .hasMessage("certificateProfile is marked non-null but is null");
   }
 
   @Test
@@ -97,7 +97,7 @@ class CertificateProfileVerificationTest {
     assertThatThrownBy(
             () -> buildCertificateProfileVerifier(null, certificateProfile, validX509EeCert))
         .isInstanceOf(NullPointerException.class)
-        .hasMessageContaining("tslFilename");
+        .hasMessage("tslFilename is marked non-null but is null");
   }
 
   @Test
@@ -112,10 +112,10 @@ class CertificateProfileVerificationTest {
             "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-keyusage.pem");
     final CertificateProfileVerification verifier =
         buildCertificateProfileVerifier(
-            FILE_NAME_TSL_DEFAULT, certificateProfile, missingKeyUsagex509EeCert);
+            FILE_NAME_TSL_ECC_DEFAULT, certificateProfile, missingKeyUsagex509EeCert);
     assertThatThrownBy(verifier::verifyKeyUsage)
         .isInstanceOf(GemPkiException.class)
-        .hasMessageContaining(ErrorCode.SE_1016.name()); // WRONG_KEYUSAGE
+        .hasMessage(ErrorCode.SE_1016_WRONG_KEYUSAGE.getErrorMessage(productType));
   }
 
   @Test
@@ -125,19 +125,19 @@ class CertificateProfileVerificationTest {
             "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-keyusage.pem");
     final CertificateProfileVerification verifier =
         buildCertificateProfileVerifier(
-            FILE_NAME_TSL_DEFAULT, certificateProfile, invalidKeyUsagex509EeCert);
+            FILE_NAME_TSL_ECC_DEFAULT, certificateProfile, invalidKeyUsagex509EeCert);
     assertThatThrownBy(verifier::verifyKeyUsage)
         .isInstanceOf(GemPkiException.class)
-        .hasMessageContaining(ErrorCode.SE_1016.getErrorMessage(productType)); // WRONG_KEYUSAGE
+        .hasMessage(ErrorCode.SE_1016_WRONG_KEYUSAGE.getErrorMessage(productType));
   }
 
   @Test
   void verifyNotAllKeyUsagesPresentInCert() throws GemPkiException {
     final CertificateProfileVerification verifier =
-        buildCertificateProfileVerifier(CertificateProfile.C_HCI_AUT_RSA);
+        buildCertificateProfileVerifier(CERT_PROFILE_C_HCI_AUT_RSA);
     assertThatThrownBy(verifier::verifyKeyUsage)
         .isInstanceOf(GemPkiException.class)
-        .hasMessageContaining(ErrorCode.SE_1016.getErrorMessage(productType));
+        .hasMessage(ErrorCode.SE_1016_WRONG_KEYUSAGE.getErrorMessage(productType));
   }
 
   @Test
@@ -147,10 +147,10 @@ class CertificateProfileVerificationTest {
             "src/test/resources/certificates/GEM.HBA-CA13/GüntherOtís.pem");
     final CertificateProfileVerification verifier =
         buildCertificateProfileVerifier(
-            FILE_NAME_TSL_DEFAULT, CertificateProfile.C_HCI_AUT_ECC, validHbaAutEcc);
+            FILE_NAME_TSL_ECC_DEFAULT, CERT_PROFILE_C_HCI_AUT_ECC, validHbaAutEcc);
     assertThatThrownBy(verifier::verifyKeyUsage)
         .isInstanceOf(GemPkiException.class)
-        .hasMessageContaining(ErrorCode.SE_1016.getErrorMessage(productType));
+        .hasMessage(ErrorCode.SE_1016_WRONG_KEYUSAGE.getErrorMessage(productType));
   }
 
   @Test
@@ -161,10 +161,10 @@ class CertificateProfileVerificationTest {
   @Test
   void verifyNotAllExtendedKeyUsagesPresentInCert() throws GemPkiException {
     final CertificateProfileVerification verifier =
-        buildCertificateProfileVerifier(CertificateProfile.C_HP_AUT_ECC);
+        buildCertificateProfileVerifier(CERT_PROFILE_C_HP_AUT_ECC);
     assertThatThrownBy(verifier::verifyExtendedKeyUsage)
         .isInstanceOf(GemPkiException.class)
-        .hasMessageContaining(ErrorCode.SE_1017.getErrorMessage(productType));
+        .hasMessage(ErrorCode.SE_1017_WRONG_EXTENDEDKEYUSAGE.getErrorMessage(productType));
   }
 
   @Test
@@ -174,10 +174,10 @@ class CertificateProfileVerificationTest {
             "src/test/resources/certificates/GEM.HBA-CA13/GüntherOtís.pem");
     final CertificateProfileVerification verifier =
         buildCertificateProfileVerifier(
-            FILE_NAME_TSL_DEFAULT, CertificateProfile.C_HCI_AUT_ECC, validHbaAutEcc);
+            FILE_NAME_TSL_ECC_DEFAULT, CERT_PROFILE_C_HCI_AUT_ECC, validHbaAutEcc);
     assertThatThrownBy(verifier::verifyExtendedKeyUsage)
         .isInstanceOf(GemPkiException.class)
-        .hasMessageContaining(ErrorCode.SE_1017.getErrorMessage(productType));
+        .hasMessage(ErrorCode.SE_1017_WRONG_EXTENDEDKEYUSAGE.getErrorMessage(productType));
   }
 
   @Test
@@ -187,10 +187,10 @@ class CertificateProfileVerificationTest {
             "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-extKeyUsage.pem");
     final CertificateProfileVerification verifier =
         buildCertificateProfileVerifier(
-            FILE_NAME_TSL_DEFAULT, certificateProfile, missingExtKeyUsagex509EeCert);
+            FILE_NAME_TSL_ECC_DEFAULT, certificateProfile, missingExtKeyUsagex509EeCert);
     assertThatThrownBy(verifier::verifyExtendedKeyUsage)
         .isInstanceOf(GemPkiException.class)
-        .hasMessageContaining(ErrorCode.SE_1017.name()); // WRONG_EXT_KEYUSAGE
+        .hasMessage(ErrorCode.SE_1017_WRONG_EXTENDEDKEYUSAGE.getErrorMessage(productType));
   }
 
   @Test
@@ -200,10 +200,10 @@ class CertificateProfileVerificationTest {
             "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-ext-keyusage.pem");
     final CertificateProfileVerification verifier =
         buildCertificateProfileVerifier(
-            FILE_NAME_TSL_DEFAULT, certificateProfile, invalidExtendedKeyUsageEeCert);
+            FILE_NAME_TSL_ECC_DEFAULT, certificateProfile, invalidExtendedKeyUsageEeCert);
     assertThatThrownBy(verifier::verifyExtendedKeyUsage)
         .isInstanceOf(GemPkiException.class)
-        .hasMessageContaining(ErrorCode.SE_1017.getErrorMessage(productType));
+        .hasMessage(ErrorCode.SE_1017_WRONG_EXTENDEDKEYUSAGE.getErrorMessage(productType));
   }
 
   @Test
@@ -214,7 +214,7 @@ class CertificateProfileVerificationTest {
     assertDoesNotThrow(
         () ->
             buildCertificateProfileVerifier(
-                    FILE_NAME_TSL_DEFAULT, certificateProfile, eeMultipleCertTypes)
+                    FILE_NAME_TSL_ECC_DEFAULT, certificateProfile, eeMultipleCertTypes)
                 .verifyCertificateType());
   }
 
@@ -224,10 +224,11 @@ class CertificateProfileVerificationTest {
         CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-policyId.pem");
     final CertificateProfileVerification verifier =
-        buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile, missingPolicyId);
+        buildCertificateProfileVerifier(
+            FILE_NAME_TSL_ECC_DEFAULT, certificateProfile, missingPolicyId);
     assertThatThrownBy(verifier::verifyCertificateType)
         .isInstanceOf(GemPkiException.class)
-        .hasMessageContaining(ErrorCode.SE_1033.getErrorMessage(productType));
+        .hasMessage(ErrorCode.SE_1033_CERT_TYPE_INFO_MISSING.getErrorMessage(productType));
   }
 
   @Test
@@ -236,10 +237,11 @@ class CertificateProfileVerificationTest {
         CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-certificate-type.pem");
     final CertificateProfileVerification verifier =
-        buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile, missingCertType);
+        buildCertificateProfileVerifier(
+            FILE_NAME_TSL_ECC_DEFAULT, certificateProfile, missingCertType);
     assertThatThrownBy(verifier::verifyCertificateType)
         .isInstanceOf(GemPkiException.class)
-        .hasMessageContaining(ErrorCode.SE_1033.getErrorMessage(productType));
+        .hasMessage(ErrorCode.SE_1033_CERT_TYPE_INFO_MISSING.getErrorMessage(productType));
   }
 
   @Test
@@ -248,21 +250,22 @@ class CertificateProfileVerificationTest {
         CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-certificate-type.pem");
     final CertificateProfileVerification verifier =
-        buildCertificateProfileVerifier(FILE_NAME_TSL_DEFAULT, certificateProfile, invalidCertType);
+        buildCertificateProfileVerifier(
+            FILE_NAME_TSL_ECC_DEFAULT, certificateProfile, invalidCertType);
     assertThatThrownBy(verifier::verifyCertificateType)
         .isInstanceOf(GemPkiException.class)
-        .hasMessageContaining(ErrorCode.SE_1018.getErrorMessage(productType));
+        .hasMessage(ErrorCode.SE_1018_CERT_TYPE_MISMATCH.getErrorMessage(productType));
   }
 
   @Test
   void verifyCertificateProfileWrongServiceInfoExtInTsl() throws GemPkiException {
     final String tslAltCaWrongServiceExtension =
-        "tsls/defect/TSL_defect_altCA_wrong-srvInfoExt.xml";
+        "tsls/ecc/defect/TSL_defect_altCA_wrong-srvInfoExt.xml";
     final CertificateProfileVerification verifier =
         buildCertificateProfileVerifier(
             tslAltCaWrongServiceExtension, certificateProfile, validX509EeCertAltCa);
     assertThatThrownBy(verifier::verifyCertificateType)
         .isInstanceOf(GemPkiException.class)
-        .hasMessageContaining(ErrorCode.SE_1061.getErrorMessage(productType));
+        .hasMessage(ErrorCode.SE_1061_CERT_TYPE_CA_NOT_AUTHORIZED.getErrorMessage(productType));
   }
 }

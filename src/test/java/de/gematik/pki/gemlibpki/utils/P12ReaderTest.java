@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
-import de.gematik.pki.gemlibpki.ocsp.OcspConstants;
+import de.gematik.pki.gemlibpki.ocsp.OcspTestConstants;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
@@ -32,20 +32,21 @@ class P12ReaderTest {
     assertDoesNotThrow(
         () ->
             P12Reader.getContentFromP12(
-                OcspConstants.P12_OCSP_RESPONSE_SIGNER_RSA, OcspConstants.P12_PASSWORD));
+                OcspTestConstants.P12_OCSP_RESPONSE_SIGNER_RSA, OcspTestConstants.P12_PASSWORD));
   }
 
   @Test
   void verifyGetContentFromP12Null() {
     assertNull(
         P12Reader.getContentFromP12(
-            Path.of("src/test/resources/certificates/empty.p12"), OcspConstants.P12_PASSWORD));
+            Path.of("src/test/resources/certificates/empty.p12"), OcspTestConstants.P12_PASSWORD));
   }
 
   @Test
   void verifyGetInvalidP12() {
     final Path invalidP12 = Path.of("src/test/resources/log4j2.xml");
-    assertThatThrownBy(() -> P12Reader.getContentFromP12(invalidP12, OcspConstants.P12_PASSWORD))
+    assertThatThrownBy(
+            () -> P12Reader.getContentFromP12(invalidP12, OcspTestConstants.P12_PASSWORD))
         .isInstanceOf(GemPkiRuntimeException.class)
         .hasMessage("Konnte .p12 Datei nicht verarbeiten.");
   }
@@ -53,8 +54,25 @@ class P12ReaderTest {
   @Test
   void verifyFileMissing() {
     final Path invalidPath = Path.of("invalid");
-    assertThatThrownBy(() -> P12Reader.getContentFromP12(invalidPath, OcspConstants.P12_PASSWORD))
+    assertThatThrownBy(
+            () -> P12Reader.getContentFromP12(invalidPath, OcspTestConstants.P12_PASSWORD))
         .isInstanceOf(GemPkiRuntimeException.class)
         .hasMessage("Cannot read path: " + invalidPath);
+  }
+
+  @Test
+  void verifyGetContentFromP12NonNull() {
+    assertThatThrownBy(() -> P12Reader.getContentFromP12((byte[]) null, null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("p12Password is marked non-null but is null");
+
+    assertThatThrownBy(() -> P12Reader.getContentFromP12((Path) null, "foo"))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("path is marked non-null but is null");
+
+    final Path path = Path.of("foo");
+    assertThatThrownBy(() -> P12Reader.getContentFromP12(path, null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("p12Password is marked non-null but is null");
   }
 }

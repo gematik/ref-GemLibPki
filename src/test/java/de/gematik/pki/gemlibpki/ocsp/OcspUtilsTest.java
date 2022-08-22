@@ -14,21 +14,26 @@
  * limitations under the License.
  */
 
-package de.gematik.pki.gemlibpki.tsl;
+package de.gematik.pki.gemlibpki.ocsp;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 
-class TslHelperTest {
+class OcspUtilsTest {
 
   @Test
   void nonNullTests() {
-    assertThatThrownBy(() -> TslHelper.tslDownloadUrlMatchesOid(null))
-        .hasMessage("oid is marked non-null but is null")
-        .isInstanceOf(NullPointerException.class);
-    assertThatThrownBy(() -> TslHelper.createJaxbElement(null))
-        .hasMessage("trustServiceStatusList is marked non-null but is null")
-        .isInstanceOf(NullPointerException.class);
+    assertThatThrownBy(() -> OcspUtils.getBasicOcspResp(null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("ocspResponse is marked non-null but is null");
+
+    assertThatThrownBy(() -> OcspUtils.getFirstSingleResp(null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("ocspResponse is marked non-null but is null");
+
+    assertThatThrownBy(() -> OcspUtils.getFirstSingleReq(null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("ocspReq is marked non-null but is null");
   }
 }

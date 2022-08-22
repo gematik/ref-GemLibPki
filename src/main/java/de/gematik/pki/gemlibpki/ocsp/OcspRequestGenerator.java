@@ -16,7 +16,7 @@
 
 package de.gematik.pki.gemlibpki.ocsp;
 
-import static de.gematik.pki.gemlibpki.utils.Utils.setBcProvider;
+import static de.gematik.pki.gemlibpki.utils.GemlibPkiUtils.setBouncyCastleProvider;
 
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import java.security.cert.CertificateEncodingException;
@@ -34,7 +34,7 @@ import org.bouncycastle.operator.DigestCalculatorProvider;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
 
-/** Class to support OSCP related data */
+/** Class to support OCSP related data */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class OcspRequestGenerator {
 
@@ -47,24 +47,26 @@ public final class OcspRequestGenerator {
    */
   public static OCSPReq generateSingleOcspRequest(
       @NonNull final X509Certificate x509EeCert, @NonNull final X509Certificate x509IssuerCert) {
-    setBcProvider();
+    setBouncyCastleProvider();
     final JcaDigestCalculatorProviderBuilder digestCalculatorProviderBuilder =
         new JcaDigestCalculatorProviderBuilder();
-    final DigestCalculatorProvider digestCalculatorProvider;
+
     try {
-      digestCalculatorProvider = digestCalculatorProviderBuilder.build();
+      final DigestCalculatorProvider digestCalculatorProvider =
+          digestCalculatorProviderBuilder.build();
+
       final DigestCalculator digestCalculator =
           digestCalculatorProvider.get(CertificateID.HASH_SHA1);
-      // Generate the id for the certificate we are looking for
+
       final CertificateID id =
           new CertificateID(
               digestCalculator,
               new JcaX509CertificateHolder(x509IssuerCert),
               x509EeCert.getSerialNumber());
-      // basic request generation with nonce
-      final OCSPReqBuilder gen = new OCSPReqBuilder();
-      gen.addRequest(id);
-      return gen.build();
+
+      final OCSPReqBuilder ocspReqBuilder = new OCSPReqBuilder();
+      ocspReqBuilder.addRequest(id);
+      return ocspReqBuilder.build();
     } catch (final OperatorCreationException | CertificateEncodingException | OCSPException e) {
       throw new GemPkiRuntimeException("Generieren des OCSP Requests fehlgeschlagen.", e);
     }

@@ -33,9 +33,19 @@ import org.bouncycastle.cert.X509CertificateHolder;
  */
 public class Policies {
 
-  private static final String FILTER_OUT_NOT_DESIRED_POLICY_OID = "1.2.276.0.76.4.163";
+  private static final String GENERAL_CERTIFICATE_POLICY_OID = "1.2.276.0.76.4.163";
+  private static final String TSL_SIGNER_POLICY_OID = "1.2.276.0.76.4.176";
+  private static final Set<String> FILTER_OUT_NOT_DESIRED_POLICY_OID =
+      Set.of(GENERAL_CERTIFICATE_POLICY_OID, TSL_SIGNER_POLICY_OID);
   private final PolicyInformation[] policyExtensions;
 
+  /**
+   * Uses policy information from extensions of the provided certificate
+   *
+   * @param x509EeCert end-entity certificate
+   * @throws CertificateEncodingException
+   * @throws IOException
+   */
   public Policies(@NonNull final X509Certificate x509EeCert)
       throws CertificateEncodingException, IOException {
     policyExtensions =
@@ -47,12 +57,15 @@ public class Policies {
   /**
    * Reading policy oid's
    *
-   * @return Non duplicate list of policy oid's belonging to class member policyExtensions. Filters
-   *     out non desired oid's.
+   * @return Non-duplicate list of policy oid's belonging to class member policyExtensions. Filters
+   *     out non-desired oid's.
    */
   public Set<String> getPolicyOids() {
     return Arrays.stream(policyExtensions)
-        .filter(i -> !i.getPolicyIdentifier().getId().equals(FILTER_OUT_NOT_DESIRED_POLICY_OID))
+        .filter(
+            policyExtension ->
+                !FILTER_OUT_NOT_DESIRED_POLICY_OID.contains(
+                    policyExtension.getPolicyIdentifier().getId()))
         .map(policyInformation -> policyInformation.getPolicyIdentifier().getId())
         .collect(Collectors.toSet());
   }

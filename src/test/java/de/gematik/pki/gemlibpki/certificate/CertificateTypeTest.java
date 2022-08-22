@@ -24,6 +24,6 @@ class CertificateTypeTest {
 
   @Test
   void getName() {
-    assertDoesNotThrow(CertificateType.SMC_B_AUT::getName);
+    assertDoesNotThrow(CertificateType.CERT_TYPE_SMC_B_AUT::getName);
   }
 }

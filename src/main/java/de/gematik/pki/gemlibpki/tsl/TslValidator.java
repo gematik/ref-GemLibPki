@@ -85,13 +85,10 @@ public final class TslValidator {
             .build();
     final XadesVerificationProfile p = new XadesVerificationProfile(certValidator);
     final XadesVerifier v = p.newVerifier();
-    final Element sigElem =
-        (Element)
-            tsl.getElementsByTagNameNS(javax.xml.crypto.dsig.XMLSignature.XMLNS, "Signature")
-                .item(0);
-    if (sigElem == null) {
+    final Element signature = TslUtils.getSignature(tsl);
+    if (signature == null) {
       return Optional.empty();
     }
-    return Optional.of(v.verify(sigElem, null));
+    return Optional.of(v.verify(signature, null));
   }
 }

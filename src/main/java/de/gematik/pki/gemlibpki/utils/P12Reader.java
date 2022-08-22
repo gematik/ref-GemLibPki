@@ -20,7 +20,11 @@ import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.security.*;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Enumeration;
@@ -71,7 +75,8 @@ public final class P12Reader {
    * @param p12Password password for p12
    * @return a {@link P12Container}
    */
-  public static P12Container getContentFromP12(final Path path, final @NonNull String p12Password) {
-    return getContentFromP12(Utils.readContent(path), p12Password);
+  public static P12Container getContentFromP12(
+      @NonNull final Path path, final @NonNull String p12Password) {
+    return getContentFromP12(GemlibPkiUtils.readContent(path), p12Password);
   }
 }

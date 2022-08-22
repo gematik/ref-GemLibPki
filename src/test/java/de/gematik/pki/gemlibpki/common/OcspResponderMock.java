@@ -23,9 +23,12 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import de.gematik.pki.gemlibpki.ocsp.OcspConstants;
+import de.gematik.pki.gemlibpki.ocsp.OcspRequestGenerator;
 import de.gematik.pki.gemlibpki.ocsp.OcspResponseGenerator;
+import de.gematik.pki.gemlibpki.ocsp.OcspTestConstants;
 import java.security.cert.X509Certificate;
 import lombok.SneakyThrows;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpStatus;
 import org.bouncycastle.cert.ocsp.OCSPReq;
 import org.bouncycastle.cert.ocsp.OCSPResp;
@@ -33,8 +36,8 @@ import org.bouncycastle.cert.ocsp.OCSPResp;
 public class OcspResponderMock {
 
   private WireMockServer wireMockServer;
-  private String sspDir;
-  private String ocspHost;
+  private final String sspDir;
+  private final String ocspHost;
 
   public OcspResponderMock(final String sspDir, final String ocspHost) {
     this.sspDir = sspDir;
@@ -42,23 +45,36 @@ public class OcspResponderMock {
     startNewWireMockServer();
   }
 
-  public void setSspDir(final String sspDir) {
-    this.sspDir = sspDir;
-  }
-
-  public void setOcspHost(final String ocspHost) {
-    this.ocspHost = ocspHost;
-  }
-
+  /**
+   * Configures WireMock with OCSP Response generated from provided OCSP request and end-entity
+   * certificate
+   *
+   * @param ocspReq OCSP request
+   * @param eeCert end-entity certificate
+   */
   public void configureForOcspRequest(final OCSPReq ocspReq, final X509Certificate eeCert) {
     // build OCSP Response depending on request
     final OCSPResp ocspRespToSent =
         OcspResponseGenerator.builder()
-            .signer(OcspConstants.getOcspSignerRsa())
+            .signer(OcspTestConstants.getOcspSignerRsa())
             .build()
-            .gen(ocspReq, eeCert);
+            .generate(ocspReq, eeCert);
     // configure WireMock with OCSP Response
     configureWireMockReceiveHttpPost(ocspRespToSent, HttpStatus.SC_OK);
+  }
+
+  /**
+   * Configures WireMock with OCSP Response generated from provided end-entity and issuer
+   * certificates
+   *
+   * @param eeCert end-entity certificate
+   * @param issuerCert issuer certificate
+   */
+  public void configureForOcspRequest(
+      final X509Certificate eeCert, final X509Certificate issuerCert) {
+
+    final OCSPReq ocspReq = OcspRequestGenerator.generateSingleOcspRequest(eeCert, issuerCert);
+    configureForOcspRequest(ocspReq, eeCert);
   }
 
   public String getSspUrl() {
@@ -77,7 +93,9 @@ public class OcspResponderMock {
             .willReturn(
                 aResponse()
                     .withStatus(httpStatus)
-                    .withHeader("Content-Type", "application/ocsp-response")
+                    .withHeader(
+                        HttpHeaders.CONTENT_TYPE,
+                        OcspConstants.MEDIA_TYPE_APPLICATION_OCSP_RESPONSE)
                     .withBody(ocspRespTx.getEncoded())));
   }
 }

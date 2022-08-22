@@ -16,10 +16,11 @@
 
 package de.gematik.pki.gemlibpki.tsl;
 
-import de.gematik.pki.gemlibpki.error.ErrorCode;
+import de.gematik.pki.gemlibpki.certificate.CertificateProfile;
+import de.gematik.pki.gemlibpki.certificate.TucPki018Verifier;
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
+import de.gematik.pki.gemlibpki.ocsp.OcspConstants;
 import de.gematik.pki.gemlibpki.ocsp.OcspRespCache;
-import de.gematik.pki.gemlibpki.ocsp.OcspTransceiver;
 import de.gematik.pki.gemlibpki.utils.CertReader;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import eu.europa.esig.xmldsig.jaxb.X509DataType;
@@ -51,8 +52,18 @@ public class TucPki001Verifier {
   @Builder.Default protected final boolean withOcspCheck = true;
   protected final OcspRespCache ocspRespCache;
 
+  @Builder.Default
+  protected final int ocspTimeoutSeconds = OcspConstants.DEFAULT_OCSP_TIMEOUT_SECONDS;
+
+  @Builder.Default protected final boolean tolerateOcspFailure = false;
+
+  /**
+   * Performs TUC_PKI_001 checks (TSL verification)
+   *
+   * @throws GemPkiException thrown when TSL is not conform to gemSpec_PKI
+   */
   public void performTucPki001Checks() throws GemPkiException {
-    log.debug("TucPki001Checks...");
+    log.debug("TUC_PKI_001 Checks...");
     final X509Certificate tslSigner =
         CertReader.readX509(
             (byte[])
@@ -70,25 +81,17 @@ public class TucPki001Verifier {
                     .findFirst()
                     .orElseThrow());
 
-    final TspServiceSubset tspServiceSubsetOfTrustAnchor =
-        new TspInformationProvider(currentTrustedServices, productType)
-            .getTspServiceSubset(tslSigner);
-    doOcspIfConfigured(tslSigner, tspServiceSubsetOfTrustAnchor);
-  }
+    final TucPki018Verifier certVerifier =
+        TucPki018Verifier.builder()
+            .productType(productType)
+            .ocspRespCache(ocspRespCache)
+            .tspServiceList(currentTrustedServices)
+            .certificateProfiles(List.of(CertificateProfile.CERT_PROFILE_C_TSL_SIG))
+            .withOcspCheck(withOcspCheck)
+            .ocspTimeoutSeconds(ocspTimeoutSeconds)
+            .tolerateOcspFailure(tolerateOcspFailure)
+            .build();
 
-  protected void doOcspIfConfigured(
-      final X509Certificate tslSigner, final TspServiceSubset tspServiceSubsetOfTrustAnchor)
-      throws GemPkiException {
-    if (withOcspCheck) {
-      OcspTransceiver.builder()
-          .productType(productType)
-          .x509EeCert(tslSigner)
-          .x509IssuerCert(tspServiceSubsetOfTrustAnchor.getX509IssuerCert())
-          .ssp(tspServiceSubsetOfTrustAnchor.getServiceSupplyPoint())
-          .build()
-          .verifyOcspResponse(ocspRespCache);
-    } else {
-      log.warn(ErrorCode.SW_1039.getErrorMessage(productType));
-    }
+    certVerifier.performTucPki18Checks(tslSigner);
   }
 }

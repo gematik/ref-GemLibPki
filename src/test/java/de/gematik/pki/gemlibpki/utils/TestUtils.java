@@ -16,26 +16,27 @@
 
 package de.gematik.pki.gemlibpki.utils;
 
-import de.gematik.pki.gemlibpki.common.OcspResponderMock;
-import de.gematik.pki.gemlibpki.ocsp.OcspRequestGenerator;
+import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
+import static org.awaitility.Awaitility.await;
+
+import de.gematik.pki.gemlibpki.TestConstants;
+import de.gematik.pki.gemlibpki.tsl.TslInformationProvider;
+import de.gematik.pki.gemlibpki.tsl.TslReader;
 import de.gematik.pki.gemlibpki.tsl.TspService;
 import eu.europa.esig.trustedlist.jaxb.tsl.AttributedNonEmptyURIType;
 import eu.europa.esig.trustedlist.jaxb.tsl.ServiceSupplyPointsType;
+import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
-import org.bouncycastle.cert.ocsp.OCSPReq;
+import java.util.concurrent.Callable;
 
 public class TestUtils {
-
-  public static void configureOcspResponderMockForOcspRequest(
-      final X509Certificate x509EeCert, final OcspResponderMock ocspResponderMock) {
-    final X509Certificate VALID_X509_ISSUER_CERT =
-        CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.RCA1_TEST-ONLY.pem");
-    final OCSPReq ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(x509EeCert, VALID_X509_ISSUER_CERT);
-    ocspResponderMock.configureForOcspRequest(ocspReq, x509EeCert);
-  }
 
   public static void overwriteSspUrls(final List<TspService> tspServiceList, final String newSsp) {
     final ServiceSupplyPointsType serviceSupplyPointsType = new ServiceSupplyPointsType();
@@ -48,5 +49,49 @@ public class TestUtils {
                 .getTspServiceType()
                 .getServiceInformation()
                 .setServiceSupplyPoints(serviceSupplyPointsType));
+  }
+
+  public static TrustStatusListType getTsl(final String tslFilename) {
+    return TslReader.getTsl(ResourceReader.getFilePathFromResources(tslFilename)).orElseThrow();
+  }
+
+  public static TrustStatusListType getDefaultTsl() {
+    return TslReader.getTsl(ResourceReader.getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT))
+        .orElseThrow();
+  }
+
+  public static List<TspService> getDefaultTspServiceList() {
+
+    return new TslInformationProvider(getDefaultTsl()).getTspServices();
+  }
+
+  public static void waitSeconds(final long seconds) {
+    await()
+        .atMost(Duration.ofSeconds(seconds + 1))
+        .pollInterval(Duration.ofMillis(10))
+        .until(secondsElapsed(seconds, ZonedDateTime.now()));
+  }
+
+  private static Callable<Boolean> secondsElapsed(final long seconds, final ZonedDateTime start) {
+    return () -> start.plusSeconds(seconds).isBefore(ZonedDateTime.now());
+  }
+
+  public static X509Certificate readCert(final String filename) {
+    return CertificateProvider.getX509Certificate(TestConstants.CERT_DIR + filename);
+  }
+
+  public static Path createLogFileInTarget(final String prefix) throws IOException {
+    final String timestamp =
+        ZonedDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+
+    final Path filePath = Path.of("target/%s_%s.dat".formatted(prefix, timestamp));
+
+    if (Files.exists(filePath)) {
+      Files.delete(filePath);
+    }
+
+    Files.createFile(filePath);
+
+    return filePath;
   }
 }

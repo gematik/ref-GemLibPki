@@ -21,7 +21,7 @@ import de.gematik.pki.gemlibpki.utils.P12Reader;
 import java.nio.file.Path;
 import lombok.Getter;
 
-public class OcspConstants {
+public class OcspTestConstants {
 
   public static final Path P12_OCSP_RESPONSE_SIGNER_RSA =
       Path.of("src/test/resources/certificates/ocsp/rsaOcspSigner.p12");

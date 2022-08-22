@@ -16,7 +16,6 @@
 
 package de.gematik.pki.gemlibpki.tsl;
 
-import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_DEFAULT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -24,17 +23,14 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import de.gematik.pki.gemlibpki.error.ErrorCode;
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.utils.CertificateProvider;
-import de.gematik.pki.gemlibpki.utils.ResourceReader;
+import de.gematik.pki.gemlibpki.utils.TestUtils;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.security.cert.X509Certificate;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class TspInformationProviderTest {
 
-  private static final String FILE_NAME_TSL_ALT_CA_BROKEN =
-      "tsls/defect/TSL_defect_altCA_broken.xml";
   private String productType;
   private TspInformationProvider tspInformationProvider;
   private X509Certificate VALID_X509_EE_CERT;
@@ -43,10 +39,8 @@ class TspInformationProviderTest {
   @BeforeEach
   void setUp() {
     productType = "IDP";
-    final Optional<TrustStatusListType> tsl =
-        TslReader.getTsl(ResourceReader.getFilePathFromResources(FILE_NAME_TSL_DEFAULT));
     final TslInformationProvider tslInformationProvider =
-        new TslInformationProvider(tsl.orElseThrow());
+        new TslInformationProvider(TestUtils.getDefaultTsl());
     tspInformationProvider =
         new TspInformationProvider(tslInformationProvider.getTspServices(), productType);
     VALID_X509_EE_CERT =
@@ -59,28 +53,35 @@ class TspInformationProviderTest {
 
   @Test
   void generateTspServiceSubsetValidEE() {
-    assertDoesNotThrow(() -> tspInformationProvider.getTspServiceSubset(VALID_X509_EE_CERT));
+    assertDoesNotThrow(() -> tspInformationProvider.getIssuerTspServiceSubset(VALID_X509_EE_CERT));
+  }
+
+  @Test
+  void getIssuerTspServiceSubsetNonNull() {
+    assertThatThrownBy(() -> tspInformationProvider.getIssuerTspServiceSubset(null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("x509EeCert is marked non-null but is null");
   }
 
   @Test
   void generateTspServiceSubsetIssuerCertificateExtractionError() {
-    final Optional<TrustStatusListType> tslAltCaBroken =
-        TslReader.getTsl(ResourceReader.getFilePathFromResources(FILE_NAME_TSL_ALT_CA_BROKEN));
+    final TrustStatusListType tslAltCaBroken =
+        TestUtils.getTsl("tsls/ecc/defect/TSL_defect_altCA_broken.xml");
     assertThatThrownBy(
             () ->
                 new TspInformationProvider(
-                        new TslInformationProvider(tslAltCaBroken.orElseThrow()).getTspServices(),
-                        productType)
-                    .getTspServiceSubset(VALID_X509_EE_CERT_ALT_CA))
+                        new TslInformationProvider(tslAltCaBroken).getTspServices(), productType)
+                    .getIssuerTspServiceSubset(VALID_X509_EE_CERT_ALT_CA))
         .isInstanceOf(GemPkiException.class)
-        .hasMessageContaining(ErrorCode.TE_1002.name());
+        .hasMessage(ErrorCode.TE_1002_TSL_CERT_EXTRACTION_ERROR.getErrorMessage(productType));
   }
 
   @Test
   void generateTspServiceSubsetIssuerCertificateMissing() {
-    assertThatThrownBy(() -> tspInformationProvider.getTspServiceSubset(VALID_X509_EE_CERT_ALT_CA))
+    assertThatThrownBy(
+            () -> tspInformationProvider.getIssuerTspServiceSubset(VALID_X509_EE_CERT_ALT_CA))
         .isInstanceOf(GemPkiException.class)
-        .hasMessageContaining(ErrorCode.TE_1027.name());
+        .hasMessage(ErrorCode.TE_1027_CA_CERT_MISSING.getErrorMessage(productType));
   }
 
   @Test
@@ -88,33 +89,33 @@ class TspInformationProviderTest {
     final X509Certificate invalidx509EeCert =
         CertificateProvider.getX509Certificate(
             "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-authorityKeyId.pem");
-    assertThatThrownBy(() -> tspInformationProvider.getTspServiceSubset(invalidx509EeCert))
+    assertThatThrownBy(() -> tspInformationProvider.getIssuerTspServiceSubset(invalidx509EeCert))
         .isInstanceOf(GemPkiException.class)
-        .hasMessageContaining(ErrorCode.SE_1023.getErrorMessage(productType));
+        .hasMessage(ErrorCode.SE_1023_AUTHORITYKEYID_DIFFERENT.getErrorMessage(productType));
   }
 
   @Test
   void generateTspServiceSubsetServiceSupplyPointValid() throws GemPkiException {
     assertThat(
-            tspInformationProvider.getTspServiceSubset(VALID_X509_EE_CERT).getServiceSupplyPoint())
+            tspInformationProvider
+                .getIssuerTspServiceSubset(VALID_X509_EE_CERT)
+                .getServiceSupplyPoint())
         .isEqualTo(
             "http://ocsp-sim01-test.gem.telematik-test:8080/ocsp/OCSPSimulator/TSL_default-seq1");
   }
 
   @Test
   void generateTspServiceSubsetServiceSupplyPointMissing() {
-    final Optional<TrustStatusListType> tslAltCaMissingSsp =
-        TslReader.getTsl(
-            ResourceReader.getFilePathFromResources("tsls/defect/TSL_defect_altCA_missingSsp.xml"));
+    final TrustStatusListType tslAltCaMissingSsp =
+        TestUtils.getTsl("tsls/ecc/defect/TSL_defect_altCA_missingSsp.xml");
 
     assertThatThrownBy(
             () ->
                 new TspInformationProvider(
-                        new TslInformationProvider(tslAltCaMissingSsp.orElseThrow())
-                            .getTspServices(),
+                        new TslInformationProvider(tslAltCaMissingSsp).getTspServices(),
                         productType)
-                    .getTspServiceSubset(VALID_X509_EE_CERT_ALT_CA))
+                    .getIssuerTspServiceSubset(VALID_X509_EE_CERT_ALT_CA))
         .isInstanceOf(GemPkiException.class)
-        .hasMessageContaining(ErrorCode.TE_1026.getErrorMessage(productType));
+        .hasMessage(ErrorCode.TE_1026_SERVICESUPPLYPOINT_MISSING.getErrorMessage(productType));
   }
 }

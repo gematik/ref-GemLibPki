@@ -16,6 +16,8 @@
 
 package de.gematik.pki.gemlibpki.certificate;
 
+import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_TSL_SIG;
+
 import de.gematik.pki.gemlibpki.error.ErrorCode;
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
@@ -51,6 +53,16 @@ public final class CertificateProfileVerification {
   // ####################  Start KeyUsage ########################################################
 
   /**
+   * Perform all verification checks
+   *
+   * @throws GemPkiException
+   */
+  public void verifyAll() throws GemPkiException {
+    verifyKeyUsage();
+    verifyExtendedKeyUsage();
+    verifyCertificateType();
+  }
+  /**
    * Verify that all intended KeyUsage bit(s) of certificate profile {@link CertificateProfile}
    * match against KeyUsage(s) of parameterized end-entity certificate.
    *
@@ -58,7 +70,7 @@ public final class CertificateProfileVerification {
    */
   public void verifyKeyUsage() throws GemPkiException {
     if (x509EeCert.getKeyUsage() == null) {
-      throw new GemPkiException(productType, ErrorCode.SE_1016); // WRONG_KEY_USAGE
+      throw new GemPkiException(productType, ErrorCode.SE_1016_WRONG_KEYUSAGE);
     }
     int nrBitsEe = 0;
     for (final boolean b : x509EeCert.getKeyUsage()) {
@@ -69,11 +81,11 @@ public final class CertificateProfileVerification {
     final List<KeyUsage> intendedKeyUsageList =
         getIntendedKeyUsagesFromCertificateProfile(certificateProfile);
     if (nrBitsEe != intendedKeyUsageList.size()) {
-      throw new GemPkiException(productType, ErrorCode.SE_1016); // WRONG_KEY_USAGE
+      throw new GemPkiException(productType, ErrorCode.SE_1016_WRONG_KEYUSAGE);
     }
     for (final KeyUsage ku : intendedKeyUsageList) {
       if (!x509EeCert.getKeyUsage()[ku.getBit()]) {
-        throw new GemPkiException(productType, ErrorCode.SE_1016); // WRONG_KEY_USAGE
+        throw new GemPkiException(productType, ErrorCode.SE_1016_WRONG_KEYUSAGE);
       }
     }
   }
@@ -113,7 +125,7 @@ public final class CertificateProfileVerification {
       if (intendedExtendedKeyUsageOidList.isEmpty() || !certificateProfile.isFailOnMissingEku()) {
         return;
       } else {
-        throw new GemPkiException(productType, ErrorCode.SE_1017);
+        throw new GemPkiException(productType, ErrorCode.SE_1017_WRONG_EXTENDEDKEYUSAGE);
       }
     }
     final List<String> filteredList =
@@ -125,8 +137,8 @@ public final class CertificateProfileVerification {
             .toList();
     if (filteredList.isEmpty()
         || eeExtendedKeyUsagesOid.size() != intendedExtendedKeyUsageOidList.size()) {
-      log.debug(ErrorCode.SE_1017.getErrorMessage(productType));
-      throw new GemPkiException(productType, ErrorCode.SE_1017);
+      log.debug(ErrorCode.SE_1017_WRONG_EXTENDEDKEYUSAGE.getErrorMessage(productType));
+      throw new GemPkiException(productType, ErrorCode.SE_1017_WRONG_EXTENDEDKEYUSAGE);
     }
   }
 
@@ -142,10 +154,8 @@ public final class CertificateProfileVerification {
         .map(ExtendedKeyUsage::getOid)
         .toList();
   }
-  // ####################  End ExtendedKeyUsage
-  // ########################################################
-  // ############## Start certificate type checks
-  // ######################################################
+  // ####################  End ExtendedKeyUsage #####################
+  // ############## Start certificate type checks ###################
 
   /**
    * Verify type of parameterized end-entity certificate against parameterized certificate profile
@@ -154,9 +164,11 @@ public final class CertificateProfileVerification {
    * @throws GemPkiException if certificate type verification fails
    */
   public void verifyCertificateType() throws GemPkiException {
-    final Set<String> certificatePolicyOids = getCertificatePolicyOids(x509EeCert);
-    verifyCertificateProfileByCertificateTypeOid(certificatePolicyOids);
-    verifyCertificateTypeOidInIssuerTspServiceExtension(certificatePolicyOids);
+    if (!certificateProfile.equals(CERT_PROFILE_C_TSL_SIG)) {
+      final Set<String> certificatePolicyOids = getCertificatePolicyOids(x509EeCert);
+      verifyCertificateProfileByCertificateTypeOid(certificatePolicyOids);
+      verifyCertificateTypeOidInIssuerTspServiceExtension(certificatePolicyOids);
+    }
   }
 
   /**
@@ -172,7 +184,7 @@ public final class CertificateProfileVerification {
       log.debug("ZertifikatsTypOids im Zertifikat: {}", certificatePolicyOidList);
       log.debug(
           "Erwartete ZertifikatsTypOid: {}", certificateProfile.getCertificateType().getOid());
-      throw new GemPkiException(productType, ErrorCode.SE_1018);
+      throw new GemPkiException(productType, ErrorCode.SE_1018_CERT_TYPE_MISMATCH);
     }
   }
 
@@ -199,7 +211,7 @@ public final class CertificateProfileVerification {
         }
       }
     }
-    throw new GemPkiException(productType, ErrorCode.SE_1061);
+    throw new GemPkiException(productType, ErrorCode.SE_1061_CERT_TYPE_CA_NOT_AUTHORIZED);
   }
 
   /**
@@ -216,13 +228,14 @@ public final class CertificateProfileVerification {
     try {
       final Policies policies = new Policies(x509EeCert);
       if (policies.getPolicyOids().isEmpty()) {
-        throw new GemPkiException(productType, ErrorCode.SE_1033);
+        throw new GemPkiException(productType, ErrorCode.SE_1033_CERT_TYPE_INFO_MISSING);
       }
       return policies.getPolicyOids();
     } catch (final IllegalArgumentException e) {
-      throw new GemPkiException(productType, ErrorCode.SE_1033);
+      throw new GemPkiException(productType, ErrorCode.SE_1033_CERT_TYPE_INFO_MISSING);
     } catch (final CertificateEncodingException | IOException e) {
-      throw new GemPkiException(productType, ErrorCode.TE_1019); // difficult to reach
+      throw new GemPkiException(
+          productType, ErrorCode.TE_1019_CERT_READ_ERROR); // difficult to reach
     }
   }
   // ############## End certificate type checks

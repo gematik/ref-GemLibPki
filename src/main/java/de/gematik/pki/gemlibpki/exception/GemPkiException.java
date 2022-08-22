@@ -19,6 +19,7 @@ package de.gematik.pki.gemlibpki.exception;
 import de.gematik.pki.gemlibpki.error.ErrorCode;
 import java.io.Serial;
 import lombok.Getter;
+import lombok.NonNull;
 
 /**
  * {@link GemPkiException} class. Mandatory for all constructors: an {@link ErrorCode} has to be
@@ -30,18 +31,24 @@ public class GemPkiException extends Exception {
   @Serial private static final long serialVersionUID = 6802689240697358373L;
   private final ErrorCode error;
 
-  public GemPkiException(final String productType, final ErrorCode error) {
+  public GemPkiException(@NonNull final String productType, @NonNull final ErrorCode error) {
     super(error.getErrorMessage(productType));
     this.error = error;
   }
 
-  public GemPkiException(final String productType, final ErrorCode error, final Exception e) {
-    super(error.getErrorMessage(productType), e);
+  public GemPkiException(
+      @NonNull final String productType,
+      @NonNull final ErrorCode error,
+      @NonNull final Exception exception) {
+    super(error.getErrorMessage(productType), exception);
     this.error = error;
   }
 
-  public GemPkiException(final ErrorCode error, final String message, final Exception e) {
-    super(message, e);
+  public GemPkiException(
+      @NonNull final ErrorCode error,
+      @NonNull final String message,
+      @NonNull final Exception exception) {
+    super(message, exception);
     this.error = error;
   }
 }

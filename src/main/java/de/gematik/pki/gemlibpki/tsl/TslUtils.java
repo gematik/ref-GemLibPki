@@ -16,6 +16,8 @@
 
 package de.gematik.pki.gemlibpki.tsl;
 
+import static javax.xml.crypto.dsig.XMLSignature.XMLNS;
+
 import eu.europa.esig.trustedlist.jaxb.tsl.MultiLangStringType;
 import eu.europa.esig.trustedlist.jaxb.tsl.OtherTSLPointerType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
@@ -34,9 +36,11 @@ import javax.xml.transform.TransformerFactory;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-final class TslHelper {
+final class TslUtils {
 
   static Predicate<OtherTSLPointerType> tslDownloadUrlMatchesOid(@NonNull final String oid) {
     return p ->
@@ -85,5 +89,13 @@ final class TslHelper {
         new QName("http://uri.etsi.org/02231/v2#", "TrustServiceStatusList"),
         TrustStatusListType.class,
         trustServiceStatusList);
+  }
+
+  /**
+   * @param tsl TSL to get signature from
+   * @return signature element of TSL
+   */
+  public static Element getSignature(@NonNull final Document tsl) {
+    return (Element) tsl.getElementsByTagNameNS(XMLNS, "Signature").item(0);
   }
 }

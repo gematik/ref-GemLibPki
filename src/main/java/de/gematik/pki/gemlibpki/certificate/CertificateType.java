@@ -23,14 +23,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Getter
 public enum CertificateType {
-  EGK_AUT("C.CH.AUT", "oid_egk_aut", "1.2.276.0.76.4.70"),
-  HBA_AUT("C.HP.AUT", "oid_hba_aut", "1.2.276.0.76.4.75"),
-  SMC_B_AUT("C.HCI.AUT", "oid_smc_b_aut", "1.2.276.0.76.4.77"),
-  SMC_B_ENC("C.HCI.ENC", "oid_smc_b_enc", "1.2.276.0.76.4.76"),
-  SMC_B_OSIG("C.HCI.OSIG", "oid_smc_b_osig", "1.2.276.0.76.4.78"),
-  FD_SIG("C.FD.SIG", "oid_fd_sig", "1.2.276.0.76.4.203"),
-  FD_OSIG("C.FD.OSIG", "oid_fd_osig", "1.2.276.0.76.4.283"),
-  NONE("", "", "");
+  CERT_TYPE_EGK_AUT("C.CH.AUT", "oid_egk_aut", "1.2.276.0.76.4.70"),
+  CERT_TYPE_HBA_AUT("C.HP.AUT", "oid_hba_aut", "1.2.276.0.76.4.75"),
+  CERT_TYPE_SMC_B_AUT("C.HCI.AUT", "oid_smc_b_aut", "1.2.276.0.76.4.77"),
+  CERT_TYPE_SMC_B_ENC("C.HCI.ENC", "oid_smc_b_enc", "1.2.276.0.76.4.76"),
+  CERT_TYPE_SMC_B_OSIG("C.HCI.OSIG", "oid_smc_b_osig", "1.2.276.0.76.4.78"),
+  CERT_TYPE_FD_SIG("C.FD.SIG", "oid_fd_sig", "1.2.276.0.76.4.203"),
+  CERT_TYPE_FD_OSIG("C.FD.OSIG", "oid_fd_osig", "1.2.276.0.76.4.283"),
+  CERT_TYPE_NONE("", "", "");
 
   private final String name;
   private final String oidReference;

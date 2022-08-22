@@ -16,9 +16,18 @@
 
 package de.gematik.pki.gemlibpki.ocsp;
 
+import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getBasicOcspResp;
+
 import java.math.BigInteger;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.cert.ocsp.OCSPResp;
 
@@ -48,7 +57,8 @@ public class OcspRespCache {
    *     for
    * @return optional of ocsp response
    */
-  public synchronized Optional<OCSPResp> getResponse(final BigInteger x509EeCertSerialNumber) {
+  public synchronized Optional<OCSPResp> getResponse(
+      @NonNull final BigInteger x509EeCertSerialNumber) {
     deleteExpiredResponses();
     return Optional.ofNullable(cache.get(x509EeCertSerialNumber));
   }
@@ -58,9 +68,12 @@ public class OcspRespCache {
    *
    * @param x509EeCertSerialNumber big integer of serial of the certificate
    * @param ocspResp ocsp response
+   * @return OCSP response
    */
-  public void saveResponse(final BigInteger x509EeCertSerialNumber, final OCSPResp ocspResp) {
+  public @NonNull OCSPResp saveResponse(
+      @NonNull final BigInteger x509EeCertSerialNumber, @NonNull final OCSPResp ocspResp) {
     cache.put(x509EeCertSerialNumber, ocspResp);
+    return ocspResp;
   }
 
   /**
@@ -91,8 +104,23 @@ public class OcspRespCache {
   }
 
   private void deleteExpiredResponses() {
-    log.warn("Deleting cached OCSP responses is not implemented yet. Cache size:{}", cache.size());
-    // TODO get current time, compare ... ocspGracePeriodSeconds and delete all expired responses
     // (responses with status revoked remain)
+    final ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
+
+    final List<BigInteger> expired = new ArrayList<>();
+    for (final Entry<BigInteger, OCSPResp> entry : cache.entrySet()) {
+      final OCSPResp ocspResp = entry.getValue();
+
+      final ZonedDateTime producedAt =
+          ZonedDateTime.ofInstant(
+              getBasicOcspResp(ocspResp).getProducedAt().toInstant(), ZoneOffset.UTC);
+
+      final long age = ChronoUnit.SECONDS.between(producedAt, now);
+
+      if (age > ocspGracePeriodSeconds) {
+        expired.add(entry.getKey());
+      }
+    }
+    expired.forEach(cache::remove);
   }
 }

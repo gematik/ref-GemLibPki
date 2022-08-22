@@ -16,20 +16,20 @@
 
 package de.gematik.pki.gemlibpki.tsl;
 
-import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_DEFAULT;
 import static de.gematik.pki.gemlibpki.TestConstants.LOCAL_SSP_DIR;
 import static de.gematik.pki.gemlibpki.TestConstants.OCSP_HOST;
 import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
-import static de.gematik.pki.gemlibpki.utils.TestUtils.configureOcspResponderMockForOcspRequest;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_TSL_CA8;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.overwriteSspUrls;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import de.gematik.pki.gemlibpki.common.OcspResponderMock;
-import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
+import de.gematik.pki.gemlibpki.error.ErrorCode;
+import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.tsl.TucPki001Verifier.TucPki001VerifierBuilder;
 import de.gematik.pki.gemlibpki.utils.P12Reader;
-import de.gematik.pki.gemlibpki.utils.ResourceReader;
+import de.gematik.pki.gemlibpki.utils.TestUtils;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.nio.file.Path;
 import java.security.cert.X509Certificate;
@@ -44,14 +44,9 @@ class TucPki001VerifierTest {
 
   @BeforeAll
   static void start() {
-    tspServicesInTruststore =
-        new TslInformationProvider(
-                TslReader.getTsl(ResourceReader.getFilePathFromResources(FILE_NAME_TSL_DEFAULT))
-                    .orElseThrow())
-            .getTspServices();
-    newTslToCheck =
-        TslReader.getTsl(ResourceReader.getFilePathFromResources(FILE_NAME_TSL_DEFAULT))
-            .orElseThrow();
+    tspServicesInTruststore = TestUtils.getDefaultTspServiceList();
+    overwriteSspUrls(tspServicesInTruststore, "invalidSsp");
+    newTslToCheck = TestUtils.getDefaultTsl();
   }
 
   @Test
@@ -63,7 +58,7 @@ class TucPki001VerifierTest {
                     "src/test/resources/certificates/GEM.TSL-CA8/TSL-Signing-Unit-8-TEST-ONLY.p12"),
                 "00")
             .getCertificate();
-    configureOcspResponderMockForOcspRequest(tslSigner, ocspResponderMock);
+    ocspResponderMock.configureForOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA8);
     overwriteSspUrls(tspServicesInTruststore, ocspResponderMock.getSspUrl());
 
     final TucPki001Verifier tucPki001Verifier =
@@ -95,9 +90,10 @@ class TucPki001VerifierTest {
             .tslToCheck(newTslToCheck)
             .currentTrustedServices(tspServicesInTruststore)
             .build();
+
     assertThatThrownBy(tucPki001Verifier::performTucPki001Checks)
-        .isInstanceOf(GemPkiRuntimeException.class)
-        .hasMessage("OCSP senden/empfangen fehlgeschlagen.");
+        .isInstanceOf(GemPkiException.class)
+        .hasMessage(ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
   }
 
   @Test

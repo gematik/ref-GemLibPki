@@ -39,14 +39,14 @@ public final class TslWriter {
   public static void write(
       @NonNull final TrustStatusListType tsl, @NonNull final Path tslFilePath) {
     try {
-      TslHelper.createMarshaller().marshal(TslHelper.createJaxbElement(tsl), tslFilePath.toFile());
+      TslUtils.createMarshaller().marshal(TslUtils.createJaxbElement(tsl), tslFilePath.toFile());
     } catch (final JAXBException e) {
       throw new GemPkiRuntimeException(STATUS_LIST_TO_FILE_FAILED, e);
     }
   }
 
   public static void write(@NonNull final Document tsl, @NonNull final Path filePath) {
-    final TransformerFactory tf = TslHelper.getTransformerFactory();
+    final TransformerFactory tf = TslUtils.getTransformerFactory();
     try {
       tf.newTransformer()
           .transform(new DOMSource(tsl.getDocumentElement()), new StreamResult(filePath.toFile()));

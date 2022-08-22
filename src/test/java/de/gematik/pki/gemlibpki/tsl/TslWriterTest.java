@@ -16,45 +16,45 @@
 
 package de.gematik.pki.gemlibpki.tsl;
 
+import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
 import static de.gematik.pki.gemlibpki.utils.ResourceReader.getFilePathFromResources;
 import static de.gematik.pki.gemlibpki.utils.XmlCompare.documentsAreEqual;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import de.gematik.pki.gemlibpki.utils.TestUtils;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.nio.file.Path;
+import javax.xml.parsers.ParserConfigurationException;
 import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
 
 class TslWriterTest {
 
-  // TSL-test.xml is TU-RSA TSL
-  private static final String FILE_NAME_TSL = "tsls/valid/TSL-test.xml";
-
   @Test
   void writeFromTrustServiceStatusList() {
-    final TrustStatusListType tsl =
-        TslReader.getTsl(getFilePathFromResources(FILE_NAME_TSL)).orElseThrow();
+    final TrustStatusListType tsl = TestUtils.getTsl(FILE_NAME_TSL_ECC_DEFAULT);
     final Path destFile = Path.of("target/newTslTssl.xml");
     TslWriter.write(tsl, destFile);
-    assertThat(documentsAreEqual(getFilePathFromResources(FILE_NAME_TSL), destFile)).isTrue();
+    assertThat(documentsAreEqual(getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT), destFile))
+        .isTrue();
   }
 
   @Test
   void writeFromDocument() {
     final Document tsl =
-        TslReader.getTslAsDoc(getFilePathFromResources(FILE_NAME_TSL)).orElseThrow();
+        TslReader.getTslAsDoc(getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT)).orElseThrow();
     final Path destFile = Path.of("target/newTslDoc.xml");
     TslWriter.write(tsl, destFile);
-    assertThat(documentsAreEqual(getFilePathFromResources(FILE_NAME_TSL), destFile)).isTrue();
+    assertThat(documentsAreEqual(getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT), destFile))
+        .isTrue();
   }
 
   @Test
   void verifyWriteDocAndTsslAreEqual() {
-    final TrustStatusListType tsl =
-        TslReader.getTsl(getFilePathFromResources(FILE_NAME_TSL)).orElseThrow();
+    final TrustStatusListType tsl = TestUtils.getTsl(FILE_NAME_TSL_ECC_DEFAULT);
     final Document tslAsDoc =
-        TslReader.getTslAsDoc(getFilePathFromResources(FILE_NAME_TSL)).orElseThrow();
+        TslReader.getTslAsDoc(getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT)).orElseThrow();
     final Path doc = Path.of("target/tslAsDoc.xml");
     final Path tssl = Path.of("target/tslAsTssl.xml");
     TslWriter.write(tslAsDoc, doc);
@@ -64,18 +64,33 @@ class TslWriterTest {
 
   @Test
   void verifyConvert() {
-    final TrustStatusListType tsl =
-        TslReader.getTsl(getFilePathFromResources(FILE_NAME_TSL)).orElseThrow();
+    final TrustStatusListType tsl = TestUtils.getTsl(FILE_NAME_TSL_ECC_DEFAULT);
     final Path doc = Path.of("target/tslConvertToDoc.xml");
     TslWriter.write(TslConverter.tslToDoc(tsl).orElseThrow(), doc);
-    assertThat(documentsAreEqual(doc, getFilePathFromResources(FILE_NAME_TSL))).isTrue();
+    assertThat(documentsAreEqual(doc, getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT)))
+        .isTrue();
   }
 
   @Test
-  void nonNullTests() {
-    assertThatThrownBy(() -> TslWriter.write((TrustStatusListType) null, null))
-        .isInstanceOf(NullPointerException.class);
-    assertThatThrownBy(() -> TslWriter.write((Document) null, null))
-        .isInstanceOf(NullPointerException.class);
+  void nonNullTests() throws ParserConfigurationException {
+    final Path tslFilePath = Path.of("dummyPath");
+    final Document document = TslUtils.createDocBuilder().newDocument();
+    final TrustStatusListType tsl = new TrustStatusListType();
+
+    assertThatThrownBy(() -> TslWriter.write((TrustStatusListType) null, tslFilePath))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("tsl is marked non-null but is null");
+
+    assertThatThrownBy(() -> TslWriter.write(tsl, null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("tslFilePath is marked non-null but is null");
+
+    assertThatThrownBy(() -> TslWriter.write((Document) null, tslFilePath))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("tsl is marked non-null but is null");
+
+    assertThatThrownBy(() -> TslWriter.write(document, null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("filePath is marked non-null but is null");
   }
 }

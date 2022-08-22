@@ -28,14 +28,13 @@ public enum KeyUsage {
    * dataEncipherment (3), keyAgreement (4), keyCertSign (5), cRLSign (6), encipherOnly (7),
    * decipherOnly (8) }
    */
-  DIGITAL_SIGNATURE("digitalSignature", 0),
-  NON_REPUDIATION("nonRepudiation", 1),
-  KEY_ENCIPHERMENT("keyEncipherment", 2),
-  DATA_ENCIPHERMENT("dataEncipherment", 3),
-  KEY_AGREEMENT("keyAgreement", 4),
-  CRL_SIGN("cRLSign", 6);
+  KEYUSAGE_DIGITAL_SIGNATURE("digitalSignature", 0),
+  KEYUSAGE_NON_REPUDIATION("nonRepudiation", 1),
+  KEYUSAGE_KEY_ENCIPHERMENT("keyEncipherment", 2),
+  KEYUSAGE_DATA_ENCIPHERMENT("dataEncipherment", 3),
+  KEYUSAGE_KEY_AGREEMENT("keyAgreement", 4),
+  KEYUSAGE_CRL_SIGN("cRLSign", 6);
 
-  // ...
   private final String description;
   private final int bit;
 }

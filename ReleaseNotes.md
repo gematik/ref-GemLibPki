@@ -1,3 +1,30 @@
+# Release 0.9.1
+
+- fix sonar issue in builder parameter
+
+# Release 0.9.0
+
+- API change: rename enum elements
+  in [CertificateProfile](src/main/java/de/gematik/pki/gemlibpki/certificate/CertificateProfile.java)
+- API change: rename getTspServiceSubset() to getIssuerTspServiceSubset()
+  in [CertificateProfile](src/main/java/de/gematik/pki/gemlibpki/tsl/TspInformationProvider.java)
+- Update XAdES4j because of https://github.com/luisgoncalves/xades4j/issues/261. This brings new
+  dependencies in jaxb context (glassfish, jakarta, etc.)
+- add OCSP validations according to TUC_PKI_006 of gemSpec_PKI
+    - timings like producedAt, etc.
+    - signature
+    - certificate status like revoked and unknown
+    - OCSP response status like TryLater, Unauthorized, etc.
+    - chertHash
+    - certId
+    - OCSP timeout
+- add possibility to generate OCSP responses with invalid parameter (signature, certId, etc.)
+- add ocsp checks against TUC_PKI_018 for TSL signer certificate during TSL validation (TUC_PKI_001)
+- add possibility to generate certId with or without null parameter in hash algorithm
+- finalize OCSP caching
+- add possibility to verify an offline ocsp response
+- bug fixes and code improvements
+
 # Release 0.8.1
 
 - change language specific code (>Java 11)
@@ -6,24 +33,27 @@
 # Release 0.8.0
 
 - API change: move whole package from de.gematik.pki to de.gematik.pki.gemlibpki
-- usage of BouncyCastle as crypto provider enforced in every class/method that deals with brainpool curves
+- usage of BouncyCastle as crypto provider enforced in every class/method that deals with brainpool
+  curves
 - switch code formatting to google java formatter
-- switch to OpenJDK 17
+- switch from OpenJDK 11 to OpenJDK 17
 - update dependencies
 - update maven plugins
 - multiple small bug fixes and improvements
 
 # Release 0.7.1
 
-- API change: rename TucPki001Verifier builder member tspServiceList to currentTrustedServices for clarity
+- API change: rename TucPki001Verifier builder member tspServiceList to currentTrustedServices for
+  clarity
 
 # Release 0.7.0
 
 - API change: rename method doOcsp() to doOcspIfConfigured()
   in [TucPki018Verifier](src/main/java/de/gematik/pki/certificate/TucPki018Verifier.java)
 - API change: rework exception handling
-- add class [TucPki001Verifier](src/main/java/de/gematik/pki/tsl/TucPki001Verifier.java) for checks of tsl.
-  The only check at the moment is the ocsp status of the tsl signing certificate.
+- add class [TucPki001Verifier](src/main/java/de/gematik/pki/tsl/TucPki001Verifier.java) for checks
+  of TSL.
+  The only check at the moment is the ocsp status of the TSL signing certificate.
 
 # Release 0.6.2
 
@@ -62,7 +92,8 @@
 # Release 0.5.0
 
 - API change: Main method for certificate checks "performTucPki18Checks(..)" in
-  class [TucPki018Verifier](src/main/java/de/gematik/pki/certificate/TucPki018Verifier.java) returns Admission instead
+  class [TucPki018Verifier](src/main/java/de/gematik/pki/certificate/TucPki018Verifier.java) returns
+  Admission instead
   of CertficateType.
 - add methods for TSL handling: read, write, modify, sign+validate (RSA/ECC)
 - OCSP request implemented, active by default
@@ -74,7 +105,9 @@
 
 # Release 0.4.0
 
-- refactoring: separate [TspInformationProvider](src/main/java/de/gematik/pki/tsl/TspInformationProvider.java) from
+- refactoring:
+  separate [TspInformationProvider](src/main/java/de/gematik/pki/tsl/TspInformationProvider.java)
+  from
   [TslInformationProvider](src/main/java/de/gematik/pki/tsl/TslInformationProvider.java)
 - OCSP request implemented, not used in certificate checks atm
 - cleanup JavaDoc

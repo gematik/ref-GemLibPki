@@ -16,10 +16,10 @@
 
 package de.gematik.pki.gemlibpki.tsl;
 
-import static de.gematik.pki.gemlibpki.tsl.TslHelper.createDocBuilder;
-import static de.gematik.pki.gemlibpki.tsl.TslHelper.createJaxbElement;
-import static de.gematik.pki.gemlibpki.tsl.TslHelper.createMarshaller;
-import static de.gematik.pki.gemlibpki.tsl.TslHelper.getTransformerFactory;
+import static de.gematik.pki.gemlibpki.tsl.TslUtils.createDocBuilder;
+import static de.gematik.pki.gemlibpki.tsl.TslUtils.createJaxbElement;
+import static de.gematik.pki.gemlibpki.tsl.TslUtils.createMarshaller;
+import static de.gematik.pki.gemlibpki.tsl.TslUtils.getTransformerFactory;
 
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;

@@ -24,14 +24,15 @@ import org.bouncycastle.asn1.x509.KeyPurposeId;
 @RequiredArgsConstructor
 @Getter
 public enum ExtendedKeyUsage {
-  ANY_EXTENDED_KEYUSAGE("anyExtendedKeyUsage", KeyPurposeId.anyExtendedKeyUsage.getId()),
-  ID_KP_SERVERAUTH("id-kp-serverAuth", KeyPurposeId.id_kp_serverAuth.getId()),
-  ID_KP_CLIENTAUTH("id-kp-clientAuth", KeyPurposeId.id_kp_clientAuth.getId()),
-  ID_KP_EMAILPROTECTION("id-kp-emailProtection", KeyPurposeId.id_kp_emailProtection.getId()),
-  ID_KP_OCSPSIGNING("id-kp-OCSPSigning", KeyPurposeId.id_kp_OCSPSigning.getId()),
-  ID_TSL_KP_TSLSIGNING(
+  EXT_KEYUSAGE_ANY_EXT_KEYUSAGE("anyExtendedKeyUsage", KeyPurposeId.anyExtendedKeyUsage.getId()),
+  EXT_KEYUSAGE_ID_KP_SERVERAUTH("id-kp-serverAuth", KeyPurposeId.id_kp_serverAuth.getId()),
+  EXT_KEYUSAGE_ID_KP_CLIENTAUTH("id-kp-clientAuth", KeyPurposeId.id_kp_clientAuth.getId()),
+  EXT_KEYUSAGE_ID_KP_EMAILPROTECTION(
+      "id-kp-emailProtection", KeyPurposeId.id_kp_emailProtection.getId()),
+  EXT_KEYUSAGE_ID_KP_OCSPSIGNING("id-kp-OCSPSigning", KeyPurposeId.id_kp_OCSPSigning.getId()),
+  EXT_KEYUSAGE_ID_TSL_KP_TSLSIGNING(
       "id-tsl-kp-tslSigning", "0.4.0.2231.3.0"); // http://oid-info.com/get/0.4.0.2231.3.0
 
-  public final String value;
-  public final String oid;
+  private final String value;
+  private final String oid;
 }

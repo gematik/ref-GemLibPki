@@ -30,10 +30,17 @@ class CertReaderTest {
   @Test
   void readExistingX509DerCert() {
     final byte[] file =
-        Utils.readContent(
+        GemlibPkiUtils.readContent(
             Path.of("src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.der"));
     assertThat(CertReader.readX509(file).getSubjectX500Principal().getName())
         .contains("Zahnarztpraxis Dr. med.Gunther");
+  }
+
+  @Test
+  void readX509NonNull() {
+    assertThatThrownBy(() -> CertReader.readX509((Path) null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("path is marked non-null but is null");
   }
 
   @SneakyThrows
@@ -51,7 +58,7 @@ class CertReaderTest {
   @Test
   void readExistingX509PemCert() {
     final byte[] file =
-        Utils.readContent(
+        GemlibPkiUtils.readContent(
             Path.of("src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem"));
     assertThat(CertReader.readX509(file).getSubjectX500Principal().getName())
         .contains("Zahnarztpraxis Dr. med.Gunther");
@@ -60,7 +67,7 @@ class CertReaderTest {
   @SneakyThrows
   @Test
   void readInvalidCert() {
-    final byte[] file = Utils.readContent(Path.of("src/test/resources/log4j2.xml"));
+    final byte[] file = GemlibPkiUtils.readContent(Path.of("src/test/resources/log4j2.xml"));
     assertThatThrownBy(() -> CertReader.readX509(file))
         .isInstanceOf(GemPkiRuntimeException.class)
         .hasMessage("Konnte Zertifikat nicht lesen.");
@@ -89,6 +96,11 @@ class CertReaderTest {
   @Test
   void nullTest() {
     final Path path = Path.of("unimportant");
+
+    assertThatThrownBy(() -> CertReader.getX509FromP12(null, "foo"))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("path is marked non-null but is null");
+
     assertThatThrownBy(() -> CertReader.getX509FromP12(path, null))
         .isInstanceOf(NullPointerException.class)
         .hasMessage("password is marked non-null but is null");

@@ -22,12 +22,15 @@ import java.io.IOException;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.isismtt.x509.AdmissionSyntax;
+import org.bouncycastle.asn1.isismtt.x509.Admissions;
+import org.bouncycastle.asn1.isismtt.x509.ProfessionInfo;
 import org.bouncycastle.asn1.x500.DirectoryString;
 import org.bouncycastle.cert.X509CertificateHolder;
 
@@ -38,7 +41,7 @@ import org.bouncycastle.cert.X509CertificateHolder;
  */
 public class Admission {
 
-  @NonNull private final ASN1Encodable asn1Admission;
+  private final ASN1Encodable asn1Admission;
 
   /**
    * Constructor
@@ -61,14 +64,13 @@ public class Admission {
    * @return String of the admission authority or an empty string if not present
    */
   public String getAdmissionAuthority() {
-    try {
-      return AdmissionSyntax.getInstance(asn1Admission)
-          .getAdmissionAuthority()
-          .getName()
-          .toString();
-    } catch (final NullPointerException e) {
+    final AdmissionSyntax admissionInstance = AdmissionSyntax.getInstance(asn1Admission);
+
+    if (admissionInstance == null) {
       return "";
     }
+
+    return admissionInstance.getAdmissionAuthority().getName().toString();
   }
 
   /**
@@ -78,11 +80,23 @@ public class Admission {
    *     admission in the certificate
    */
   public Set<String> getProfessionItems() {
-    return Arrays.stream(
-            AdmissionSyntax.getInstance(asn1Admission)
-                .getContentsOfAdmissions()[0]
-                .getProfessionInfos()[0]
-                .getProfessionItems())
+    final AdmissionSyntax admissionInstance = AdmissionSyntax.getInstance(asn1Admission);
+
+    if (admissionInstance == null) {
+      return Collections.emptySet();
+    }
+
+    final Admissions[] admissions = admissionInstance.getContentsOfAdmissions();
+    if (admissions.length == 0) {
+      return Collections.emptySet();
+    }
+
+    final ProfessionInfo[] professionInfos = admissions[0].getProfessionInfos();
+    if (professionInfos.length == 0) {
+      return Collections.emptySet();
+    }
+
+    return Arrays.stream(professionInfos[0].getProfessionItems())
         .map(DirectoryString::getString)
         .collect(Collectors.toSet());
   }

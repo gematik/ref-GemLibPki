@@ -27,8 +27,8 @@ public enum Role {
   OID_OEFFENTLICHE_APOTHEKE("Öffentliche Apotheke", "1.2.276.0.76.4.54"),
   OID_KRANKENHAUSAPOTHEKE("Krankenhausapotheke", "1.2.276.0.76.4.55"),
   OID_EREZEPT("E-Rezept", "1.2.276.0.76.4.259"),
-  NONE("", "");
+  ROLE_NONE("", "");
 
-  private final String professsionItem;
+  private final String professionItem;
   private final String professionOid;
 }

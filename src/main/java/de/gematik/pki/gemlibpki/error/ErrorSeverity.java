@@ -23,8 +23,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Getter
 public enum ErrorSeverity {
-  ERROR("Error"),
-  WARNING("Warning");
+  SEVERITY_ERROR("Error"),
+  SEVERITY_WARNING("Warning");
 
   private final String description;
 }

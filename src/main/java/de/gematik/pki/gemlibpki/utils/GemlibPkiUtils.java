@@ -23,16 +23,25 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.bouncycastle.crypto.digests.SHA1Digest;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Utils {
+public final class GemlibPkiUtils {
 
+  /**
+   * Uses Files.readAllBytes(path) to read the content under the path; {@link
+   * GemPkiRuntimeException} is thrown instead of {@link IOException}
+   *
+   * @param path the local file path
+   * @return content of the file
+   */
   public static byte[] readContent(final Path path) {
-
     try {
       return Files.readAllBytes(path);
     } catch (final IOException e) {
@@ -40,6 +49,12 @@ public final class Utils {
     }
   }
 
+  /**
+   * Returns SHA256 of the input content
+   *
+   * @param byteArray content to generate SHA256 for
+   * @return SHA256 of the input content
+   */
   public static byte[] calculateSha256(final byte[] byteArray) {
     try {
       final MessageDigest digest = MessageDigest.getInstance(new SHA256Digest().getAlgorithmName());
@@ -49,8 +64,28 @@ public final class Utils {
     }
   }
 
-  public static void setBcProvider() {
+  /**
+   * Returns SHA1 of the input content
+   *
+   * @param byteArray content to generate SHA1 for
+   * @return SHA1 of the input content
+   */
+  public static byte[] calculateSha1(final byte[] byteArray) {
+    try {
+      final MessageDigest digest = MessageDigest.getInstance(new SHA1Digest().getAlgorithmName());
+      return digest.digest(byteArray);
+    } catch (final NoSuchAlgorithmException e) {
+      throw new GemPkiRuntimeException("Signaturalgorithmus nicht unterstützt.", e);
+    }
+  }
+
+  /** Use BouncyCastle as the security provider instead of default one */
+  public static void setBouncyCastleProvider() {
     Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
     Security.insertProviderAt(new BouncyCastleProvider(), 1);
+  }
+
+  public static ZonedDateTime now() {
+    return ZonedDateTime.now(ZoneOffset.UTC);
   }
 }

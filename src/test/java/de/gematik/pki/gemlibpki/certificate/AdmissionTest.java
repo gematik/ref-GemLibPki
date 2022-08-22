@@ -38,7 +38,7 @@ final class AdmissionTest {
   void admissionNull() {
     assertThatThrownBy(() -> new Admission(null))
         .isInstanceOf(NullPointerException.class)
-        .hasMessageContaining("x509EeCert");
+        .hasMessage("x509EeCert is marked non-null but is null");
   }
 
   @Test
@@ -49,7 +49,7 @@ final class AdmissionTest {
   @Test
   void getProfessionItems() throws CertificateEncodingException, IOException {
     assertThat(new Admission(certValid).getProfessionItems())
-        .contains(Role.OID_ZAHNARZTPRAXIS.getProfesssionItem());
+        .contains(Role.OID_ZAHNARZTPRAXIS.getProfessionItem());
   }
 
   @Test
