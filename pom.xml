@@ -4,7 +4,7 @@
 
   <groupId>de.gematik.pki.gemlibpki</groupId>
   <artifactId>gemLibPki</artifactId>
-  <version>0.9.1</version>
+  <version>0.9.2</version>
   <packaging>jar</packaging>
   <name>GemLibPki</name>
   <description>library for implement and tests of the gematik pki specification</description>
@@ -54,7 +54,7 @@
   </distributionManagement>
 
   <properties>
-    <project.build.outputTimestamp>1661160306</project.build.outputTimestamp>
+    <project.build.outputTimestamp>1661350026</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.encoding>${project.build.sourceEncoding}</maven.compiler.encoding>
     <version.java>17</version.java>

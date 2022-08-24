@@ -88,10 +88,13 @@ public class OcspResponseGenerator {
   @NonNull @Builder.Default private final OCSPRespStatus respStatus = OCSPRespStatus.SUCCESSFUL;
   @Builder.Default private final boolean withResponseBytes = true;
   @NonNull @Builder.Default private final ResponderIdType responderIdType = ResponderIdType.BY_KEY;
+
   @NonNull @Builder.Default
   private final ZonedDateTime thisUpdate = ZonedDateTime.now(ZoneOffset.UTC);
+
   @NonNull @Builder.Default
   private final ZonedDateTime producedAt = ZonedDateTime.now(ZoneOffset.UTC);
+
   private final ZonedDateTime nextUpdate;
   @Builder.Default private final boolean withNullParameterHashAlgoOfCertId = false;
 

@@ -31,24 +31,23 @@ We are fully aware of the content and meaning of the test data. We never publish
 ##### Certificate checks
 
 - we check against certificate profiles specified by gematik, not against usages and contexts
-- several methods to get information about a certificate and its issuer
+- we provide several methods to get information about a certificate and its issuer
 - contains checks of all steps defined in TUC_PKI_018 „Zertifikatsprüfung in der TI“ specified in
-  gematik document "
-  Übergreifende Spezifikation PKI" (gemSpec_PKI)
+  gematik document "Übergreifende Spezifikation PKI" (gemSpec_PKI)
 - OCSP requests are optional and activated by default
-- OCSP responses are not analyzed beyond status GOOD (no signature checks etc.)
-
-##### TSL handling
-
-- several methods for parsing, modifying, signing and signature validation of a TSL
+- OCSP responses are verified according to TUC_PKI_006 "OCSP-Abfrage". See OCSP checks section.
 
 ##### OCSP checks
 
-- OCSP responses can be generated with different properties. By default a valid OCSP Response
+- OCSP responses can be generated with different properties. By default, a valid OCSP Response
   according to rf2560 is generated
 - OCSP responses are validated according to TUC_PKI_006 of gemSpec_PKI.
 - OCSP validation can be disabled via builder parameter `withOcspCheck` of
   [TucPki018Verifier](src/main/java/de/gematik/pki/gemlibpki/certificate/TucPki018Verifier.java).
+
+##### TSL handling
+
+- several methods for parsing, modifying, signing and signature validation of a TSL
 
 ##### Error codes
 
@@ -58,7 +57,7 @@ We are fully aware of the content and meaning of the test data. We never publish
 
 The lib is developed and tested with **OpenJDK 17** and **Apache Maven 3.8.6**
 
-Build with :
+Build with:
 
     mvn clean install
 
@@ -70,7 +69,8 @@ Build with :
   and call its public methods
 - get TspServices from TslInformationProvider
 - instantiate
-  a [TucPki018Verifier](src/main/java/de/gematik/pki/gemlibpki/certificate/TucPki018Verifier.java) (**via builder) and call its public method performTucPki18Checks
+  a [TucPki018Verifier](src/main/java/de/gematik/pki/gemlibpki/certificate/TucPki018Verifier.java) (**
+  via builder) and call its public method performTucPki18Checks
 
 ### Steps to perform TSL checks
 

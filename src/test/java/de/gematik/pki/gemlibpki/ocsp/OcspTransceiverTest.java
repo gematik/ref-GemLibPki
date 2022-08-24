@@ -31,11 +31,15 @@ import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.tsl.TspService;
 import de.gematik.pki.gemlibpki.utils.CertificateProvider;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
+import eu.europa.esig.dss.spi.x509.revocation.ocsp.OCSPRespStatus;
 import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import org.apache.http.HttpStatus;
+import org.bouncycastle.cert.ocsp.CertificateStatus;
 import org.bouncycastle.cert.ocsp.OCSPReq;
 import org.bouncycastle.cert.ocsp.OCSPResp;
 import org.junit.jupiter.api.BeforeAll;
@@ -150,6 +154,53 @@ class OcspTransceiverTest {
                     .verifyOcspResponse(cache))
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
+  }
+
+  @Test
+  void verifyCachingForOcspStatusSuccessful() throws GemPkiException {
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
+
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerRsa())
+            .respStatus(OCSPRespStatus.SUCCESSFUL)
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT, CertificateStatus.GOOD);
+
+    ocspResponderMock.configureWireMockReceiveHttpPost(ocspResp, HttpStatus.SC_OK);
+
+    final OcspRespCache cache = new OcspRespCache(2);
+
+    getOcspTransceiver().verifyOcspResponse(cache);
+
+    assertThat(cache.getSize()).isEqualTo(1);
+    TestUtils.waitSeconds(cache.getOcspGracePeriodSeconds() + 1);
+    Optional<OCSPResp> ocspRespOpt = cache.getResponse(VALID_X509_EE_CERT.getSerialNumber());
+    assertThat(ocspRespOpt.isEmpty());
+    assertThat(cache.getSize()).isZero();
+  }
+
+  @Test
+  void verifyCachingForOcspStatusBad() throws GemPkiException {
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
+
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerRsa())
+            .respStatus(OCSPRespStatus.UNKNOWN_STATUS)
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT, CertificateStatus.GOOD);
+
+    ocspResponderMock.configureWireMockReceiveHttpPost(ocspResp, HttpStatus.SC_OK);
+
+    final OcspRespCache cache = new OcspRespCache(2);
+
+    assertThatThrownBy(() -> getOcspTransceiver().verifyOcspResponse(cache))
+        .isInstanceOf(GemPkiException.class)
+        .hasMessage(ErrorCode.TE_1058_OCSP_STATUS_ERROR.getErrorMessage(PRODUCT_TYPE));
+    assertThat(cache.getSize()).isZero();
   }
 
   @Test

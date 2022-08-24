@@ -104,7 +104,7 @@ public class OcspRespCache {
   }
 
   private void deleteExpiredResponses() {
-    // (responses with status revoked remain)
+
     final ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
 
     final List<BigInteger> expired = new ArrayList<>();

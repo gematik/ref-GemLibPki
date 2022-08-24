@@ -1,3 +1,8 @@
+# Release 0.9.2
+
+- BUGFIX: save only ocsp responses to cache with status SUCCESSFUL (0)
+- prepare reproducible builds: change line endings to LF
+
 # Release 0.9.1
 
 - fix sonar issue in builder parameter

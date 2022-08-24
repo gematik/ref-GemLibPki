@@ -87,7 +87,7 @@ public class OcspResponderMock {
   }
 
   @SneakyThrows
-  private void configureWireMockReceiveHttpPost(final OCSPResp ocspRespTx, final int httpStatus) {
+  public void configureWireMockReceiveHttpPost(final OCSPResp ocspRespTx, final int httpStatus) {
     wireMockServer.stubFor(
         post(urlEqualTo(sspDir))
             .willReturn(

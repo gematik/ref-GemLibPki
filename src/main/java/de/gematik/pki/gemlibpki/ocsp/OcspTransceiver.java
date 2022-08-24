@@ -79,23 +79,36 @@ public class OcspTransceiver {
         OcspRequestGenerator.generateSingleOcspRequest(x509EeCert, x509IssuerCert);
 
     if (ocspRespCache != null) {
+
       final Optional<OCSPResp> ocspRespCachedOpt =
           ocspRespCache.getResponse(x509EeCert.getSerialNumber());
+
       if (ocspRespCachedOpt.isEmpty()) {
+        log.debug("Send Ocsp req, because not in cache.");
         final Optional<OCSPResp> ocspRespOpt = sendOcspRequest(ocspReq);
+
         if (ocspRespOpt.isEmpty()) {
+          log.debug("No Ocsp resp received.");
           return;
         }
-        ocspResp = ocspRespCache.saveResponse(x509EeCert.getSerialNumber(), ocspRespOpt.get());
+
+        ocspResp = ocspRespOpt.get();
+        if (ocspResp.getStatus() == OCSPResp.SUCCESSFUL) {
+          log.debug("Ocsp resp from server saved to cache.");
+          ocspRespCache.saveResponse(x509EeCert.getSerialNumber(), ocspResp);
+        }
+
       } else {
+        log.debug("Ocsp resp from cache.");
         ocspResp = ocspRespCachedOpt.get();
       }
-
     } else {
+      log.debug("Send Ocsp req because no cache.");
       final Optional<OCSPResp> ocspRespOpt = sendOcspRequest(ocspReq);
       if (ocspRespOpt.isEmpty()) {
         return;
       }
+      log.debug("Ocsp resp from server, because no cache.");
       ocspResp = ocspRespOpt.get();
     }
 
