@@ -22,25 +22,30 @@ import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_RSA_DEFAULT;
 import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_RSA_NOSIG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
+import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.utils.CertReader;
 import de.gematik.pki.gemlibpki.utils.GemlibPkiUtils;
 import de.gematik.pki.gemlibpki.utils.P12Container;
 import de.gematik.pki.gemlibpki.utils.P12Reader;
 import de.gematik.pki.gemlibpki.utils.ResourceReader;
+import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.util.Objects;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
+import xades4j.XAdES4jXMLSigException;
 
 class TslSignerTest {
 
   private static final String TRUSTANCHOR_PATH_RSA =
-      "certificates/GEM.TSL-CA4/GEM.TSL-CA4_TEST-ONLY.cer";
-  private static final String SIGNER_PATH_RSA = "certificates/GEM.TSL-CA4/tslSigner.p12";
+      "certificates/GEM.TSL-CA40/GEM.TSL-CA40-TEST-ONLY.pem";
+  private static final String SIGNER_PATH_RSA = "certificates/GEM.TSL-CA40/TSL-Signer40.p12";
   private static final String TRUSTANCHOR_PATH_ECC =
       "certificates/GEM.TSL-CA8/GEM.TSL-CA8_brainpoolIP256r1.der";
   private static final String SIGNER_PATH_ECC =
@@ -73,6 +78,52 @@ class TslSignerTest {
                 ResourceReader.getFilePathFromResources(TRUSTANCHOR_PATH_ECC)));
     final P12Container signerEcc = readSignerCert(SIGNER_PATH_ECC);
     TslSigner.sign(tslEcc, signerEcc);
+  }
+
+  @Test
+  void bouncyCastleProviderIsSetRsa() {
+    // now remove the BouncyCastleProvider
+    final Document tslRsa =
+        TslReader.getTslAsDoc(ResourceReader.getFilePathFromResources(FILE_NAME_TSL_RSA_DEFAULT))
+            .orElseThrow();
+    final P12Container signerRsa = readSignerCert(SIGNER_PATH_RSA);
+
+    assertDoesNotThrow(() -> TslSigner.sign(tslRsa, signerRsa));
+    // now remove the BouncyCastleProvider
+    Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+
+    assertThatThrownBy(() -> TslSigner.sign(tslRsa, signerRsa))
+        .isInstanceOf(GemPkiRuntimeException.class)
+        .cause()
+        .isInstanceOf(XAdES4jXMLSigException.class)
+        .hasMessage(
+            "The requested algorithm http://www.w3.org/2007/05/xmldsig-more#sha256-rsa-MGF1 does"
+                + " not exist. Original Message was:"
+                + " org.apache.xml.security.algorithms.implementations.SignatureBaseRSA$SignatureRSASHA256MGF1");
+    // ... and then restore the BouncyCastleProvider
+    GemlibPkiUtils.setBouncyCastleProvider();
+  }
+
+  @Test
+  void bouncyCastleProviderIsSetEcc() {
+    // now remove the BouncyCastleProvider
+    final Document tslEcc =
+        TslReader.getTslAsDoc(ResourceReader.getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT))
+            .orElseThrow();
+    final P12Container signerEcc = readSignerCert(SIGNER_PATH_ECC);
+
+    assertDoesNotThrow(() -> TslSigner.sign(tslEcc, signerEcc));
+    // now remove the BouncyCastleProvider
+    Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+
+    assertThatThrownBy(() -> TslSigner.sign(tslEcc, signerEcc))
+        .isInstanceOf(GemPkiRuntimeException.class)
+        .hasMessage("Fehler bei erstellen der XAdES Signatur.")
+        .cause()
+        .isInstanceOf(XAdES4jXMLSigException.class)
+        .hasMessageStartingWith("Curve not supported: org.bouncycastle.jce.spec.ECNamedCurveSpec@");
+    // ... and then restore the BouncyCastleProvider
+    GemlibPkiUtils.setBouncyCastleProvider();
   }
 
   @Test

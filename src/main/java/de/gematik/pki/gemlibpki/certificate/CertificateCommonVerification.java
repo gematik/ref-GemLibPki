@@ -41,6 +41,10 @@ import lombok.extern.slf4j.Slf4j;
 @Builder
 public final class CertificateCommonVerification {
 
+  static {
+    setBouncyCastleProvider();
+  }
+
   public static final String SVCSTATUS_REVOKED = "http://uri.etsi.org/TrstSvc/Svcstatus/revoked";
 
   @NonNull private final String productType;
@@ -98,7 +102,6 @@ public final class CertificateCommonVerification {
   public void verifySignature(@NonNull final X509Certificate x509IssuerCert)
       throws GemPkiException {
 
-    setBouncyCastleProvider();
     try {
       x509EeCert.verify(x509IssuerCert.getPublicKey());
       log.debug("Signaturprüfung von {} erfolgreich", x509EeCert.getSubjectX500Principal());

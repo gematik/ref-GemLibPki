@@ -79,7 +79,10 @@ public final class GemlibPkiUtils {
     }
   }
 
-  /** Use BouncyCastle as the security provider instead of default one */
+  /**
+   * Use BouncyCastle as the security provider instead of default one and make sure that this
+   * provider is at position one
+   */
   public static void setBouncyCastleProvider() {
     Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
     Security.insertProviderAt(new BouncyCastleProvider(), 1);

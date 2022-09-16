@@ -26,23 +26,16 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.security.cert.X509Certificate;
 import org.bouncycastle.cert.ocsp.OCSPReq;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 class OcspRequestGeneratorTest {
 
-  private static X509Certificate VALID_X509_EE_CERT;
-  private static X509Certificate VALID_X509_ISSUER_CERT;
-
-  @BeforeAll
-  public static void start() {
-    VALID_X509_EE_CERT =
-        CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem");
-    VALID_X509_ISSUER_CERT =
-        CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.RCA1_TEST-ONLY.pem");
-  }
+  private static final X509Certificate VALID_X509_EE_CERT =
+      CertificateProvider.getX509Certificate(
+          "src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem");
+  private static final X509Certificate VALID_X509_ISSUER_CERT =
+      CertificateProvider.getX509Certificate(
+          "src/test/resources/certificates/GEM.RCA1_TEST-ONLY.pem");
 
   @Test
   void verifyGenerateOcspRequest() {

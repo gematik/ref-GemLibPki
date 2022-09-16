@@ -24,12 +24,15 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.utils.CertificateProvider;
+import de.gematik.pki.gemlibpki.utils.GemlibPkiUtils;
 import de.gematik.pki.gemlibpki.utils.P12Reader;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
 import eu.europa.esig.dss.spi.x509.revocation.ocsp.OCSPRespStatus;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.NoSuchProviderException;
+import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -49,6 +52,8 @@ import org.bouncycastle.cert.ocsp.OCSPResp;
 import org.bouncycastle.cert.ocsp.RevokedStatus;
 import org.bouncycastle.cert.ocsp.SingleResp;
 import org.bouncycastle.cert.ocsp.UnknownStatus;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -89,6 +94,28 @@ class OcspResponseGeneratorTest {
                     .signer(OcspTestConstants.getOcspSignerEcc())
                     .build()
                     .generate(ocspReq, VALID_X509_EE_CERT)));
+  }
+
+  @Test
+  void bouncyCastleProviderIsSet() {
+    final OcspResponseGenerator generator =
+        OcspResponseGenerator.builder().signer(OcspTestConstants.getOcspSignerEcc()).build();
+
+    assertDoesNotThrow(() -> generator.generate(ocspReq, VALID_X509_EE_CERT));
+
+    // now remove the BouncyCastleProvider
+    Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+
+    assertThatThrownBy(() -> generator.generate(ocspReq, VALID_X509_EE_CERT))
+        .isInstanceOf(GemPkiRuntimeException.class)
+        .cause()
+        .isInstanceOf(OperatorCreationException.class)
+        .hasMessage("cannot create signer: no such provider: BC")
+        .cause()
+        .isInstanceOf(NoSuchProviderException.class)
+        .hasMessage("no such provider: BC");
+    // ... and then restore the BouncyCastleProvider
+    GemlibPkiUtils.setBouncyCastleProvider();
   }
 
   @Test

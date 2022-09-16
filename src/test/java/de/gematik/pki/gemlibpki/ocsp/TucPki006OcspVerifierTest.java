@@ -21,6 +21,7 @@ import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_MILLISECONDS;
 import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.TIMEOUT_DELTA_MILLISECONDS;
+import static de.gematik.pki.gemlibpki.ocsp.OcspTestConstants.P12_PASSWORD;
 import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getBasicOcspResp;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -33,8 +34,11 @@ import de.gematik.pki.gemlibpki.tsl.TslInformationProvider;
 import de.gematik.pki.gemlibpki.tsl.TspService;
 import de.gematik.pki.gemlibpki.utils.CertificateProvider;
 import de.gematik.pki.gemlibpki.utils.GemlibPkiUtils;
+import de.gematik.pki.gemlibpki.utils.P12Container;
+import de.gematik.pki.gemlibpki.utils.P12Reader;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
 import eu.europa.esig.dss.spi.x509.revocation.ocsp.OCSPRespStatus;
+import java.nio.file.Path;
 import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -296,6 +300,35 @@ class TucPki006OcspVerifierTest {
     final OCSPResp ocspRespLocal =
         OcspResponseGenerator.builder()
             .signer(OcspTestConstants.getOcspSignerEcc())
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT);
+
+    final TucPki006OcspVerifier tucPki006OcspVerifier =
+        TucPki006OcspVerifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tspServiceList(tspServiceList)
+            .ocspResponse(ocspRespLocal)
+            .eeCert(VALID_X509_EE_CERT)
+            .build();
+
+    assertThatThrownBy(tucPki006OcspVerifier::verifyOcspResponseSignature)
+        .isInstanceOf(GemPkiException.class)
+        .hasMessage(ErrorCode.SE_1030_OCSP_CERT_MISSING.getErrorMessage(PRODUCT_TYPE));
+  }
+
+  @Test
+  void verifyOcspSignerMissingDifferentKey() {
+
+    final List<TspService> tspServiceList =
+        new TslInformationProvider(TestUtils.getTsl(FILE_NAME_TSL_RSA_DEFAULT)).getTspServices();
+
+    final P12Container signer =
+        P12Reader.getContentFromP12(
+            Path.of("src/test/resources/certificates/ocsp/eccDifferent-key.p12"), P12_PASSWORD);
+
+    final OCSPResp ocspRespLocal =
+        OcspResponseGenerator.builder()
+            .signer(signer)
             .build()
             .generate(ocspReq, VALID_X509_EE_CERT);
 

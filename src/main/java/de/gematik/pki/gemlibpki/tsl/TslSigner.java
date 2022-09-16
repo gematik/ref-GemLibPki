@@ -47,6 +47,9 @@ import xades4j.utils.XadesProfileResolutionException;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class TslSigner {
 
+  static {
+    setBouncyCastleProvider();
+  }
   /**
    * Signs a given tsl
    *
@@ -54,7 +57,7 @@ public final class TslSigner {
    * @param tslSigner {@link P12Container} with x509certificate a key (RSA/ECC) for signature
    */
   public static void sign(@NonNull final Document tsl, @NonNull final P12Container tslSigner) {
-    setBouncyCastleProvider();
+
     final Element elemToSign = getTslWithoutSignature(tsl);
     final KeyingDataProvider kdp =
         new DirectKeyingDataProvider(tslSigner.getCertificate(), tslSigner.getPrivateKey());

@@ -1,9 +1,11 @@
-# ![Logo](./doc/images/certification_64px.png) GemLibPki
+<img align="right" width="200" height="37" src="doc/images/Gematik_Logo_Flag.png"/> <br />
 
-<div>Icons made by <a href="https://www.freepik.com" title="Freepik">Freepik</a> from 
-<a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
+# GemLibPki
 
-## GemLibPki - a Java library for functionalities in PKI (Public Key Infrastructure) of products specified by gematik
+--- 
+A java library for functionalities in PKI (Public Key Infrastructure) of products specified by gematik
+
+---
 
 Products specified by gematik which have to deal with PKI will have to handle certificates and
 TSLs (TrustedServiceProvider Status List). This library may help to understand the intention of the
@@ -12,7 +14,7 @@ Please
 see [liability limitation](https://fachportal.gematik.de/default-titlegrundsaetzliche-nutzungsbedingungen)
 for further information.
 
-Specifications are published at [Gematik Fachportal](https://fachportal.gematik.de/).
+Specifications are published at [gematik Fachportal](https://fachportal.gematik.de/).
 
 [Link to Maven Repository](https://mvnrepository.com/artifact/de.gematik.pki.gemlibpki/gemLibPki)
 
@@ -60,6 +62,12 @@ The lib is developed and tested with **OpenJDK 17** and **Apache Maven 3.8.6**
 Build with:
 
     mvn clean install
+
+Builds are reproducible, to check call
+
+    mvn clean verify artifact:compare
+
+in any compatible unix environment.
 
 ### Steps to perform certificate checks
 

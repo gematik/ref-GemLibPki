@@ -38,6 +38,10 @@ import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class OcspRequestGenerator {
 
+  static {
+    setBouncyCastleProvider();
+  }
+
   /**
    * Generates an OCSP request using BouncyCastle.
    *
@@ -47,11 +51,12 @@ public final class OcspRequestGenerator {
    */
   public static OCSPReq generateSingleOcspRequest(
       @NonNull final X509Certificate x509EeCert, @NonNull final X509Certificate x509IssuerCert) {
-    setBouncyCastleProvider();
+
     final JcaDigestCalculatorProviderBuilder digestCalculatorProviderBuilder =
         new JcaDigestCalculatorProviderBuilder();
 
     try {
+
       final DigestCalculatorProvider digestCalculatorProvider =
           digestCalculatorProviderBuilder.build();
 
@@ -65,7 +70,9 @@ public final class OcspRequestGenerator {
               x509EeCert.getSerialNumber());
 
       final OCSPReqBuilder ocspReqBuilder = new OCSPReqBuilder();
+
       ocspReqBuilder.addRequest(id);
+
       return ocspReqBuilder.build();
     } catch (final OperatorCreationException | CertificateEncodingException | OCSPException e) {
       throw new GemPkiRuntimeException("Generieren des OCSP Requests fehlgeschlagen.", e);

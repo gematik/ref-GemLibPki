@@ -7,7 +7,7 @@
 
 
 doc/development.txt
-LICENSE_HEADER
+LICENSE_PLACEHOLDER
 Pipeline.CI.Jenkinsfile
 Pipeline.DeployGitHub.Jenkinsfile
 Pipeline.InternalRelease.Jenkinsfile

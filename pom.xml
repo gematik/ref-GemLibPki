@@ -4,7 +4,7 @@
 
   <groupId>de.gematik.pki.gemlibpki</groupId>
   <artifactId>gemLibPki</artifactId>
-  <version>0.9.2</version>
+  <version>0.9.3</version>
   <packaging>jar</packaging>
   <name>GemLibPki</name>
   <description>library for implement and tests of the gematik pki specification</description>
@@ -54,7 +54,7 @@
   </distributionManagement>
 
   <properties>
-    <project.build.outputTimestamp>1661350026</project.build.outputTimestamp>
+    <project.build.outputTimestamp>1663335327</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.encoding>${project.build.sourceEncoding}</maven.compiler.encoding>
     <version.java>17</version.java>
@@ -63,7 +63,7 @@
     <!-- dependencies -->
     <version.assertj>3.23.1</version.assertj>
     <version.awaitility>4.2.0</version.awaitility>
-    <version.bouncycastle>1.71</version.bouncycastle>
+    <version.bouncycastle>1.71.1</version.bouncycastle>
     <version.commons-lang3>3.12.0</version.commons-lang3>
     <version.dss-tsl-validation>5.9.d4j.1</version.dss-tsl-validation>
     <version.jakarta.xml.bind-api>4.0.0</version.jakarta.xml.bind-api>
@@ -72,26 +72,26 @@
     <version.junit-jupiter>5.9.0</version.junit-jupiter>
     <version.log4j>2.18.0</version.log4j>
     <version.lombok>1.18.24</version.lombok>
-    <version.unirest-java>3.13.10</version.unirest-java>
+    <version.unirest-java>3.13.11</version.unirest-java>
     <version.wiremock-jre8>2.33.2</version.wiremock-jre8>
     <version.xades4j>2.1.0</version.xades4j>
     <version.xmlunit>2.9.0</version.xmlunit>
 
     <!--  plugins -->
-    <version.dependency-check-maven>7.1.1</version.dependency-check-maven>
+    <version.dependency-check-maven>7.2.0</version.dependency-check-maven>
     <version.jacoco-maven-plugin>0.8.8</version.jacoco-maven-plugin>
     <version.maven-clean-plugin>3.2.0</version.maven-clean-plugin>
     <version.maven-compiler-plugin>3.10.1</version.maven-compiler-plugin>
     <version.maven-enforcer-plugin>3.1.0</version.maven-enforcer-plugin>
     <version.maven-gpg-plugin>3.0.1</version.maven-gpg-plugin>
-    <version.maven-jar-plugin>3.2.2</version.maven-jar-plugin>
+    <version.maven-jar-plugin>3.3.0</version.maven-jar-plugin>
     <version.maven-javadoc-plugin>3.4.1</version.maven-javadoc-plugin>
     <version.maven-source-plugin>3.2.1</version.maven-source-plugin>
     <version.maven-surefire-plugin>3.0.0-M7</version.maven-surefire-plugin>
     <version.nexus-staging-maven-plugin>1.6.13</version.nexus-staging-maven-plugin>
     <version.sonar-maven-plugin>3.9.1.2184</version.sonar-maven-plugin>
     <version.spotless.google-java-format>1.15.0</version.spotless.google-java-format>
-    <version.spotless-maven-plugin>2.24.1</version.spotless-maven-plugin>
+    <version.spotless-maven-plugin>2.26.0</version.spotless-maven-plugin>
 
     <!-- settings for upload to sonar server -->
     <sonar.coverage.jacoco.xmlReportPaths>${project.reporting.outputDirectory}/jacoco/index.xml</sonar.coverage.jacoco.xmlReportPaths>
@@ -402,7 +402,7 @@
               <reflowLongStrings>true</reflowLongStrings>
             </googleJavaFormat>
             <licenseHeader>
-              <file>LICENSE_HEADER</file>
+              <file>LICENSE_PLACEHOLDER</file>
             </licenseHeader>
           </java>
           <groovy>

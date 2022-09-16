@@ -161,10 +161,10 @@ public class OcspResponseGenerator {
       }
       case BY_KEY -> {
         final DigestCalculatorProvider digCalcProv = new BcDigestCalculatorProvider();
+        final byte[] publicKeyBytes = ocspResponseSignerCert.getPublicKey().getEncoded();
         basicOcspRespBuilder =
             new BasicOCSPRespBuilder(
-                SubjectPublicKeyInfo.getInstance(
-                    ocspResponseSignerCert.getPublicKey().getEncoded()),
+                SubjectPublicKeyInfo.getInstance(publicKeyBytes),
                 digCalcProv.get(CertificateID.HASH_SHA1));
       }
       default -> throw new GemPkiRuntimeException(

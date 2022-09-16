@@ -1,13 +1,24 @@
-# Release 0.9.2
+<img align="right" width="200" height="37" src="doc/images/Gematik_Logo_Flag.png"/> <br />
+
+# Release notes GemLibPki
+
+## Release 0.9.3 (2022-09-16)
+
+- replace expired test certificates in unit tests for tsl signature and validation
+- add unit tests for bouncy castle usage und ocsp edge case
+- update dependencies
+- repair images
+
+## Release 0.9.2 (2022-08-24)
 
 - BUGFIX: save only ocsp responses to cache with status SUCCESSFUL (0)
 - prepare reproducible builds: change line endings to LF
 
-# Release 0.9.1
+## Release 0.9.1 (2022-08-22)
 
 - fix sonar issue in builder parameter
 
-# Release 0.9.0
+## Release 0.9.0
 
 - API change: rename enum elements
   in [CertificateProfile](src/main/java/de/gematik/pki/gemlibpki/certificate/CertificateProfile.java)
@@ -30,12 +41,12 @@
 - add possibility to verify an offline ocsp response
 - bug fixes and code improvements
 
-# Release 0.8.1
+## Release 0.8.1 (2022-06-23)
 
 - change language specific code (>Java 11)
 - fix small issues
 
-# Release 0.8.0
+## Release 0.8.0
 
 - API change: move whole package from de.gematik.pki to de.gematik.pki.gemlibpki
 - usage of BouncyCastle as crypto provider enforced in every class/method that deals with brainpool
@@ -46,12 +57,12 @@
 - update maven plugins
 - multiple small bug fixes and improvements
 
-# Release 0.7.1
+## Release 0.7.1
 
 - API change: rename TucPki001Verifier builder member tspServiceList to currentTrustedServices for
   clarity
 
-# Release 0.7.0
+## Release 0.7.0
 
 - API change: rename method doOcsp() to doOcspIfConfigured()
   in [TucPki018Verifier](src/main/java/de/gematik/pki/certificate/TucPki018Verifier.java)
@@ -60,41 +71,41 @@
   of TSL.
   The only check at the moment is the ocsp status of the TSL signing certificate.
 
-# Release 0.6.2
+## Release 0.6.2
 
 - allow disabling of OCSP checks
 - add dependency checks for CVE's
 - refactor unit tests
 - update dependencies
 
-# Release 0.6.1
+## Release 0.6.1
 
 - BUGFIX: make certHash extension non-critical
 - BUGFIX: correct certHash extension to be part of single response instead of basic response
 
-# Release 0.6.0
+## Release 0.6.0
 
 - add certHash extension in OCSP responses (enabled by default)
 - add certHash validation of OCSP responses (enabled by default)
 - refactor OcspVerifier class to harmonise with CertificateVerifier
 
-# Release 0.5.3
+## Release 0.5.3
 
 - add C.FD.OSIG certificate profile
 
-# Release 0.5.2
+## Release 0.5.2
 
 - set AccessLevel from private to protected for class TucPki018Verifier to make it
   extendable https://github.com/gematik/ref-GemLibPki/pull/2
 - raise code coverage
 
-# Release 0.5.1
+## Release 0.5.1
 
 - P12Container serializable
 - P12Reader extended
 - dependencies updated
 
-# Release 0.5.0
+## Release 0.5.0
 
 - API change: Main method for certificate checks "performTucPki18Checks(..)" in
   class [TucPki018Verifier](src/main/java/de/gematik/pki/certificate/TucPki018Verifier.java) returns
@@ -104,11 +115,11 @@
 - OCSP request implemented, active by default
 - additional CertificateProfiles implemented
 
-# Release 0.4.1
+## Release 0.4.1
 
 - resign test certificates
 
-# Release 0.4.0
+## Release 0.4.0
 
 - refactoring:
   separate [TspInformationProvider](src/main/java/de/gematik/pki/tsl/TspInformationProvider.java)
@@ -117,12 +128,12 @@
 - OCSP request implemented, not used in certificate checks atm
 - cleanup JavaDoc
 
-# Release 0.3.0
+## Release 0.3.0
 
 - fix https://github.com/gematik/ref-GemLibPki/issues/1
 - refactor class names
 
-# Release 0.2.0
+## Release 0.2.0
 
 - accept several profiles/policies in certificates
 - change behaviour of certificate checks (for [ext]KeyUsage) to fit gematik certificate profiles
@@ -133,7 +144,7 @@
 - pump code coverage
 - refactor packages
 
-# Release 0.1.0
+## Release 0.1.0
 
 - This is the initial release of GemLibPki
 - Certificate checks of TUC_PKI_018 are implemented
