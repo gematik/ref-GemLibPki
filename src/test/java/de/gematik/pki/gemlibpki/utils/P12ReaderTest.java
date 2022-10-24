@@ -20,8 +20,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import de.gematik.pki.gemlibpki.TestConstants;
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
-import de.gematik.pki.gemlibpki.ocsp.OcspTestConstants;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
@@ -29,24 +29,20 @@ class P12ReaderTest {
 
   @Test
   void verifyGetContentFromP12Valid() {
-    assertDoesNotThrow(
-        () ->
-            P12Reader.getContentFromP12(
-                OcspTestConstants.P12_OCSP_RESPONSE_SIGNER_RSA, OcspTestConstants.P12_PASSWORD));
+    assertDoesNotThrow(() -> TestUtils.readP12("ocsp/rsaOcspSigner.p12"));
   }
 
   @Test
   void verifyGetContentFromP12Null() {
     assertNull(
         P12Reader.getContentFromP12(
-            Path.of("src/test/resources/certificates/empty.p12"), OcspTestConstants.P12_PASSWORD));
+            Path.of(TestConstants.CERT_DIR, "empty.p12"), TestConstants.P12_PASSWORD));
   }
 
   @Test
   void verifyGetInvalidP12() {
     final Path invalidP12 = Path.of("src/test/resources/log4j2.xml");
-    assertThatThrownBy(
-            () -> P12Reader.getContentFromP12(invalidP12, OcspTestConstants.P12_PASSWORD))
+    assertThatThrownBy(() -> P12Reader.getContentFromP12(invalidP12, TestConstants.P12_PASSWORD))
         .isInstanceOf(GemPkiRuntimeException.class)
         .hasMessage("Konnte .p12 Datei nicht verarbeiten.");
   }
@@ -54,8 +50,7 @@ class P12ReaderTest {
   @Test
   void verifyFileMissing() {
     final Path invalidPath = Path.of("invalid");
-    assertThatThrownBy(
-            () -> P12Reader.getContentFromP12(invalidPath, OcspTestConstants.P12_PASSWORD))
+    assertThatThrownBy(() -> P12Reader.getContentFromP12(invalidPath, TestConstants.P12_PASSWORD))
         .isInstanceOf(GemPkiRuntimeException.class)
         .hasMessage("Cannot read path: " + invalidPath);
   }

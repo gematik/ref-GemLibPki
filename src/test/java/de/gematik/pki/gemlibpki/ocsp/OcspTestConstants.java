@@ -17,23 +17,14 @@
 package de.gematik.pki.gemlibpki.ocsp;
 
 import de.gematik.pki.gemlibpki.utils.P12Container;
-import de.gematik.pki.gemlibpki.utils.P12Reader;
-import java.nio.file.Path;
+import de.gematik.pki.gemlibpki.utils.TestUtils;
 import lombok.Getter;
 
 public class OcspTestConstants {
 
-  public static final Path P12_OCSP_RESPONSE_SIGNER_RSA =
-      Path.of("src/test/resources/certificates/ocsp/rsaOcspSigner.p12");
-  public static final Path P12_OCSP_RESPONSE_SIGNER_ECC =
-      Path.of("src/test/resources/certificates/ocsp/eccOcspSigner.p12");
-  public static final String P12_PASSWORD = "00";
+  @Getter
+  private static final P12Container ocspSignerRsa = TestUtils.readP12("ocsp/rsaOcspSigner.p12");
 
-  @Getter private static final P12Container ocspSignerRsa;
-  @Getter private static final P12Container ocspSignerEcc;
-
-  static {
-    ocspSignerRsa = P12Reader.getContentFromP12(P12_OCSP_RESPONSE_SIGNER_RSA, P12_PASSWORD);
-    ocspSignerEcc = P12Reader.getContentFromP12(P12_OCSP_RESPONSE_SIGNER_ECC, P12_PASSWORD);
-  }
+  @Getter
+  private static final P12Container ocspSignerEcc = TestUtils.readP12("ocsp/eccOcspSigner.p12");
 }

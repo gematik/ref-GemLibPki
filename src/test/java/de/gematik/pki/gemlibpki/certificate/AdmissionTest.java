@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
-import de.gematik.pki.gemlibpki.utils.CertificateProvider;
+import de.gematik.pki.gemlibpki.utils.TestUtils;
 import java.io.IOException;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
@@ -29,8 +29,7 @@ import org.junit.jupiter.api.Test;
 final class AdmissionTest {
 
   private final X509Certificate certValid =
-      CertificateProvider.getX509Certificate(
-          "src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem");
+      TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
 
   private AdmissionTest() {}
 
@@ -66,8 +65,7 @@ final class AdmissionTest {
   @Test
   void verifyMissingProfOid() throws CertificateEncodingException, IOException {
     final X509Certificate missingProfOid =
-        CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther_missing-prof-oid.pem");
+        TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther_missing-prof-oid.pem");
     assertDoesNotThrow(() -> new Admission(missingProfOid));
     assertThat(new Admission(missingProfOid).getProfessionOids()).isEmpty();
   }

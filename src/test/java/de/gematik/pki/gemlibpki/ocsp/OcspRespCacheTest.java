@@ -20,7 +20,6 @@ import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB_RSA;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import de.gematik.pki.gemlibpki.utils.CertificateProvider;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
 import java.math.BigInteger;
 import java.security.cert.X509Certificate;
@@ -46,14 +45,10 @@ class OcspRespCacheTest {
 
   @BeforeAll
   static void setup() {
-    VALID_X509_EE_CERT =
-        CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem");
+    VALID_X509_EE_CERT = TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
     // certificate is not issued by VALID_X509_ISSUER_CERT - this will fail when certHash check is
     // implemented
-    VALID_X509_ISSUER_CERT =
-        CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.RCA1_TEST-ONLY.pem");
+    VALID_X509_ISSUER_CERT = TestUtils.readCert("GEM.RCA1_TEST-ONLY.pem");
     ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
   }

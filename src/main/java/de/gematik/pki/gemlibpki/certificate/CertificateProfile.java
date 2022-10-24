@@ -19,6 +19,7 @@ package de.gematik.pki.gemlibpki.certificate;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_EGK_AUT;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_FD_OSIG;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_FD_SIG;
+import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_GSMCK_AK_AUT;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_HBA_AUT;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_NONE;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_SMC_B_AUT;
@@ -26,6 +27,7 @@ import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_SMC
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_SMC_B_OSIG;
 import static de.gematik.pki.gemlibpki.certificate.ExtendedKeyUsage.EXT_KEYUSAGE_ID_KP_CLIENTAUTH;
 import static de.gematik.pki.gemlibpki.certificate.ExtendedKeyUsage.EXT_KEYUSAGE_ID_KP_EMAILPROTECTION;
+import static de.gematik.pki.gemlibpki.certificate.ExtendedKeyUsage.EXT_KEYUSAGE_ID_KP_SERVERAUTH;
 import static de.gematik.pki.gemlibpki.certificate.ExtendedKeyUsage.EXT_KEYUSAGE_ID_TSL_KP_TSLSIGNING;
 import static de.gematik.pki.gemlibpki.certificate.KeyUsage.KEYUSAGE_DATA_ENCIPHERMENT;
 import static de.gematik.pki.gemlibpki.certificate.KeyUsage.KEYUSAGE_DIGITAL_SIGNATURE;
@@ -41,6 +43,17 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Getter
 public enum CertificateProfile {
+  CERT_PROFILE_C_AK_AUT_RSA(
+      CERT_TYPE_GSMCK_AK_AUT,
+      List.of(KEYUSAGE_DIGITAL_SIGNATURE, KEYUSAGE_KEY_ENCIPHERMENT),
+      List.of(EXT_KEYUSAGE_ID_KP_CLIENTAUTH, EXT_KEYUSAGE_ID_KP_SERVERAUTH),
+      true),
+  CERT_PROFILE_C_AK_AUT_ECC(
+      CERT_TYPE_GSMCK_AK_AUT,
+      List.of(KEYUSAGE_DIGITAL_SIGNATURE),
+      List.of(EXT_KEYUSAGE_ID_KP_CLIENTAUTH, EXT_KEYUSAGE_ID_KP_SERVERAUTH),
+      true),
+
   CERT_PROFILE_C_CH_AUT_RSA(
       CERT_TYPE_EGK_AUT,
       List.of(KEYUSAGE_DIGITAL_SIGNATURE, KEYUSAGE_KEY_ENCIPHERMENT),

@@ -34,6 +34,7 @@ import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 
 public class TestUtils {
@@ -93,5 +94,11 @@ public class TestUtils {
     Files.createFile(filePath);
 
     return filePath;
+  }
+
+  public static P12Container readP12(final String p12Path) {
+    return Objects.requireNonNull(
+        P12Reader.getContentFromP12(
+            Path.of(TestConstants.CERT_DIR, p12Path), TestConstants.P12_PASSWORD));
   }
 }

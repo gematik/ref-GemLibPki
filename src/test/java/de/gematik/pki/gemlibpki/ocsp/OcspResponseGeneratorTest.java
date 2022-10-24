@@ -23,14 +23,11 @@ import static org.bouncycastle.internal.asn1.isismtt.ISISMTTObjectIdentifiers.id
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
-import de.gematik.pki.gemlibpki.utils.CertificateProvider;
 import de.gematik.pki.gemlibpki.utils.GemlibPkiUtils;
-import de.gematik.pki.gemlibpki.utils.P12Reader;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
 import eu.europa.esig.dss.spi.x509.revocation.ocsp.OCSPRespStatus;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.NoSuchProviderException;
 import java.security.Security;
 import java.security.cert.X509Certificate;
@@ -63,11 +60,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 class OcspResponseGeneratorTest {
 
   final X509Certificate VALID_X509_EE_CERT =
-      CertificateProvider.getX509Certificate(
-          "src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem");
-  final X509Certificate VALID_X509_ISSUER_CERT =
-      CertificateProvider.getX509Certificate(
-          "src/test/resources/certificates/GEM.RCA1_TEST-ONLY.pem");
+      TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
+  final X509Certificate VALID_X509_ISSUER_CERT = TestUtils.readCert("GEM.RCA1_TEST-ONLY.pem");
   final OCSPReq ocspReq =
       OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
 
@@ -122,10 +116,7 @@ class OcspResponseGeneratorTest {
   void useOcspRespInvalidAlgo() {
     final OcspResponseGenerator ocspResp =
         OcspResponseGenerator.builder()
-            .signer(
-                Objects.requireNonNull(
-                    P12Reader.getContentFromP12(
-                        Path.of("src/test/resources/certificates/ocsp/dsaCert.p12"), "00")))
+            .signer(Objects.requireNonNull(TestUtils.readP12("ocsp/dsaCert.p12")))
             .build();
     assertThatThrownBy(() -> ocspResp.generate(ocspReq, VALID_X509_EE_CERT))
         .isInstanceOf(GemPkiRuntimeException.class)

@@ -20,19 +20,18 @@ import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
 import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_RSA_ALT_TA;
 import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_RSA_DEFAULT;
 import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_RSA_NOSIG;
+import static de.gematik.pki.gemlibpki.utils.TestUtils.readP12;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
-import de.gematik.pki.gemlibpki.utils.CertReader;
 import de.gematik.pki.gemlibpki.utils.GemlibPkiUtils;
 import de.gematik.pki.gemlibpki.utils.P12Container;
-import de.gematik.pki.gemlibpki.utils.P12Reader;
 import de.gematik.pki.gemlibpki.utils.ResourceReader;
+import de.gematik.pki.gemlibpki.utils.TestUtils;
 import java.security.Security;
 import java.security.cert.X509Certificate;
-import java.util.Objects;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -43,27 +42,23 @@ import xades4j.XAdES4jXMLSigException;
 
 class TslSignerTest {
 
-  private static final String TRUSTANCHOR_PATH_RSA =
-      "certificates/GEM.TSL-CA40/GEM.TSL-CA40-TEST-ONLY.pem";
-  private static final String SIGNER_PATH_RSA = "certificates/GEM.TSL-CA40/TSL-Signer40.p12";
-  private static final String TRUSTANCHOR_PATH_ECC =
-      "certificates/GEM.TSL-CA8/GEM.TSL-CA8_brainpoolIP256r1.der";
-  private static final String SIGNER_PATH_ECC =
-      "certificates/GEM.TSL-CA8/TSL-Signing-Unit-8-TEST-ONLY.p12";
+  private static final String SIGNER_PATH_RSA = "GEM.TSL-CA40/TSL-Signer40.p12";
+
+  private static final String SIGNER_PATH_ECC = "GEM.TSL-CA8/TSL-Signing-Unit-8-TEST-ONLY.p12";
 
   private static Document tslRsa, tslRsaNoSig, tslEcc;
-  private static X509Certificate trustAnchorRsa, trustAnchorEcc;
+  private static final X509Certificate trustAnchorRsa =
+      TestUtils.readCert("GEM.TSL-CA40/GEM.TSL-CA40-TEST-ONLY.pem");
+  private static final X509Certificate trustAnchorEcc =
+      TestUtils.readCert("GEM.TSL-CA8/GEM.TSL-CA8_brainpoolIP256r1.der");
 
   @BeforeAll
   public static void setup() {
     tslRsa =
         TslReader.getTslAsDoc(ResourceReader.getFilePathFromResources(FILE_NAME_TSL_RSA_DEFAULT))
             .orElseThrow();
-    trustAnchorRsa =
-        CertReader.readX509(
-            GemlibPkiUtils.readContent(
-                ResourceReader.getFilePathFromResources(TRUSTANCHOR_PATH_RSA)));
-    final P12Container signerRsa = readSignerCert(SIGNER_PATH_RSA);
+
+    final P12Container signerRsa = readP12(SIGNER_PATH_RSA);
     TslSigner.sign(tslRsa, signerRsa);
     tslRsaNoSig =
         TslReader.getTslAsDoc(ResourceReader.getFilePathFromResources(FILE_NAME_TSL_RSA_NOSIG))
@@ -72,11 +67,8 @@ class TslSignerTest {
     tslEcc =
         TslReader.getTslAsDoc(ResourceReader.getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT))
             .orElseThrow();
-    trustAnchorEcc =
-        CertReader.readX509(
-            GemlibPkiUtils.readContent(
-                ResourceReader.getFilePathFromResources(TRUSTANCHOR_PATH_ECC)));
-    final P12Container signerEcc = readSignerCert(SIGNER_PATH_ECC);
+
+    final P12Container signerEcc = readP12(SIGNER_PATH_ECC);
     TslSigner.sign(tslEcc, signerEcc);
   }
 
@@ -86,7 +78,7 @@ class TslSignerTest {
     final Document tslRsa =
         TslReader.getTslAsDoc(ResourceReader.getFilePathFromResources(FILE_NAME_TSL_RSA_DEFAULT))
             .orElseThrow();
-    final P12Container signerRsa = readSignerCert(SIGNER_PATH_RSA);
+    final P12Container signerRsa = readP12(SIGNER_PATH_RSA);
 
     assertDoesNotThrow(() -> TslSigner.sign(tslRsa, signerRsa));
     // now remove the BouncyCastleProvider
@@ -110,7 +102,7 @@ class TslSignerTest {
     final Document tslEcc =
         TslReader.getTslAsDoc(ResourceReader.getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT))
             .orElseThrow();
-    final P12Container signerEcc = readSignerCert(SIGNER_PATH_ECC);
+    final P12Container signerEcc = readP12(SIGNER_PATH_ECC);
 
     assertDoesNotThrow(() -> TslSigner.sign(tslEcc, signerEcc));
     // now remove the BouncyCastleProvider
@@ -168,7 +160,7 @@ class TslSignerTest {
 
   @Test
   void nonNull() {
-    final P12Container container = readSignerCert(SIGNER_PATH_RSA);
+    final P12Container container = readP12(SIGNER_PATH_RSA);
     assertThatThrownBy(() -> TslSigner.sign(null, container))
         .isInstanceOf(NullPointerException.class)
         .hasMessage("tsl is marked non-null but is null");
@@ -176,10 +168,5 @@ class TslSignerTest {
     assertThatThrownBy(() -> TslSigner.sign(tslEcc, null))
         .isInstanceOf(NullPointerException.class)
         .hasMessage("tslSigner is marked non-null but is null");
-  }
-
-  private static P12Container readSignerCert(final String certPath) {
-    return Objects.requireNonNull(
-        P12Reader.getContentFromP12(ResourceReader.getFilePathFromResources(certPath), "00"));
   }
 }

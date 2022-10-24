@@ -1,10 +1,6 @@
 .idea/
 *.iml
 **/target
-/doc/api-docs.json
-/doc/swagger.*
-/doc/*.svg
-
 
 doc/development.txt
 LICENSE_PLACEHOLDER

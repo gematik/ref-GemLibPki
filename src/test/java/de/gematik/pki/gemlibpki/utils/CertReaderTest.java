@@ -19,6 +19,7 @@ package de.gematik.pki.gemlibpki.utils;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import de.gematik.pki.gemlibpki.TestConstants;
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import java.nio.file.Path;
 import lombok.SneakyThrows;
@@ -31,7 +32,7 @@ class CertReaderTest {
   void readExistingX509DerCert() {
     final byte[] file =
         GemlibPkiUtils.readContent(
-            Path.of("src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.der"));
+            Path.of(TestConstants.CERT_DIR, "GEM.SMCB-CA10/valid/DrMedGunther.der"));
     assertThat(CertReader.readX509(file).getSubjectX500Principal().getName())
         .contains("Zahnarztpraxis Dr. med.Gunther");
   }
@@ -48,7 +49,7 @@ class CertReaderTest {
   void readX509() {
     assertThat(
             CertReader.readX509(
-                    Path.of("src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.der"))
+                    Path.of(TestConstants.CERT_DIR, "GEM.SMCB-CA10/valid/DrMedGunther.der"))
                 .getSubjectX500Principal()
                 .getName())
         .contains("Zahnarztpraxis Dr. med.Gunther");
@@ -59,7 +60,7 @@ class CertReaderTest {
   void readExistingX509PemCert() {
     final byte[] file =
         GemlibPkiUtils.readContent(
-            Path.of("src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem"));
+            Path.of(TestConstants.CERT_DIR, "GEM.SMCB-CA10/valid/DrMedGunther.pem"));
     assertThat(CertReader.readX509(file).getSubjectX500Principal().getName())
         .contains("Zahnarztpraxis Dr. med.Gunther");
   }
@@ -87,7 +88,8 @@ class CertReaderTest {
   void getX509CertificateFromP12() {
     assertThat(
             CertReader.getX509FromP12(
-                    Path.of("src/test/resources/certificates/ocsp/eccOcspSigner.p12"), "00")
+                    Path.of(TestConstants.CERT_DIR, "ocsp/eccOcspSigner.p12"),
+                    TestConstants.P12_PASSWORD)
                 .getSubjectX500Principal()
                 .getName())
         .contains("OCSP Signer 09 ecc TEST-ONLY");

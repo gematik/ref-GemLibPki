@@ -27,6 +27,7 @@ import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA50
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA54;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB_RSA;
+import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_AK_AUT_ECC;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_CH_AUT_ECC;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_FD_OSIG;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_FD_SIG;
@@ -63,7 +64,6 @@ import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
-import org.assertj.core.api.AbstractThrowableAssert;
 import org.bouncycastle.cert.ocsp.OCSPReq;
 import org.bouncycastle.cert.ocsp.OCSPResp;
 import org.junit.jupiter.api.BeforeEach;
@@ -130,6 +130,16 @@ class TucPki018VerifierTest {
             .withOcspCheck(false)
             .build();
     assertDoesNotThrow(() -> verifier.performTucPki18Checks(VALID_X509_EE_CERT));
+  }
+
+  @Test
+  void verifyAkAutEccCertValid() {
+    final X509Certificate eeCert = readCert("GEM.KOMP-CA10/80276883110000000001-20221012_ecc.crt");
+    ocspResponderMock.configureForOcspRequest(eeCert, VALID_ISSUER_CERT_KOMP_CA10);
+    assertDoesNotThrow(
+        () ->
+            buildTucPki18Verifier(List.of(CERT_PROFILE_C_AK_AUT_ECC))
+                .performTucPki18Checks(eeCert));
   }
 
   @Test
@@ -236,10 +246,9 @@ class TucPki018VerifierTest {
     ocspResponderMock.configureForOcspRequest(eeWrongKeyUsage, VALID_ISSUER_CERT_SMCB);
     final TucPki018Verifier verifier =
         buildTucPki18Verifier(List.of(CERT_PROFILE_C_HCI_AUT_ECC, CERT_PROFILE_C_HP_AUT_ECC));
-    final AbstractThrowableAssert<?, ? extends Throwable> z =
-        assertThatThrownBy(() -> verifier.performTucPki18Checks(eeWrongKeyUsage))
-            .isInstanceOf(GemPkiParsingException.class)
-            .hasMessageContaining(ErrorCode.SE_1016_WRONG_KEYUSAGE.name());
+    assertThatThrownBy(() -> verifier.performTucPki18Checks(eeWrongKeyUsage))
+        .isInstanceOf(GemPkiParsingException.class)
+        .hasMessageContaining(ErrorCode.SE_1016_WRONG_KEYUSAGE.name());
   }
 
   @Test

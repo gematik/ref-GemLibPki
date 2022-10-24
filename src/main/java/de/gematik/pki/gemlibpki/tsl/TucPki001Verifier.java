@@ -18,6 +18,7 @@ package de.gematik.pki.gemlibpki.tsl;
 
 import de.gematik.pki.gemlibpki.certificate.CertificateProfile;
 import de.gematik.pki.gemlibpki.certificate.TucPki018Verifier;
+import de.gematik.pki.gemlibpki.error.ErrorCode;
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.ocsp.OcspConstants;
 import de.gematik.pki.gemlibpki.ocsp.OcspRespCache;
@@ -64,22 +65,8 @@ public class TucPki001Verifier {
    */
   public void performTucPki001Checks() throws GemPkiException {
     log.debug("TUC_PKI_001 Checks...");
-    final X509Certificate tslSigner =
-        CertReader.readX509(
-            (byte[])
-                tslToCheck.getSignature().getKeyInfo().getContent().stream()
-                    .filter(JAXBElement.class::isInstance)
-                    .map(JAXBElement.class::cast)
-                    .map(JAXBElement::getValue)
-                    .filter(X509DataType.class::isInstance)
-                    .map(X509DataType.class::cast)
-                    .map(X509DataType::getX509IssuerSerialOrX509SKIOrX509SubjectName)
-                    .flatMap(List::stream)
-                    .filter(JAXBElement.class::isInstance)
-                    .map(JAXBElement.class::cast)
-                    .map(JAXBElement::getValue)
-                    .findFirst()
-                    .orElseThrow());
+
+    final X509Certificate tslSigner = getTslSignerCertificate();
 
     final TucPki018Verifier certVerifier =
         TucPki018Verifier.builder()
@@ -93,5 +80,33 @@ public class TucPki001Verifier {
             .build();
 
     certVerifier.performTucPki18Checks(tslSigner);
+  }
+
+  X509Certificate getTslSignerCertificate() throws GemPkiException {
+
+    try {
+      final byte[] bytes =
+          (byte[])
+              tslToCheck.getSignature().getKeyInfo().getContent().stream()
+                  .filter(JAXBElement.class::isInstance)
+                  .map(JAXBElement.class::cast)
+                  .map(JAXBElement::getValue)
+                  .filter(X509DataType.class::isInstance)
+                  .map(X509DataType.class::cast)
+                  .map(X509DataType::getX509IssuerSerialOrX509SKIOrX509SubjectName)
+                  .flatMap(List::stream)
+                  .filter(JAXBElement.class::isInstance)
+                  .map(JAXBElement.class::cast)
+                  .map(JAXBElement::getValue)
+                  .findFirst()
+                  .orElseThrow(
+                      () ->
+                          new GemPkiException(
+                              productType, ErrorCode.TE_1002_TSL_CERT_EXTRACTION_ERROR));
+
+      return CertReader.readX509(bytes);
+    } catch (final RuntimeException e) {
+      throw new GemPkiException(productType, ErrorCode.TE_1002_TSL_CERT_EXTRACTION_ERROR);
+    }
   }
 }

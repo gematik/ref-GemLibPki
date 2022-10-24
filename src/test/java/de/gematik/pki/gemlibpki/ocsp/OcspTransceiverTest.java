@@ -19,6 +19,7 @@ package de.gematik.pki.gemlibpki.ocsp;
 import static de.gematik.pki.gemlibpki.TestConstants.LOCAL_SSP_DIR;
 import static de.gematik.pki.gemlibpki.TestConstants.OCSP_HOST;
 import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.ocsp.OcspTransceiver.OCSP_SEND_RECEIVE_FAILED;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -29,21 +30,26 @@ import de.gematik.pki.gemlibpki.error.ErrorCode;
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.tsl.TspService;
-import de.gematik.pki.gemlibpki.utils.CertificateProvider;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
 import eu.europa.esig.dss.spi.x509.revocation.ocsp.OCSPRespStatus;
+import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import org.apache.http.HttpStatus;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.bouncycastle.cert.ocsp.CertificateStatus;
 import org.bouncycastle.cert.ocsp.OCSPReq;
 import org.bouncycastle.cert.ocsp.OCSPResp;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 class OcspTransceiverTest {
 
@@ -58,12 +64,8 @@ class OcspTransceiverTest {
   @BeforeAll
   public static void start() {
     ocspResponderMock = new OcspResponderMock(LOCAL_SSP_DIR, OCSP_HOST);
-    VALID_X509_EE_CERT =
-        CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem");
-    VALID_X509_ISSUER_CERT =
-        CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.RCA1_TEST-ONLY.pem");
+    VALID_X509_EE_CERT = TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
+    VALID_X509_ISSUER_CERT = TestUtils.readCert("GEM.RCA1_TEST-ONLY.pem");
 
     tspServiceList = TestUtils.getDefaultTspServiceList();
   }
@@ -76,13 +78,19 @@ class OcspTransceiverTest {
   }
 
   private static OcspTransceiver getOcspTransceiver() {
+    return getOcspTransceiver(ocspResponderMock.getSspUrl(), false);
+  }
+
+  private static OcspTransceiver getOcspTransceiver(
+      final String ssp, final boolean tolerateOcspFailure) {
     return OcspTransceiver.builder()
         .productType(PRODUCT_TYPE)
         .tspServiceList(tspServiceList)
         .x509EeCert(VALID_X509_EE_CERT)
         .x509IssuerCert(VALID_X509_ISSUER_CERT)
-        .ssp(ocspResponderMock.getSspUrl())
+        .ssp(ssp)
         .ocspTimeoutSeconds(ocspTimeoutSeconds)
+        .tolerateOcspFailure(tolerateOcspFailure)
         .build();
   }
 
@@ -157,7 +165,7 @@ class OcspTransceiverTest {
   }
 
   @Test
-  void verifyCachingForOcspStatusSuccessful() throws GemPkiException {
+  void verifyCachingForOcspRespStatusSuccessful() throws GemPkiException {
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
 
@@ -168,7 +176,7 @@ class OcspTransceiverTest {
             .build()
             .generate(ocspReq, VALID_X509_EE_CERT, CertificateStatus.GOOD);
 
-    ocspResponderMock.configureWireMockReceiveHttpPost(ocspResp, HttpStatus.SC_OK);
+    ocspResponderMock.configureWireMockReceiveHttpPost(ocspResp, HttpURLConnection.HTTP_OK);
 
     final OcspRespCache cache = new OcspRespCache(2);
 
@@ -176,13 +184,13 @@ class OcspTransceiverTest {
 
     assertThat(cache.getSize()).isEqualTo(1);
     TestUtils.waitSeconds(cache.getOcspGracePeriodSeconds() + 1);
-    Optional<OCSPResp> ocspRespOpt = cache.getResponse(VALID_X509_EE_CERT.getSerialNumber());
-    assertThat(ocspRespOpt.isEmpty());
+    final Optional<OCSPResp> ocspRespOpt = cache.getResponse(VALID_X509_EE_CERT.getSerialNumber());
+    assertThat(ocspRespOpt).isEmpty();
     assertThat(cache.getSize()).isZero();
   }
 
   @Test
-  void verifyCachingForOcspStatusBad() throws GemPkiException {
+  void verifyCachingForOcspRespStatusBad() {
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
 
@@ -193,7 +201,7 @@ class OcspTransceiverTest {
             .build()
             .generate(ocspReq, VALID_X509_EE_CERT, CertificateStatus.GOOD);
 
-    ocspResponderMock.configureWireMockReceiveHttpPost(ocspResp, HttpStatus.SC_OK);
+    ocspResponderMock.configureWireMockReceiveHttpPost(ocspResp, HttpURLConnection.HTTP_OK);
 
     final OcspRespCache cache = new OcspRespCache(2);
 
@@ -201,6 +209,25 @@ class OcspTransceiverTest {
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.TE_1058_OCSP_STATUS_ERROR.getErrorMessage(PRODUCT_TYPE));
     assertThat(cache.getSize()).isZero();
+  }
+
+  @Test
+  void verifyOcspRespStatusBadNoCache() {
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
+
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerRsa())
+            .respStatus(OCSPRespStatus.UNKNOWN_STATUS)
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT, CertificateStatus.GOOD);
+
+    ocspResponderMock.configureWireMockReceiveHttpPost(ocspResp, HttpURLConnection.HTTP_OK);
+
+    assertThatThrownBy(() -> getOcspTransceiver().verifyOcspResponse(null))
+        .isInstanceOf(GemPkiException.class)
+        .hasMessage(ErrorCode.TE_1058_OCSP_STATUS_ERROR.getErrorMessage(PRODUCT_TYPE));
   }
 
   @Test
@@ -328,8 +355,8 @@ class OcspTransceiverTest {
             .build();
 
     assertThatThrownBy(() -> ocspTransceiver.sendOcspRequest(ocspReq))
-        .isInstanceOf(GemPkiRuntimeException.class)
-        .hasMessage(OCSP_SEND_RECEIVE_FAILED);
+        .isInstanceOf(GemPkiException.class)
+        .hasMessage(ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
   }
 
   @Test
@@ -345,5 +372,144 @@ class OcspTransceiverTest {
         OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
     ocspResponderMock.configureForOcspRequest(ocspReq, VALID_X509_EE_CERT);
     return ocspReq;
+  }
+
+  @Test
+  void sendOcspRespGetEncoded_IOException() throws IOException {
+    final OCSPReq ocspReqReal =
+        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_ISSUER_CERT_SMCB);
+
+    final OCSPReq ocspReq = Mockito.spy(ocspReqReal);
+    Mockito.when(ocspReq.getEncoded()).thenThrow(new IOException());
+
+    final OcspTransceiver transceiver = getOcspTransceiver("", false);
+
+    assertThatThrownBy(() -> transceiver.sendOcspRequest(ocspReq))
+        .isInstanceOf(GemPkiRuntimeException.class)
+        .hasMessage(OCSP_SEND_RECEIVE_FAILED)
+        .cause()
+        .isInstanceOf(IOException.class);
+  }
+
+  @Test
+  void sendOcspRespFutureGetBad_InterruptedException()
+      throws ExecutionException, InterruptedException, TimeoutException {
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_ISSUER_CERT_SMCB);
+
+    final Future<?> future = Mockito.spy(Future.class);
+    Mockito.doThrow(InterruptedException.class)
+        .when(future)
+        .get(Mockito.anyLong(), Mockito.eq(TimeUnit.SECONDS));
+
+    final OcspTransceiver transceiver = getOcspTransceiver("", false);
+
+    final OcspTransceiver transceiverSpy = Mockito.spy(transceiver);
+    Mockito.doReturn(future).when(transceiverSpy).getFuture(Mockito.any(), Mockito.any());
+
+    assertThatThrownBy(() -> transceiverSpy.sendOcspRequest(ocspReq))
+        .isInstanceOf(GemPkiException.class)
+        .hasMessage(ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE))
+        .cause()
+        .isInstanceOf(InterruptedException.class);
+  }
+
+  @Test
+  void sendOcspRespFutureGetBad_InterruptedException_tolerate()
+      throws ExecutionException, InterruptedException, TimeoutException {
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_ISSUER_CERT_SMCB);
+
+    final Future<?> future = Mockito.spy(Future.class);
+    Mockito.doThrow(InterruptedException.class)
+        .when(future)
+        .get(Mockito.anyLong(), Mockito.eq(TimeUnit.SECONDS));
+
+    final OcspTransceiver transceiver = getOcspTransceiver("", true);
+
+    final OcspTransceiver transceiverSpy = Mockito.spy(transceiver);
+    Mockito.doReturn(future).when(transceiverSpy).getFuture(Mockito.any(), Mockito.any());
+
+    assertDoesNotThrow(() -> transceiverSpy.sendOcspRequest(ocspReq));
+  }
+
+  @Test
+  void sendOcspRespFutureGetBad_ExecutionException()
+      throws ExecutionException, InterruptedException, TimeoutException {
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_ISSUER_CERT_SMCB);
+
+    final Future<?> future = Mockito.spy(Future.class);
+    Mockito.doThrow(ExecutionException.class)
+        .when(future)
+        .get(Mockito.anyLong(), Mockito.eq(TimeUnit.SECONDS));
+
+    final OcspTransceiver transceiver = getOcspTransceiver("", false);
+
+    final OcspTransceiver transceiverSpy = Mockito.spy(transceiver);
+    Mockito.doReturn(future).when(transceiverSpy).getFuture(Mockito.any(), Mockito.any());
+
+    assertThatThrownBy(() -> transceiverSpy.sendOcspRequest(ocspReq))
+        .isInstanceOf(GemPkiException.class)
+        .hasMessage(ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE))
+        .cause()
+        .isInstanceOf(ExecutionException.class);
+  }
+
+  @Test
+  void sendOcspRespFutureGetBad_ExecutionException_tolerate()
+      throws ExecutionException, InterruptedException, TimeoutException {
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_ISSUER_CERT_SMCB);
+
+    final Future<?> future = Mockito.spy(Future.class);
+    Mockito.doThrow(ExecutionException.class)
+        .when(future)
+        .get(Mockito.anyLong(), Mockito.eq(TimeUnit.SECONDS));
+
+    final OcspTransceiver transceiver = getOcspTransceiver("", true);
+
+    final OcspTransceiver transceiverSpy = Mockito.spy(transceiver);
+    Mockito.doReturn(future).when(transceiverSpy).getFuture(Mockito.any(), Mockito.any());
+
+    assertDoesNotThrow(() -> transceiverSpy.sendOcspRequest(ocspReq));
+  }
+
+  @Test
+  void sendOcspRespFutureGetBad_TimeoutException()
+      throws ExecutionException, InterruptedException, TimeoutException {
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_ISSUER_CERT_SMCB);
+
+    final Future<?> future = Mockito.spy(Future.class);
+    Mockito.doThrow(TimeoutException.class)
+        .when(future)
+        .get(Mockito.anyLong(), Mockito.eq(TimeUnit.SECONDS));
+
+    final OcspTransceiver transceiver = getOcspTransceiver("", false);
+
+    final OcspTransceiver transceiverSpy = Mockito.spy(transceiver);
+    Mockito.doReturn(future).when(transceiverSpy).getFuture(Mockito.any(), Mockito.any());
+
+    assertThatThrownBy(() -> transceiverSpy.sendOcspRequest(ocspReq))
+        .isInstanceOf(GemPkiException.class)
+        .hasMessage(ErrorCode.TE_1032_OCSP_NOT_AVAILABLE.getErrorMessage(PRODUCT_TYPE))
+        .cause()
+        .isInstanceOf(TimeoutException.class);
+  }
+
+  @Test
+  void sendOcspRespOcspForBodyBad_IOException() throws IOException {
+    final OCSPReq ocspReq = configureOcspResponderMockForOcspRequest();
+
+    final OcspTransceiver transceiver = getOcspTransceiver();
+
+    final OcspTransceiver transceiverSpy = Mockito.spy(transceiver);
+    Mockito.doThrow(IOException.class).when(transceiverSpy).getOcpsRespForBody(Mockito.any());
+
+    assertThatThrownBy(() -> transceiverSpy.sendOcspRequest(ocspReq))
+        .isInstanceOf(GemPkiRuntimeException.class)
+        .cause()
+        .isInstanceOf(IOException.class);
   }
 }

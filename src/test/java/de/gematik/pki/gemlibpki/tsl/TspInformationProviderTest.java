@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import de.gematik.pki.gemlibpki.error.ErrorCode;
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
-import de.gematik.pki.gemlibpki.utils.CertificateProvider;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.security.cert.X509Certificate;
@@ -43,12 +42,8 @@ class TspInformationProviderTest {
         new TslInformationProvider(TestUtils.getDefaultTsl());
     tspInformationProvider =
         new TspInformationProvider(tslInformationProvider.getTspServices(), productType);
-    VALID_X509_EE_CERT =
-        CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem");
-    VALID_X509_EE_CERT_ALT_CA =
-        CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.SMCB-CA33/DrMedGuntherKZV.pem");
+    VALID_X509_EE_CERT = TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
+    VALID_X509_EE_CERT_ALT_CA = TestUtils.readCert("GEM.SMCB-CA33/DrMedGuntherKZV.pem");
   }
 
   @Test
@@ -87,8 +82,7 @@ class TspInformationProviderTest {
   @Test
   void generateTspServiceSubsetMissingAki() {
     final X509Certificate invalidx509EeCert =
-        CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-authorityKeyId.pem");
+        TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_missing-authorityKeyId.pem");
     assertThatThrownBy(() -> tspInformationProvider.getIssuerTspServiceSubset(invalidx509EeCert))
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.SE_1023_AUTHORITYKEYID_DIFFERENT.getErrorMessage(productType));

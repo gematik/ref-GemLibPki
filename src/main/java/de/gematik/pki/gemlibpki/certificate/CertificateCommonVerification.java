@@ -78,7 +78,6 @@ public final class CertificateCommonVerification {
    * @throws GemPkiException if certificate is not valid in time
    */
   public void verifyValidity(@NonNull final ZonedDateTime referenceDate) throws GemPkiException {
-
     final boolean isValidBeforeReferenceDate =
         x509EeCert.getNotBefore().toInstant().atZone(ZoneOffset.UTC).isAfter(referenceDate);
     final boolean isValidAfterReferenceDate =

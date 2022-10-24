@@ -68,12 +68,10 @@ public class OcspRespCache {
    *
    * @param x509EeCertSerialNumber big integer of serial of the certificate
    * @param ocspResp ocsp response
-   * @return OCSP response
    */
-  public @NonNull OCSPResp saveResponse(
+  public void saveResponse(
       @NonNull final BigInteger x509EeCertSerialNumber, @NonNull final OCSPResp ocspResp) {
     cache.put(x509EeCertSerialNumber, ocspResp);
-    return ocspResp;
   }
 
   /**

@@ -28,36 +28,31 @@ import de.gematik.pki.gemlibpki.common.OcspResponderMock;
 import de.gematik.pki.gemlibpki.error.ErrorCode;
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.tsl.TucPki001Verifier.TucPki001VerifierBuilder;
-import de.gematik.pki.gemlibpki.utils.P12Reader;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
-import java.nio.file.Path;
+import eu.europa.esig.xmldsig.jaxb.X509DataType;
 import java.security.cert.X509Certificate;
 import java.util.List;
+import javax.xml.bind.JAXBElement;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 class TucPki001VerifierTest {
 
   private static List<TspService> tspServicesInTruststore;
-  private static TrustStatusListType newTslToCheck;
+  private static final TrustStatusListType newTslToCheck = TestUtils.getDefaultTsl();
 
   @BeforeAll
   static void start() {
     tspServicesInTruststore = TestUtils.getDefaultTspServiceList();
     overwriteSspUrls(tspServicesInTruststore, "invalidSsp");
-    newTslToCheck = TestUtils.getDefaultTsl();
   }
 
   @Test
   void verifyPerformTucPki001ChecksValid() {
     final OcspResponderMock ocspResponderMock = new OcspResponderMock(LOCAL_SSP_DIR, OCSP_HOST);
     final X509Certificate tslSigner =
-        P12Reader.getContentFromP12(
-                Path.of(
-                    "src/test/resources/certificates/GEM.TSL-CA8/TSL-Signing-Unit-8-TEST-ONLY.p12"),
-                "00")
-            .getCertificate();
+        TestUtils.readP12("GEM.TSL-CA8/TSL-Signing-Unit-8-TEST-ONLY.p12").getCertificate();
     ocspResponderMock.configureForOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA8);
     overwriteSspUrls(tspServicesInTruststore, ocspResponderMock.getSspUrl());
 
@@ -68,6 +63,97 @@ class TucPki001VerifierTest {
             .currentTrustedServices(tspServicesInTruststore)
             .build();
     assertDoesNotThrow(tucPki001Verifier::performTucPki001Checks);
+  }
+
+  @Test
+  void verifyGetTslSignerCertificateInvalidFindFirst() {
+
+    final TrustStatusListType tslToCheck = TestUtils.getDefaultTsl();
+
+    tslToCheck.getSignature().getKeyInfo().getContent().clear();
+
+    final TucPki001Verifier tucPki001Verifier =
+        TucPki001Verifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tslToCheck(tslToCheck)
+            .currentTrustedServices(tspServicesInTruststore)
+            .build();
+
+    assertThatThrownBy(tucPki001Verifier::getTslSignerCertificate)
+        .isInstanceOf(GemPkiException.class)
+        .hasMessage(ErrorCode.TE_1002_TSL_CERT_EXTRACTION_ERROR.getErrorMessage(PRODUCT_TYPE));
+  }
+
+  @Test
+  void verifyGetTslSignerCertificateInvalidManyChanges() {
+
+    final TrustStatusListType tslToCheck = TestUtils.getDefaultTsl();
+
+    final List<JAXBElement> jaxbElements =
+        tslToCheck.getSignature().getKeyInfo().getContent().stream()
+            .filter(JAXBElement.class::isInstance)
+            .map(JAXBElement.class::cast)
+            .map(JAXBElement::getValue)
+            .filter(X509DataType.class::isInstance)
+            .map(X509DataType.class::cast)
+            .map(X509DataType::getX509IssuerSerialOrX509SKIOrX509SubjectName)
+            .flatMap(List::stream)
+            .filter(JAXBElement.class::isInstance)
+            .map(JAXBElement.class::cast)
+            .toList();
+
+    final JAXBElement jaxbElement = jaxbElements.get(0);
+
+    jaxbElement.setValue("invalidbytesX509Certificate".getBytes());
+
+    final TucPki001Verifier tucPki001Verifier =
+        TucPki001Verifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tslToCheck(tslToCheck)
+            .currentTrustedServices(tspServicesInTruststore)
+            .build();
+
+    assertThatThrownBy(tucPki001Verifier::getTslSignerCertificate)
+        .isInstanceOf(GemPkiException.class)
+        .hasMessage(ErrorCode.TE_1002_TSL_CERT_EXTRACTION_ERROR.getErrorMessage(PRODUCT_TYPE));
+  }
+
+  @Test
+  void verifyGetTslSignerCertificateInvalidFewChanges() {
+
+    final TrustStatusListType tslToCheck = TestUtils.getDefaultTsl();
+
+    final List<JAXBElement> jaxbElements =
+        tslToCheck.getSignature().getKeyInfo().getContent().stream()
+            .filter(JAXBElement.class::isInstance)
+            .map(JAXBElement.class::cast)
+            .map(JAXBElement::getValue)
+            .filter(X509DataType.class::isInstance)
+            .map(X509DataType.class::cast)
+            .map(X509DataType::getX509IssuerSerialOrX509SKIOrX509SubjectName)
+            .flatMap(List::stream)
+            .filter(JAXBElement.class::isInstance)
+            .map(JAXBElement.class::cast)
+            .toList();
+
+    final JAXBElement jaxbElement = jaxbElements.get(0);
+    final byte[] bytes = (byte[]) jaxbElement.getValue();
+
+    // change content
+    for (int i = 0; i < 9; ++i) {
+      bytes[i] = '*';
+    }
+
+    final TucPki001Verifier tucPki001Verifier =
+        TucPki001Verifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tslToCheck(tslToCheck)
+            .currentTrustedServices(tspServicesInTruststore)
+            .build();
+
+    assertThatThrownBy(tucPki001Verifier::getTslSignerCertificate)
+        .isInstanceOf(GemPkiException.class)
+        .hasMessage(ErrorCode.TE_1002_TSL_CERT_EXTRACTION_ERROR.getErrorMessage(PRODUCT_TYPE));
   }
 
   @Test

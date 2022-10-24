@@ -3,7 +3,8 @@
 # GemLibPki
 
 --- 
-A java library for functionalities in PKI (Public Key Infrastructure) of products specified by gematik
+A java library for functionalities in PKI (Public Key Infrastructure) of products specified by
+gematik
 
 ---
 
@@ -16,7 +17,7 @@ for further information.
 
 Specifications are published at [gematik Fachportal](https://fachportal.gematik.de/).
 
-[Link to Maven Repository](https://mvnrepository.com/artifact/de.gematik.pki.gemlibpki/gemLibPki)
+[Link to Maven Repository](https://mvnrepository.com/artifact/de.gematik.pki/gemLibPki)
 
 ### Versioning
 
@@ -95,4 +96,5 @@ in any compatible unix environment.
 ### ToDo
 
 - detailed TSL validation according to TUC_PKI_001
+- offline mode for TUC_PKI_001 is not implemented
 - implement critical extension checks according to GS-A_4661 (RFC5280#4.2)

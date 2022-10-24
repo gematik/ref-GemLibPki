@@ -21,6 +21,7 @@ import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.tsl.TspService;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -74,6 +75,12 @@ public class OcspTransceiver {
   public void verifyOcspResponse(
       final OcspRespCache ocspRespCache, final ZonedDateTime referenceDate) throws GemPkiException {
 
+    final TucPki006OcspVerifier.TucPki006OcspVerifierBuilder verifierBuilder =
+        TucPki006OcspVerifier.builder()
+            .productType(productType)
+            .tspServiceList(tspServiceList)
+            .eeCert(x509EeCert);
+
     final OCSPResp ocspResp;
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(x509EeCert, x509IssuerCert);
@@ -93,14 +100,16 @@ public class OcspTransceiver {
         }
 
         ocspResp = ocspRespOpt.get();
-        if (ocspResp.getStatus() == OCSPResp.SUCCESSFUL) {
-          log.debug("Ocsp resp from server saved to cache.");
-          ocspRespCache.saveResponse(x509EeCert.getSerialNumber(), ocspResp);
-        }
+        verifierBuilder.ocspResponse(ocspResp).build();
+        verifierBuilder.build().performOcspChecks(ocspReq, referenceDate);
+
+        ocspRespCache.saveResponse(x509EeCert.getSerialNumber(), ocspResp);
+        log.debug("Ocsp resp from server saved to cache.");
+        return;
 
       } else {
-        log.debug("Ocsp resp from cache.");
-        ocspResp = ocspRespCachedOpt.get();
+        log.debug("Ocsp resp from cache: verification is not performed");
+        return;
       }
     } else {
       log.debug("Send Ocsp req because no cache.");
@@ -112,15 +121,8 @@ public class OcspTransceiver {
       ocspResp = ocspRespOpt.get();
     }
 
-    final TucPki006OcspVerifier verifier =
-        TucPki006OcspVerifier.builder()
-            .productType(productType)
-            .tspServiceList(tspServiceList)
-            .eeCert(x509EeCert)
-            .ocspResponse(ocspResp)
-            .build();
-
-    verifier.performOcspChecks(ocspReq, referenceDate);
+    verifierBuilder.ocspResponse(ocspResp).build();
+    verifierBuilder.build().performOcspChecks(ocspReq, referenceDate);
   }
 
   /**
@@ -134,6 +136,14 @@ public class OcspTransceiver {
     verifyOcspResponse(ocspRespCache, ZonedDateTime.now(ZoneOffset.UTC));
   }
 
+  private void handleWithTolerateOcspFailure() throws GemPkiException {
+    if (tolerateOcspFailure) {
+      log.warn(ErrorCode.TW_1028_OCSP_CHECK_REVOCATION_FAILED.getErrorMessage(productType));
+    } else {
+      throw new GemPkiException(productType, ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR);
+    }
+  }
+
   private void handleWithTolerateOcspFailure(final Exception e) throws GemPkiException {
     if (tolerateOcspFailure) {
       log.warn(ErrorCode.TW_1028_OCSP_CHECK_REVOCATION_FAILED.getErrorMessage(productType), e);
@@ -142,6 +152,15 @@ public class OcspTransceiver {
     }
   }
 
+  Future<Pair<HttpResponse<byte[]>, Exception>> getFuture(
+      final ExecutorService executor,
+      final Callable<Pair<HttpResponse<byte[]>, Exception>> callableTask) {
+    return executor.submit(callableTask);
+  }
+
+  OCSPResp getOcpsRespForBody(final byte[] body) throws IOException {
+    return new OCSPResp(body);
+  }
   /**
    * Sends given OCSP request to given SSP. For use without response validation.
    *
@@ -155,9 +174,6 @@ public class OcspTransceiver {
         ocspReq.getRequestList()[0].getCertID().getSerialNumber(),
         ssp);
 
-    final ExecutorService executor = Executors.newSingleThreadExecutor();
-    final HttpResponse<byte[]> httpResponse;
-
     final byte[] ocspReqEncoded;
     try {
       ocspReqEncoded = ocspReq.getEncoded();
@@ -165,21 +181,15 @@ public class OcspTransceiver {
       throw new GemPkiRuntimeException(OCSP_SEND_RECEIVE_FAILED, e);
     }
 
+    final Callable<Pair<HttpResponse<byte[]>, Exception>> callableTask =
+        () -> sendOcspRequest(ssp, ocspReqEncoded);
+
+    final ExecutorService executor = Executors.newSingleThreadExecutor();
+    final Pair<HttpResponse<byte[]>, Exception> result;
     try {
-      final Callable<Pair<HttpResponse<byte[]>, Exception>> callableTask =
-          () -> sendOcspRequest(ssp, ocspReqEncoded);
-      final Future<Pair<HttpResponse<byte[]>, Exception>> future = executor.submit(callableTask);
-      final Pair<HttpResponse<byte[]>, Exception> result =
-          future.get(ocspTimeoutSeconds, TimeUnit.SECONDS);
-
-      final Exception sendOcspRequestException = result.getRight();
-      if (sendOcspRequestException != null) {
-        handleWithTolerateOcspFailure(sendOcspRequestException);
-        return Optional.empty();
-      }
-
-      httpResponse = result.getLeft();
-
+      final Future<Pair<HttpResponse<byte[]>, Exception>> future =
+          getFuture(executor, callableTask);
+      result = future.get(ocspTimeoutSeconds, TimeUnit.SECONDS);
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
       handleWithTolerateOcspFailure(e);
@@ -196,12 +206,29 @@ public class OcspTransceiver {
       executor.shutdown();
     }
 
-    try {
-      log.info("HttpStatus der OcspResponse: {}", httpResponse.getStatus());
-      return Optional.of(new OCSPResp(httpResponse.getBody()));
-    } catch (final IOException e) {
-      throw new GemPkiRuntimeException(OCSP_SEND_RECEIVE_FAILED, e);
+    final Exception sendOcspRequestException = result.getRight();
+    if (sendOcspRequestException != null) {
+      handleWithTolerateOcspFailure(sendOcspRequestException);
+      return Optional.empty();
     }
+
+    final HttpResponse<byte[]> httpResponse = result.getLeft();
+
+    if (httpResponse.getStatus() == HttpURLConnection.HTTP_OK) {
+      final byte[] body = httpResponse.getBody();
+      final OCSPResp ocspResp;
+
+      try {
+        ocspResp = getOcpsRespForBody(body);
+      } catch (final IOException e) {
+        throw new GemPkiRuntimeException(OCSP_SEND_RECEIVE_FAILED, e);
+      }
+
+      return Optional.of(ocspResp);
+    }
+
+    handleWithTolerateOcspFailure();
+    return Optional.empty();
   }
 
   private Pair<HttpResponse<byte[]>, Exception> sendOcspRequest(

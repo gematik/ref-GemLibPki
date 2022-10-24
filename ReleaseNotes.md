@@ -2,6 +2,14 @@
 
 # Release notes GemLibPki
 
+## Release 0.9.4 (2022-10-24)
+
+- change maven groupId to "de.gematik.pki"
+- change OCSP caching behavior
+- add certificate profile for ak.aut certs
+- updated dependencies
+- cleanup and small fixes
+
 ## Release 0.9.3 (2022-09-16)
 
 - replace expired test certificates in unit tests for tsl signature and validation

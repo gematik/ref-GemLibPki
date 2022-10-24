@@ -20,7 +20,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
-import de.gematik.pki.gemlibpki.utils.CertificateProvider;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -31,11 +30,9 @@ import org.junit.jupiter.api.Test;
 class OcspRequestGeneratorTest {
 
   private static final X509Certificate VALID_X509_EE_CERT =
-      CertificateProvider.getX509Certificate(
-          "src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem");
+      TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
   private static final X509Certificate VALID_X509_ISSUER_CERT =
-      CertificateProvider.getX509Certificate(
-          "src/test/resources/certificates/GEM.RCA1_TEST-ONLY.pem");
+      TestUtils.readCert("GEM.RCA1_TEST-ONLY.pem");
 
   @Test
   void verifyGenerateOcspRequest() {

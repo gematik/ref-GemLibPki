@@ -27,10 +27,7 @@ import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.tsl.TslInformationProvider;
 import de.gematik.pki.gemlibpki.tsl.TspInformationProvider;
 import de.gematik.pki.gemlibpki.tsl.TspServiceSubset;
-import de.gematik.pki.gemlibpki.utils.CertificateProvider;
-import de.gematik.pki.gemlibpki.utils.ResourceReader;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
-import java.nio.file.Path;
 import java.security.cert.X509Certificate;
 import java.time.ZonedDateTime;
 import lombok.NonNull;
@@ -51,17 +48,9 @@ class CertificateCommonVerificationTest {
   @BeforeEach
   void setUp() throws GemPkiException {
     final X509Certificate VALID_X509_EE_CERT =
-        CertificateProvider.getX509Certificate(
-            ResourceReader.getFilePathFromResources(
-                "certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem"));
-    validX509EeCertAltCa =
-        CertificateProvider.getX509Certificate(
-            ResourceReader.getFilePathFromResources(
-                "certificates/GEM.SMCB-CA33/DrMedGuntherKZV.pem"));
-    validX509IssuerCert =
-        CertificateProvider.getX509Certificate(
-            ResourceReader.getFilePathFromResources(
-                "certificates/GEM.SMCB-CA10/GEM.SMCB-CA10_TEST-ONLY.pem"));
+        TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
+    validX509EeCertAltCa = TestUtils.readCert("GEM.SMCB-CA33/DrMedGuntherKZV.pem");
+    validX509IssuerCert = TestUtils.readCert("GEM.SMCB-CA10/GEM.SMCB-CA10_TEST-ONLY.pem");
     DATETIME_TO_CHECK = ZonedDateTime.parse("2020-11-20T15:00:00Z");
     certificateCommonVerification =
         buildCertificateCommonVerifier(FILE_NAME_TSL_ECC_DEFAULT, VALID_X509_EE_CERT);
@@ -105,9 +94,7 @@ class CertificateCommonVerificationTest {
   @Test
   void verifySignatureNotValid() throws GemPkiException {
     final X509Certificate invalidX509EeCert =
-        CertificateProvider.getX509Certificate(
-            Path.of(
-                "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-signature.pem"));
+        TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_invalid-signature.pem");
     final CertificateCommonVerification verifier =
         buildCertificateCommonVerifier(FILE_NAME_TSL_ECC_ALT_CA, invalidX509EeCert);
 
@@ -126,9 +113,7 @@ class CertificateCommonVerificationTest {
   @Test
   void verifyValidityCertificateExpired() throws GemPkiException {
     final X509Certificate expiredEeCert =
-        CertificateProvider.getX509Certificate(
-            Path.of(
-                "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_expired.pem"));
+        TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_expired.pem");
     final CertificateCommonVerification verifier =
         buildCertificateCommonVerifier(FILE_NAME_TSL_ECC_DEFAULT, expiredEeCert);
     assertThatThrownBy(() -> verifier.verifyValidity(DATETIME_TO_CHECK))
@@ -139,9 +124,7 @@ class CertificateCommonVerificationTest {
   @Test
   void verifyValidityCertificateNotYetValid() throws GemPkiException {
     final X509Certificate notYetValidEeCert =
-        CertificateProvider.getX509Certificate(
-            Path.of(
-                "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_not-yet-valid.pem"));
+        TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_not-yet-valid.pem");
     final CertificateCommonVerification verifier =
         buildCertificateCommonVerifier(FILE_NAME_TSL_ECC_DEFAULT, notYetValidEeCert);
     assertThatThrownBy(() -> verifier.verifyValidity(DATETIME_TO_CHECK))

@@ -23,6 +23,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Getter
 public enum CertificateType {
+  CERT_TYPE_GSMCK_AK_AUT("C.AK.AUT", "oid_ak_aut", "1.2.276.0.76.4.79"),
+  CERT_TYPE_GSMCK_NK_VPN("C.NK.VPN", "oid_nk_vpn", "1.2.276.0.76.4.80"),
+  CERT_TYPE_GSMCK_SAK_AUT("C.SAK.AUT", "oid_sak_aut", "1.2.276.0.76.4.113"),
   CERT_TYPE_EGK_AUT("C.CH.AUT", "oid_egk_aut", "1.2.276.0.76.4.70"),
   CERT_TYPE_HBA_AUT("C.HP.AUT", "oid_hba_aut", "1.2.276.0.76.4.75"),
   CERT_TYPE_SMC_B_AUT("C.HCI.AUT", "oid_smc_b_aut", "1.2.276.0.76.4.77"),

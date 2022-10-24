@@ -28,8 +28,6 @@ import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.tsl.TslInformationProvider;
 import de.gematik.pki.gemlibpki.tsl.TspInformationProvider;
 import de.gematik.pki.gemlibpki.tsl.TspServiceSubset;
-import de.gematik.pki.gemlibpki.utils.CertificateProvider;
-import de.gematik.pki.gemlibpki.utils.ResourceReader;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
 import java.security.cert.X509Certificate;
 import lombok.NonNull;
@@ -46,14 +44,8 @@ class CertificateProfileVerificationTest {
 
   @BeforeEach
   void setUp() throws GemPkiException {
-    validX509EeCert =
-        CertificateProvider.getX509Certificate(
-            ResourceReader.getFilePathFromResources(
-                "certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem"));
-    validX509EeCertAltCa =
-        CertificateProvider.getX509Certificate(
-            ResourceReader.getFilePathFromResources(
-                "certificates/GEM.SMCB-CA33/DrMedGuntherKZV.pem"));
+    validX509EeCert = TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
+    validX509EeCertAltCa = TestUtils.readCert("GEM.SMCB-CA33/DrMedGuntherKZV.pem");
     productType = "IDP";
     certificateProfileVerification = buildCertificateProfileVerifier(certificateProfile);
   }
@@ -108,8 +100,7 @@ class CertificateProfileVerificationTest {
   @Test
   void verifyKeyUsageMissingInCertificate() throws GemPkiException {
     final X509Certificate missingKeyUsagex509EeCert =
-        CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-keyusage.pem");
+        TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_missing-keyusage.pem");
     final CertificateProfileVerification verifier =
         buildCertificateProfileVerifier(
             FILE_NAME_TSL_ECC_DEFAULT, certificateProfile, missingKeyUsagex509EeCert);
@@ -121,8 +112,7 @@ class CertificateProfileVerificationTest {
   @Test
   void verifyKeyUsageInvalidInCertificate() throws GemPkiException {
     final X509Certificate invalidKeyUsagex509EeCert =
-        CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-keyusage.pem");
+        TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_invalid-keyusage.pem");
     final CertificateProfileVerification verifier =
         buildCertificateProfileVerifier(
             FILE_NAME_TSL_ECC_DEFAULT, certificateProfile, invalidKeyUsagex509EeCert);
@@ -142,9 +132,7 @@ class CertificateProfileVerificationTest {
 
   @Test
   void verifyToManyKeyUsagesPresentInCert() throws GemPkiException {
-    final X509Certificate validHbaAutEcc =
-        CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.HBA-CA13/GüntherOtís.pem");
+    final X509Certificate validHbaAutEcc = TestUtils.readCert("GEM.HBA-CA13/GüntherOtís.pem");
     final CertificateProfileVerification verifier =
         buildCertificateProfileVerifier(
             FILE_NAME_TSL_ECC_DEFAULT, CERT_PROFILE_C_HCI_AUT_ECC, validHbaAutEcc);
@@ -169,9 +157,7 @@ class CertificateProfileVerificationTest {
 
   @Test
   void verifyToManyExtendedKeyUsagesPresentInCert() throws GemPkiException {
-    final X509Certificate validHbaAutEcc =
-        CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.HBA-CA13/GüntherOtís.pem");
+    final X509Certificate validHbaAutEcc = TestUtils.readCert("GEM.HBA-CA13/GüntherOtís.pem");
     final CertificateProfileVerification verifier =
         buildCertificateProfileVerifier(
             FILE_NAME_TSL_ECC_DEFAULT, CERT_PROFILE_C_HCI_AUT_ECC, validHbaAutEcc);
@@ -183,8 +169,7 @@ class CertificateProfileVerificationTest {
   @Test
   void verifyExtendedKeyUsageMissingInCertificate() throws GemPkiException {
     final X509Certificate missingExtKeyUsagex509EeCert =
-        CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-extKeyUsage.pem");
+        TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_missing-extKeyUsage.pem");
     final CertificateProfileVerification verifier =
         buildCertificateProfileVerifier(
             FILE_NAME_TSL_ECC_DEFAULT, certificateProfile, missingExtKeyUsagex509EeCert);
@@ -196,8 +181,7 @@ class CertificateProfileVerificationTest {
   @Test
   void verifyExtendedKeyUsageInvalidInCertificate() throws GemPkiException {
     final X509Certificate invalidExtendedKeyUsageEeCert =
-        CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-ext-keyusage.pem");
+        TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_invalid-ext-keyusage.pem");
     final CertificateProfileVerification verifier =
         buildCertificateProfileVerifier(
             FILE_NAME_TSL_ECC_DEFAULT, certificateProfile, invalidExtendedKeyUsageEeCert);
@@ -209,8 +193,7 @@ class CertificateProfileVerificationTest {
   @Test
   void multipleCertificateProfilesMultipleCertTypesInEe() {
     final X509Certificate eeMultipleCertTypes =
-        CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.SMCB-CA9/Aschoffsche_Apotheke_twoCertTypes.pem");
+        TestUtils.readCert("GEM.SMCB-CA9/Aschoffsche_Apotheke_twoCertTypes.pem");
     assertDoesNotThrow(
         () ->
             buildCertificateProfileVerifier(
@@ -221,8 +204,7 @@ class CertificateProfileVerificationTest {
   @Test
   void verifyCertificateProfileMissingPolicyId() throws GemPkiException {
     final X509Certificate missingPolicyId =
-        CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-policyId.pem");
+        TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_missing-policyId.pem");
     final CertificateProfileVerification verifier =
         buildCertificateProfileVerifier(
             FILE_NAME_TSL_ECC_DEFAULT, certificateProfile, missingPolicyId);
@@ -234,8 +216,7 @@ class CertificateProfileVerificationTest {
   @Test
   void verifyCertificateProfileMissingCertType() throws GemPkiException {
     final X509Certificate missingCertType =
-        CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_missing-certificate-type.pem");
+        TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_missing-certificate-type.pem");
     final CertificateProfileVerification verifier =
         buildCertificateProfileVerifier(
             FILE_NAME_TSL_ECC_DEFAULT, certificateProfile, missingCertType);
@@ -247,8 +228,7 @@ class CertificateProfileVerificationTest {
   @Test
   void verifyCertificateProfileInvalidCertType() throws GemPkiException {
     final X509Certificate invalidCertType =
-        CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.SMCB-CA10/invalid/DrMedGunther_invalid-certificate-type.pem");
+        TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_invalid-certificate-type.pem");
     final CertificateProfileVerification verifier =
         buildCertificateProfileVerifier(
             FILE_NAME_TSL_ECC_DEFAULT, certificateProfile, invalidCertType);

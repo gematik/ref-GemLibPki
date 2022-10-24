@@ -114,7 +114,7 @@ public class TucPki006OcspVerifier {
     verifyNextUpdate(referenceDate);
 
     verifyOcspResponseCertId(ocspReq);
-    log.info("OCSP validation finished.");
+    log.info("OCSP validation successfully finished.");
   }
 
   /**

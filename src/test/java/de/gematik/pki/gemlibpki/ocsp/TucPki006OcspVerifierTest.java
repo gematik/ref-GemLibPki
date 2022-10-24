@@ -21,7 +21,6 @@ import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_MILLISECONDS;
 import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.TIMEOUT_DELTA_MILLISECONDS;
-import static de.gematik.pki.gemlibpki.ocsp.OcspTestConstants.P12_PASSWORD;
 import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getBasicOcspResp;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -32,13 +31,10 @@ import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.ocsp.OcspResponseGenerator.ResponderIdType;
 import de.gematik.pki.gemlibpki.tsl.TslInformationProvider;
 import de.gematik.pki.gemlibpki.tsl.TspService;
-import de.gematik.pki.gemlibpki.utils.CertificateProvider;
 import de.gematik.pki.gemlibpki.utils.GemlibPkiUtils;
 import de.gematik.pki.gemlibpki.utils.P12Container;
-import de.gematik.pki.gemlibpki.utils.P12Reader;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
 import eu.europa.esig.dss.spi.x509.revocation.ocsp.OCSPRespStatus;
-import java.nio.file.Path;
 import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -66,12 +62,8 @@ class TucPki006OcspVerifierTest {
 
   @BeforeAll
   public static void start() {
-    VALID_X509_EE_CERT =
-        CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.SMCB-CA10/valid/DrMedGunther.pem");
-    VALID_X509_ISSUER_CERT =
-        CertificateProvider.getX509Certificate(
-            "src/test/resources/certificates/GEM.RCA1_TEST-ONLY.pem");
+    VALID_X509_EE_CERT = TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
+    VALID_X509_ISSUER_CERT = TestUtils.readCert("GEM.RCA1_TEST-ONLY.pem");
     ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
 
@@ -322,9 +314,7 @@ class TucPki006OcspVerifierTest {
     final List<TspService> tspServiceList =
         new TslInformationProvider(TestUtils.getTsl(FILE_NAME_TSL_RSA_DEFAULT)).getTspServices();
 
-    final P12Container signer =
-        P12Reader.getContentFromP12(
-            Path.of("src/test/resources/certificates/ocsp/eccDifferent-key.p12"), P12_PASSWORD);
+    final P12Container signer = TestUtils.readP12("ocsp/eccDifferent-key.p12");
 
     final OCSPResp ocspRespLocal =
         OcspResponseGenerator.builder()

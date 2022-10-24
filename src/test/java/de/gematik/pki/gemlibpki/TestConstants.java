@@ -21,7 +21,7 @@ import static de.gematik.pki.gemlibpki.utils.TestUtils.readCert;
 import java.security.cert.X509Certificate;
 
 public class TestConstants {
-
+  public static final String P12_PASSWORD = "00";
   public static final String PRODUCT_TYPE = "Unittest";
   public static final String FILE_NAME_TSL_ECC_DEFAULT = "tsls/ecc/valid/TSL_default.xml";
   public static final String FILE_NAME_TSL_ECC_ALT_CA = "tsls/ecc/valid/TSL_altCA.xml";

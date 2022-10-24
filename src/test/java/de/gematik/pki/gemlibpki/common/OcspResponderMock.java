@@ -26,10 +26,10 @@ import de.gematik.pki.gemlibpki.ocsp.OcspConstants;
 import de.gematik.pki.gemlibpki.ocsp.OcspRequestGenerator;
 import de.gematik.pki.gemlibpki.ocsp.OcspResponseGenerator;
 import de.gematik.pki.gemlibpki.ocsp.OcspTestConstants;
+import java.net.HttpURLConnection;
 import java.security.cert.X509Certificate;
 import lombok.SneakyThrows;
 import org.apache.http.HttpHeaders;
-import org.apache.http.HttpStatus;
 import org.bouncycastle.cert.ocsp.OCSPReq;
 import org.bouncycastle.cert.ocsp.OCSPResp;
 
@@ -60,7 +60,7 @@ public class OcspResponderMock {
             .build()
             .generate(ocspReq, eeCert);
     // configure WireMock with OCSP Response
-    configureWireMockReceiveHttpPost(ocspRespToSent, HttpStatus.SC_OK);
+    configureWireMockReceiveHttpPost(ocspRespToSent, HttpURLConnection.HTTP_OK);
   }
 
   /**
