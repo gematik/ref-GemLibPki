@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,11 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.Base64;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.bouncycastle.crypto.digests.SHA1Digest;
@@ -32,7 +35,7 @@ import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public final class GemlibPkiUtils {
+public final class GemLibPkiUtils {
 
   /**
    * Uses Files.readAllBytes(path) to read the content under the path; {@link
@@ -90,5 +93,26 @@ public final class GemlibPkiUtils {
 
   public static ZonedDateTime now() {
     return ZonedDateTime.now(ZoneOffset.UTC);
+  }
+
+  public static String toMimeBase64NoLineBreaks(final X509Certificate x509Certificate)
+      throws CertificateEncodingException {
+    return toMimeBase64NoLineBreaks(x509Certificate.getEncoded());
+  }
+
+  // https://www.w3.org/TR/xmlschema-2/#base64Binary
+  // RFC 2045
+  public static String toMimeBase64NoLineBreaks(final byte[] bytes) {
+    return Base64.getMimeEncoder(-1, new byte[0]).encodeToString(bytes);
+  }
+
+  public static void changeLast4Bytes(final byte[] bytes) {
+    change4Bytes(bytes, bytes.length);
+  }
+
+  public static void change4Bytes(final byte[] respBytes, final int lastIndex) {
+    for (int i = 1; i <= 4; i++) {
+      respBytes[lastIndex - i] ^= 1;
+    }
   }
 }

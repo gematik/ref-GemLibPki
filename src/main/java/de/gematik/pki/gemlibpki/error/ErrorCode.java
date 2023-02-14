@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import static de.gematik.pki.gemlibpki.error.ErrorSeverity.SEVERITY_ERROR;
 import static de.gematik.pki.gemlibpki.error.ErrorSeverity.SEVERITY_WARNING;
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -272,7 +273,7 @@ public enum ErrorCode {
    * @param productType type of the product
    * @return error message
    */
-  public String getErrorMessage(final String productType) {
+  public String getErrorMessage(@NonNull final String productType) {
     return "\n%s:PKI - %s %s - %s %s"
         .formatted(
             productType,

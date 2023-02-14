@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,8 @@ public class Policies {
    * Uses policy information from extensions of the provided certificate
    *
    * @param x509EeCert end-entity certificate
-   * @throws CertificateEncodingException
-   * @throws IOException
+   * @throws CertificateEncodingException thrown if an encoding error in the cert occurs
+   * @throws IOException thrown if cert cannot be read
    */
   public Policies(@NonNull final X509Certificate x509EeCert)
       throws CertificateEncodingException, IOException {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,13 @@ package de.gematik.pki.gemlibpki.tsl;
 
 import static de.gematik.pki.gemlibpki.tsl.TslUtils.tslDownloadUrlMatchesOid;
 
-import de.gematik.pki.gemlibpki.utils.GemlibPkiUtils;
+import de.gematik.pki.gemlibpki.utils.GemLibPkiUtils;
 import eu.europa.esig.trustedlist.jaxb.tsl.NextUpdateType;
 import eu.europa.esig.trustedlist.jaxb.tsl.OtherTSLPointersType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
+import java.math.BigInteger;
 import java.nio.file.Path;
 import java.time.ZonedDateTime;
-import java.util.Optional;
 import javax.xml.datatype.XMLGregorianCalendar;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -41,8 +41,8 @@ public final class TslReader {
    * @param tslPath File path to TSL
    * @return A TSL as Document
    */
-  public static Optional<Document> getTslAsDoc(@NonNull final Path tslPath) {
-    return TslConverter.bytesToDoc(GemlibPkiUtils.readContent(tslPath));
+  public static Document getTslAsDoc(@NonNull final Path tslPath) {
+    return TslConverter.bytesToDoc(GemLibPkiUtils.readContent(tslPath));
   }
 
   /**
@@ -51,8 +51,8 @@ public final class TslReader {
    * @param tslPath file name
    * @return a TrustServiceStatusList contains issuer certificates among other things
    */
-  public static Optional<TrustStatusListType> getTsl(@NonNull final Path tslPath) {
-    return TslConverter.bytesToTsl(GemlibPkiUtils.readContent(tslPath));
+  public static TrustStatusListType getTsl(@NonNull final Path tslPath) {
+    return TslConverter.bytesToTsl(GemLibPkiUtils.readContent(tslPath));
   }
 
   /**
@@ -61,8 +61,8 @@ public final class TslReader {
    * @param tsl A TSL
    * @return sequence number
    */
-  public static int getSequenceNumber(@NonNull final TrustStatusListType tsl) {
-    return tsl.getSchemeInformation().getTSLSequenceNumber().intValueExact();
+  public static BigInteger getSequenceNumber(@NonNull final TrustStatusListType tsl) {
+    return tsl.getSchemeInformation().getTSLSequenceNumber();
   }
 
   /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package de.gematik.pki.gemlibpki.certificate;
 
-import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
 import static de.gematik.pki.gemlibpki.TestConstants.LOCAL_SSP_DIR;
 import static de.gematik.pki.gemlibpki.TestConstants.OCSP_HOST;
 import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
@@ -57,7 +56,7 @@ import de.gematik.pki.gemlibpki.tsl.TspInformationProvider;
 import de.gematik.pki.gemlibpki.tsl.TspService;
 import de.gematik.pki.gemlibpki.tsl.TspServiceSubset;
 import de.gematik.pki.gemlibpki.utils.CertificateProvider;
-import de.gematik.pki.gemlibpki.utils.GemlibPkiUtils;
+import de.gematik.pki.gemlibpki.utils.GemLibPkiUtils;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
 import de.gematik.pki.gemlibpki.utils.VariableSource;
 import java.security.cert.X509Certificate;
@@ -79,6 +78,7 @@ class TucPki018VerifierTest {
   private static final OcspResponderMock ocspResponderMock =
       new OcspResponderMock(LOCAL_SSP_DIR, OCSP_HOST);
   private static final int ocspTimeoutSeconds = OcspConstants.DEFAULT_OCSP_TIMEOUT_SECONDS;
+  private static final int OCSP_GRACE_PERIOD_SECONDS = 30;
 
   private TucPki018Verifier tucPki018Verifier;
   private OcspRespCache ocspRespCache;
@@ -87,7 +87,7 @@ class TucPki018VerifierTest {
 
   @BeforeEach
   void init() {
-    ocspRespCache = new OcspRespCache(30);
+    ocspRespCache = new OcspRespCache(OCSP_GRACE_PERIOD_SECONDS);
 
     tolerateOcspFailure = false;
     tucPki018Verifier = buildTucPki18Verifier(certificateProfiles);
@@ -277,8 +277,7 @@ class TucPki018VerifierTest {
 
     final TspServiceSubset tspServiceSubset =
         new TspInformationProvider(
-                new TslInformationProvider(TestUtils.getTsl(FILE_NAME_TSL_ECC_DEFAULT))
-                    .getTspServices(),
+                new TslInformationProvider(TestUtils.getDefaultTsl()).getTspServices(),
                 PRODUCT_TYPE)
             .getIssuerTspServiceSubset(VALID_X509_EE_CERT);
 
@@ -387,7 +386,7 @@ class TucPki018VerifierTest {
   @Test
   void verifyPerformTucPki18ChecksWithGivenOcspResponseValid() {
 
-    final ZonedDateTime referenceDate = GemlibPkiUtils.now().minusYears(10);
+    final ZonedDateTime referenceDate = GemLibPkiUtils.now().minusYears(10);
 
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_ISSUER_CERT_SMCB);
@@ -419,7 +418,7 @@ class TucPki018VerifierTest {
 
     ocspResponderMock.configureForOcspRequest(VALID_X509_EE_CERT, VALID_ISSUER_CERT_SMCB);
 
-    final ZonedDateTime referenceDate = GemlibPkiUtils.now().minusYears(10);
+    final ZonedDateTime referenceDate = GemLibPkiUtils.now().minusYears(10);
 
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_ISSUER_CERT_SMCB);

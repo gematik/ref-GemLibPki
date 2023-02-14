@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_MILLISECONDS;
 import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.TIMEOUT_DELTA_MILLISECONDS;
+import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.OCSP_RESPONSE_ERROR;
 import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getBasicOcspResp;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -28,23 +29,32 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import de.gematik.pki.gemlibpki.error.ErrorCode;
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
+import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
+import de.gematik.pki.gemlibpki.ocsp.OcspResponseGenerator.CertificateIdGeneration;
 import de.gematik.pki.gemlibpki.ocsp.OcspResponseGenerator.ResponderIdType;
 import de.gematik.pki.gemlibpki.tsl.TslInformationProvider;
 import de.gematik.pki.gemlibpki.tsl.TspService;
-import de.gematik.pki.gemlibpki.utils.GemlibPkiUtils;
+import de.gematik.pki.gemlibpki.utils.GemLibPkiUtils;
 import de.gematik.pki.gemlibpki.utils.P12Container;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
 import eu.europa.esig.dss.spi.x509.revocation.ocsp.OCSPRespStatus;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import lombok.NonNull;
+import org.apache.commons.lang3.tuple.Pair;
 import org.bouncycastle.asn1.ocsp.ResponderID;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.CRLReason;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.ocsp.BasicOCSPResp;
 import org.bouncycastle.cert.ocsp.CertificateStatus;
+import org.bouncycastle.cert.ocsp.OCSPException;
 import org.bouncycastle.cert.ocsp.OCSPReq;
 import org.bouncycastle.cert.ocsp.OCSPResp;
 import org.bouncycastle.cert.ocsp.RespID;
@@ -52,6 +62,11 @@ import org.bouncycastle.cert.ocsp.RevokedStatus;
 import org.bouncycastle.cert.ocsp.UnknownStatus;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.MockedConstruction;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 class TucPki006OcspVerifierTest {
 
@@ -83,6 +98,7 @@ class TucPki006OcspVerifierTest {
             .respStatus(OCSPRespStatus.MALFORMED_REQUEST)
             .build()
             .generate(ocspReq, VALID_X509_EE_CERT);
+
     final TucPki006OcspVerifier verifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
@@ -101,7 +117,7 @@ class TucPki006OcspVerifierTest {
   }
 
   @Test
-  void verifyCertHashInValid() {
+  void verifyCertHashInvalid() {
 
     assertThatThrownBy(
             () ->
@@ -191,6 +207,10 @@ class TucPki006OcspVerifierTest {
         .isInstanceOf(NullPointerException.class)
         .hasMessage("referenceDate is marked non-null but is null");
 
+    assertThatThrownBy(() -> verifier.performOcspChecks(null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("ocspReq is marked non-null but is null");
+
     assertThatThrownBy(() -> verifier.verifyStatus(null))
         .isInstanceOf(NullPointerException.class)
         .hasMessage("referenceDate is marked non-null but is null");
@@ -198,6 +218,18 @@ class TucPki006OcspVerifierTest {
     assertThatThrownBy(() -> verifier.verifyOcspResponseCertId(null))
         .isInstanceOf(NullPointerException.class)
         .hasMessage("ocspReq is marked non-null but is null");
+
+    assertThatThrownBy(() -> verifier.verifyThisUpdate(null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("referenceDate is marked non-null but is null");
+
+    assertThatThrownBy(() -> verifier.verifyProducedAt(null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("referenceDate is marked non-null but is null");
+
+    assertThatThrownBy(() -> verifier.verifyNextUpdate(null))
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage("referenceDate is marked non-null but is null");
   }
 
   private static OCSPResp genDefaultOcspResp() {
@@ -335,12 +367,17 @@ class TucPki006OcspVerifierTest {
         .hasMessage(ErrorCode.SE_1030_OCSP_CERT_MISSING.getErrorMessage(PRODUCT_TYPE));
   }
 
-  @Test
-  void verifyOcspResponseCertId() {
+  @ParameterizedTest
+  @EnumSource(
+      value = CertificateIdGeneration.class,
+      names = {"VALID_CERTID"},
+      mode = EnumSource.Mode.EXCLUDE)
+  void verifyOcspResponseInvalidCertId(final CertificateIdGeneration certificateIdGeneration) {
+
     final OCSPResp ocspRespLocal =
         OcspResponseGenerator.builder()
             .signer(OcspTestConstants.getOcspSignerEcc())
-            .validCertId(false)
+            .certificateIdGeneration(certificateIdGeneration)
             .build()
             .generate(ocspReq, VALID_X509_EE_CERT);
 
@@ -360,7 +397,7 @@ class TucPki006OcspVerifierTest {
   @Test
   void verifyOcspResponseCertStatusRevoked() {
 
-    final ZonedDateTime revokedDate = GemlibPkiUtils.now().minusMinutes(10);
+    final ZonedDateTime revokedDate = GemLibPkiUtils.now().minusMinutes(10);
 
     final int revokedReason = CRLReason.aACompromise;
 
@@ -458,7 +495,7 @@ class TucPki006OcspVerifierTest {
             .ocspResponse(ocspResp)
             .build();
 
-    assertDoesNotThrow(() -> verifier.verifyThisUpdate(GemlibPkiUtils.now()));
+    assertDoesNotThrow(() -> verifier.verifyThisUpdate(GemLibPkiUtils.now()));
   }
 
   @Test
@@ -481,7 +518,7 @@ class TucPki006OcspVerifierTest {
             .ocspResponse(ocspResp)
             .build();
 
-    assertDoesNotThrow(() -> verifier.verifyThisUpdate(GemlibPkiUtils.now()));
+    assertDoesNotThrow(() -> verifier.verifyThisUpdate(GemLibPkiUtils.now()));
   }
 
   @Test
@@ -506,7 +543,7 @@ class TucPki006OcspVerifierTest {
             .ocspResponse(ocspResp)
             .build();
 
-    final ZonedDateTime now = GemlibPkiUtils.now();
+    final ZonedDateTime now = GemLibPkiUtils.now();
     assertThatThrownBy(() -> verifier.verifyThisUpdate(now))
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
@@ -533,7 +570,7 @@ class TucPki006OcspVerifierTest {
             .ocspResponse(ocspResp)
             .build();
 
-    assertDoesNotThrow(() -> verifier.verifyProducedAt(GemlibPkiUtils.now()));
+    assertDoesNotThrow(() -> verifier.verifyProducedAt(GemLibPkiUtils.now()));
   }
 
   @Test
@@ -559,7 +596,7 @@ class TucPki006OcspVerifierTest {
             .ocspResponse(ocspResp)
             .build();
 
-    final ZonedDateTime now = GemlibPkiUtils.now();
+    final ZonedDateTime now = GemLibPkiUtils.now();
     assertThatThrownBy(() -> verifier.verifyProducedAt(now))
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
@@ -588,7 +625,7 @@ class TucPki006OcspVerifierTest {
             .ocspResponse(ocspResp)
             .build();
 
-    assertDoesNotThrow(() -> verifier.verifyProducedAt(GemlibPkiUtils.now()));
+    assertDoesNotThrow(() -> verifier.verifyProducedAt(GemLibPkiUtils.now()));
   }
 
   @Test
@@ -613,7 +650,7 @@ class TucPki006OcspVerifierTest {
             .ocspResponse(ocspResp)
             .build();
 
-    final ZonedDateTime now = GemlibPkiUtils.now();
+    final ZonedDateTime now = GemLibPkiUtils.now();
     assertThatThrownBy(() -> verifier.verifyProducedAt(now))
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
@@ -642,7 +679,7 @@ class TucPki006OcspVerifierTest {
             .ocspResponse(ocspResp)
             .build();
 
-    final ZonedDateTime now = GemlibPkiUtils.now();
+    final ZonedDateTime now = GemLibPkiUtils.now();
     assertThatThrownBy(() -> verifier.verifyNextUpdate(now))
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
@@ -671,7 +708,7 @@ class TucPki006OcspVerifierTest {
             .ocspResponse(ocspResp)
             .build();
 
-    assertDoesNotThrow(() -> verifier.verifyNextUpdate(GemlibPkiUtils.now()));
+    assertDoesNotThrow(() -> verifier.verifyNextUpdate(GemLibPkiUtils.now()));
   }
 
   @Test
@@ -694,7 +731,7 @@ class TucPki006OcspVerifierTest {
             .ocspResponse(ocspResp)
             .build();
 
-    assertDoesNotThrow(() -> verifier.verifyNextUpdate(GemlibPkiUtils.now()));
+    assertDoesNotThrow(() -> verifier.verifyNextUpdate(GemLibPkiUtils.now()));
   }
 
   @Test
@@ -715,13 +752,41 @@ class TucPki006OcspVerifierTest {
             .ocspResponse(ocspResp)
             .build();
 
-    assertDoesNotThrow(() -> verifier.verifyNextUpdate(GemlibPkiUtils.now()));
+    assertDoesNotThrow(() -> verifier.verifyNextUpdate(GemLibPkiUtils.now()));
+  }
+
+  @Test
+  void verifyOfflineOcspResponse() {
+
+    final ZonedDateTime referenceDate = GemLibPkiUtils.now();
+
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_ISSUER_CERT_SMCB);
+
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .producedAt(referenceDate)
+            .nextUpdate(referenceDate)
+            .thisUpdate(referenceDate)
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT);
+
+    final TucPki006OcspVerifier verifier =
+        TucPki006OcspVerifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tspServiceList(TestUtils.getDefaultTspServiceList())
+            .eeCert(VALID_X509_EE_CERT)
+            .ocspResponse(ocspResp)
+            .build();
+
+    assertDoesNotThrow(() -> verifier.performOcspChecks(ocspReq));
   }
 
   @Test
   void verifyOfflineOcspResponseWithReferenceDate() {
 
-    final ZonedDateTime referenceDate = GemlibPkiUtils.now().minusYears(10);
+    final ZonedDateTime referenceDate = GemLibPkiUtils.now().minusYears(10);
 
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_ISSUER_CERT_SMCB);
@@ -749,7 +814,7 @@ class TucPki006OcspVerifierTest {
   @Test
   void verifyOfflineOcspResponseNoReferenceDate() {
 
-    final ZonedDateTime referenceDate = GemlibPkiUtils.now().minusYears(10);
+    final ZonedDateTime referenceDate = GemLibPkiUtils.now().minusYears(10);
 
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_ISSUER_CERT_SMCB);
@@ -774,5 +839,136 @@ class TucPki006OcspVerifierTest {
     assertThatThrownBy(() -> verifier.performOcspChecks(ocspReq))
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
+  }
+
+  private Pair<OCSPResp, TucPki006OcspVerifier> getPairForMocks() {
+    return getPairForMocks(VALID_X509_EE_CERT);
+  }
+
+  private Pair<OCSPResp, TucPki006OcspVerifier> getPairForMocks(
+      @NonNull final X509Certificate eeCert) {
+    final ZonedDateTime referenceDate = GemLibPkiUtils.now();
+
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .producedAt(referenceDate)
+            .nextUpdate(referenceDate)
+            .thisUpdate(referenceDate)
+            .build()
+            .generate(ocspReq, eeCert);
+
+    final TucPki006OcspVerifier verifier =
+        TucPki006OcspVerifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tspServiceList(TestUtils.getDefaultTspServiceList())
+            .eeCert(eeCert)
+            .ocspResponse(ocspResp)
+            .build();
+    return Pair.of(ocspResp, verifier);
+  }
+
+  @Test
+  void verifyOcspResponseSignature_MockExceptionSignatureResponse() throws OCSPException {
+
+    final Pair<OCSPResp, TucPki006OcspVerifier> pair = getPairForMocks();
+
+    final OCSPResp ocspResp = pair.getLeft();
+    final TucPki006OcspVerifier verifier = pair.getRight();
+
+    final BasicOCSPResp basicOcspResp = getBasicOcspResp(ocspResp);
+    final BasicOCSPResp basicOcspRespSpy = Mockito.spy(basicOcspResp);
+    Mockito.doThrow(OCSPException.class).when(basicOcspRespSpy).isSignatureValid(Mockito.any());
+
+    try (final MockedStatic<OcspUtils> ocspUtils = Mockito.mockStatic(OcspUtils.class)) {
+      ocspUtils.when(() -> OcspUtils.getBasicOcspResp(Mockito.any())).thenReturn(basicOcspRespSpy);
+      assertThatThrownBy(verifier::verifyOcspResponseSignature)
+          .isInstanceOf(GemPkiRuntimeException.class)
+          .hasMessage("Interner Fehler beim verifizieren der Ocsp Response Signatur.");
+    }
+  }
+
+  @Test
+  void verifyOcspResponseSignature_MockExceptionNotUniqueCertHolderInBasicOcspResp() {
+
+    final Pair<OCSPResp, TucPki006OcspVerifier> pair = getPairForMocks();
+
+    final OCSPResp ocspResp = pair.getLeft();
+    final TucPki006OcspVerifier verifier = pair.getRight();
+
+    final BasicOCSPResp basicOcspResp = getBasicOcspResp(ocspResp);
+    final BasicOCSPResp basicOcspRespSpy = Mockito.spy(basicOcspResp);
+    Mockito.doReturn(new X509CertificateHolder[] {}).when(basicOcspRespSpy).getCerts();
+
+    try (final MockedStatic<OcspUtils> ocspUtils = Mockito.mockStatic(OcspUtils.class)) {
+      ocspUtils.when(() -> OcspUtils.getBasicOcspResp(Mockito.any())).thenReturn(basicOcspRespSpy);
+      assertThatThrownBy(verifier::verifyOcspResponseSignature)
+          .isInstanceOf(GemPkiRuntimeException.class)
+          .hasMessage("Nicht genau 1 Zertifikat in OCSP-Response gefunden.");
+    }
+  }
+
+  @Test
+  void verifyOcspResponseSignature_MockExceptionJcaX509CertificateConverter() {
+
+    final Pair<OCSPResp, TucPki006OcspVerifier> pair = getPairForMocks();
+
+    final TucPki006OcspVerifier verifier = pair.getRight();
+
+    try (final MockedConstruction<JcaX509CertificateConverter> ignored =
+        Mockito.mockConstruction(
+            JcaX509CertificateConverter.class,
+            (mock, context) ->
+                Mockito.when(mock.getCertificate(Mockito.any()))
+                    .thenThrow(new CertificateException()))) {
+      assertThatThrownBy(verifier::verifyOcspResponseSignature)
+          .isInstanceOf(GemPkiRuntimeException.class)
+          .hasMessage("Fehler beim lesen der OCSP Signer Zertifikates aus der OCSP Response.");
+    }
+  }
+
+  @Test
+  void verifyOcspResponseSignature_MockExceptionCertGetEncoded()
+      throws CertificateEncodingException {
+
+    final Pair<OCSPResp, TucPki006OcspVerifier> pair = getPairForMocks();
+
+    final TucPki006OcspVerifier verifier = pair.getRight();
+
+    final X509Certificate x509Cert = VALID_X509_EE_CERT;
+    final X509Certificate x509CertSpy = Mockito.spy(x509Cert);
+    Mockito.doThrow(CertificateEncodingException.class).when(x509CertSpy).getEncoded();
+
+    try (final MockedConstruction<JcaX509CertificateConverter> ignored =
+        Mockito.mockConstruction(
+            JcaX509CertificateConverter.class,
+            (mock, context) ->
+                Mockito.when(mock.getCertificate(Mockito.any())).thenReturn(x509CertSpy))) {
+      assertThatThrownBy(verifier::verifyOcspResponseSignature)
+          .isInstanceOf(GemPkiRuntimeException.class)
+          .hasMessage("Fehler beim lesen des OCSP Signers aus der Response.");
+    }
+  }
+
+  @Test
+  void verifyCertHash_MockCertificateEncodingException() throws CertificateEncodingException {
+
+    final X509Certificate x509Cert = VALID_X509_EE_CERT;
+    final X509Certificate x509CertSpy = Mockito.spy(x509Cert);
+
+    final Pair<OCSPResp, TucPki006OcspVerifier> pair = getPairForMocks(x509CertSpy);
+    final TucPki006OcspVerifier verifier = pair.getRight();
+
+    Mockito.doThrow(CertificateEncodingException.class).when(x509CertSpy).getEncoded();
+
+    try (final MockedConstruction<JcaX509CertificateConverter> ignored =
+        Mockito.mockConstruction(
+            JcaX509CertificateConverter.class,
+            (mock, context) ->
+                Mockito.when(mock.getCertificate(Mockito.any())).thenReturn(x509CertSpy))) {
+      assertThatThrownBy(verifier::verifyCertHash)
+          .isInstanceOf(GemPkiRuntimeException.class)
+          .hasMessage(OCSP_RESPONSE_ERROR);
+    }
   }
 }

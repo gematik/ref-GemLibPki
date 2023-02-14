@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package de.gematik.pki.gemlibpki.utils;
 
+import de.gematik.pki.gemlibpki.error.ErrorCode;
+import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -48,6 +50,15 @@ public final class CertReader {
     }
   }
 
+  public static X509Certificate readX509(final String productType, final byte[] bytes)
+      throws GemPkiException {
+    try {
+      return readX509(bytes);
+    } catch (final GemPkiRuntimeException e) {
+      throw new GemPkiException(productType, ErrorCode.TE_1002_TSL_CERT_EXTRACTION_ERROR, e);
+    }
+  }
+
   /**
    * Reads X.509 from the path
    *
@@ -55,7 +66,7 @@ public final class CertReader {
    * @return X509Certificate
    */
   public static X509Certificate readX509(@NonNull final Path path) {
-    return readX509(GemlibPkiUtils.readContent(path));
+    return readX509(GemLibPkiUtils.readContent(path));
   }
 
   /**
@@ -67,7 +78,7 @@ public final class CertReader {
   public static X509Certificate getX509FromP12(
       @NonNull final Path path, @NonNull final String password) {
     return Objects.requireNonNull(
-            P12Reader.getContentFromP12(GemlibPkiUtils.readContent(path), password))
+            P12Reader.getContentFromP12(GemLibPkiUtils.readContent(path), password))
         .getCertificate();
   }
 }

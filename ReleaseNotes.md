@@ -1,8 +1,30 @@
-<img align="right" width="200" height="37" src="doc/images/Gematik_Logo_Flag.png"/> <br />
+<img align="right" width="250" height="47" src="doc/images/Gematik_Logo_Flag_With_Background.png"/> <br/>
 
 # Release notes GemLibPki
 
-## Release 0.9.4 (2022-10-24)
+## Release 0.11.0
+
+- API change: modify [TslSigner](src/main/java/de/gematik/pki/gemlibpki/tsl/TslSigner.java) to be a
+  builder
+- API change: [TslConverter](src/main/java/de/gematik/pki/gemlibpki/tsl/TslConverter.java) does not
+  return optionals anymore
+- extend with TslConverter formatting options (pretty print, etc.)
+- API change: [TucPki001Verifier](src/main/java/de/gematik/pki/gemlibpki/tsl/TucPki001Verifier.java)
+  returns a TslTrustanchorUpdate object to easily verify trust anchor updates
+- extend to TucPki001Verifier check TSL id, sequence number and announced trust anchor if applicable
+- add possibility to sign TSLs with certificates with incorrect key usages and validities
+- extend [TslModifier](src/main/java/de/gematik/pki/gemlibpki/tsl/TslModifier.java) with various
+  modification methods
+- update dependencies
+
+## Release 0.10.0
+
+- API change
+  in [TucPki001Verifier](src/main/java/de/gematik/pki/gemlibpki/tsl/TucPki001Verifier.java)
+- add TUC_PKI_012 XML-Signatur-Prüfung to TucPki001Verifier
+- extend CertificateID manipulations in OcspResponseGenerator
+
+## Release 0.9.4
 
 - change maven groupId to "de.gematik.pki"
 - change OCSP caching behavior
@@ -10,19 +32,19 @@
 - updated dependencies
 - cleanup and small fixes
 
-## Release 0.9.3 (2022-09-16)
+## Release 0.9.3
 
 - replace expired test certificates in unit tests for tsl signature and validation
 - add unit tests for bouncy castle usage und ocsp edge case
 - update dependencies
 - repair images
 
-## Release 0.9.2 (2022-08-24)
+## Release 0.9.2
 
 - BUGFIX: save only ocsp responses to cache with status SUCCESSFUL (0)
 - prepare reproducible builds: change line endings to LF
 
-## Release 0.9.1 (2022-08-22)
+## Release 0.9.1
 
 - fix sonar issue in builder parameter
 
@@ -49,7 +71,7 @@
 - add possibility to verify an offline ocsp response
 - bug fixes and code improvements
 
-## Release 0.8.1 (2022-06-23)
+## Release 0.8.1
 
 - change language specific code (>Java 11)
 - fix small issues

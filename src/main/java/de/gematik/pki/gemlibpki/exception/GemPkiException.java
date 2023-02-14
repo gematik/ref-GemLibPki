@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -39,15 +39,13 @@ public class GemPkiException extends Exception {
   public GemPkiException(
       @NonNull final String productType,
       @NonNull final ErrorCode error,
-      @NonNull final Exception exception) {
+      final Exception exception) {
     super(error.getErrorMessage(productType), exception);
     this.error = error;
   }
 
   public GemPkiException(
-      @NonNull final ErrorCode error,
-      @NonNull final String message,
-      @NonNull final Exception exception) {
+      @NonNull final ErrorCode error, @NonNull final String message, final Exception exception) {
     super(message, exception);
     this.error = error;
   }

@@ -2,7 +2,7 @@
 *.iml
 **/target
 
-doc/development.txt
+doc/dev/
 LICENSE_PLACEHOLDER
 Pipeline.CI.Jenkinsfile
 Pipeline.DeployGitHub.Jenkinsfile

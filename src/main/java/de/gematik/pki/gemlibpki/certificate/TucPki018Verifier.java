@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -98,8 +98,8 @@ public class TucPki018Verifier {
         new TspInformationProvider(tspServiceList, productType)
             .getIssuerTspServiceSubset(x509EeCert);
 
-    doOcspIfConfigured(x509EeCert, tspServiceSubset, referenceDate);
     commonChecks(x509EeCert, tspServiceSubset);
+    doOcspIfConfigured(x509EeCert, tspServiceSubset, referenceDate);
     return tucPki018ProfileChecks(x509EeCert, tspServiceSubset);
   }
 
@@ -114,6 +114,7 @@ public class TucPki018Verifier {
       @NonNull final TspServiceSubset tspServiceSubset,
       @NonNull final ZonedDateTime referenceDate)
       throws GemPkiException {
+
     if (withOcspCheck) {
       final X509Certificate x509IssuerCert = tspServiceSubset.getX509IssuerCert();
       final OcspTransceiver transceiver =
@@ -126,6 +127,7 @@ public class TucPki018Verifier {
               .ocspTimeoutSeconds(ocspTimeoutSeconds)
               .tolerateOcspFailure(tolerateOcspFailure)
               .build();
+
       if (ocspResponse == null) {
         transceiver.verifyOcspResponse(ocspRespCache, referenceDate);
       } else {
@@ -223,13 +225,13 @@ public class TucPki018Verifier {
       @NonNull final X509Certificate x509EeCert, @NonNull final TspServiceSubset tspServiceSubset)
       throws GemPkiException {
 
-    final CertificateCommonVerification cv =
+    final CertificateCommonVerification certificateCommonVerification =
         CertificateCommonVerification.builder()
             .productType(productType)
             .x509EeCert(x509EeCert)
             .tspServiceSubset(tspServiceSubset)
             .build();
 
-    cv.verifyAll();
+    certificateCommonVerification.verifyAll();
   }
 }

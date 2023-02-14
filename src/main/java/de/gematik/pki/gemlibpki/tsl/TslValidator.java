@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.xml.security.signature.XMLSignatureException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.w3c.dom.Document;
@@ -40,6 +41,7 @@ import xades4j.verification.XadesVerificationProfile;
 import xades4j.verification.XadesVerifier;
 
 /** Class to validate a TSL by checking its signature */
+@Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class TslValidator {
 
@@ -57,6 +59,7 @@ public final class TslValidator {
       if (xvr.isEmpty()) {
         return false;
       }
+
       return xvr.get().getXmlSignature().checkSignatureValue(xvr.get().getValidationCertificate());
     } catch (final XAdES4jException
         | NoSuchAlgorithmException
@@ -64,10 +67,23 @@ public final class TslValidator {
         | NoSuchProviderException
         | CertificateException
         | KeyStoreException e) {
+      log.info("TSL signature verification failed.");
       return false;
     } catch (final IOException e) {
       throw new GemPkiRuntimeException("TSL signature verification failed.", e);
     }
+  }
+
+  /**
+   * Check signature of given TSL (mathematically and against trust anchor).
+   *
+   * @param tsl the tsl to check
+   * @param trustAnchor the tsl trust anchor certificate (issuer of signing certificate)
+   * @return true if signature is valid, otherwise false
+   */
+  public static boolean checkSignature(
+      final byte @NonNull [] tsl, @NonNull final X509Certificate trustAnchor) {
+    return checkSignature(TslConverter.bytesToDoc(tsl), trustAnchor);
   }
 
   private static Optional<XAdESVerificationResult> getVerificationResult(
@@ -83,12 +99,12 @@ public final class TslValidator {
             .certPathBuilderProvider(BouncyCastleProvider.PROVIDER_NAME)
             .checkRevocation(false)
             .build();
-    final XadesVerificationProfile p = new XadesVerificationProfile(certValidator);
-    final XadesVerifier v = p.newVerifier();
+    final XadesVerificationProfile profile = new XadesVerificationProfile(certValidator);
+    final XadesVerifier verifier = profile.newVerifier();
     final Element signature = TslUtils.getSignature(tsl);
     if (signature == null) {
       return Optional.empty();
     }
-    return Optional.of(v.verify(signature, null));
+    return Optional.of(verifier.verify(signature, null));
   }
 }

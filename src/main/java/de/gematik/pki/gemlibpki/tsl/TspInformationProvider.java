@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,10 @@ package de.gematik.pki.gemlibpki.tsl;
 
 import de.gematik.pki.gemlibpki.error.ErrorCode;
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
+import de.gematik.pki.gemlibpki.utils.CertReader;
 import eu.europa.esig.trustedlist.jaxb.tsl.DigitalIdentityType;
 import eu.europa.esig.trustedlist.jaxb.tsl.ServiceSupplyPointsType;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
@@ -33,6 +30,7 @@ import java.util.Optional;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.x509.AuthorityKeyIdentifier;
@@ -125,6 +123,27 @@ public class TspInformationProvider {
    */
   public TspServiceSubset getIssuerTspServiceSubset(@NonNull final X509Certificate x509EeCert)
       throws GemPkiException {
+    final Pair<TspService, X509Certificate> pair = getIssuerTspServiceAndIssuerCert(x509EeCert);
+
+    final TspService tspService = pair.getLeft();
+    final X509Certificate x509IssuerCert = pair.getRight();
+
+    return TspServiceSubset.builder()
+        .x509IssuerCert(x509IssuerCert)
+        .serviceStatus(tspService.getTspServiceType().getServiceInformation().getServiceStatus())
+        .statusStartingTime(getCertificateAuthorityStatusStartingTime(tspService))
+        .serviceSupplyPoint(getFirstServiceSupplyPointFromTspService(tspService))
+        .extensions(
+            tspService
+                .getTspServiceType()
+                .getServiceInformation()
+                .getServiceInformationExtensions()
+                .getExtension())
+        .build();
+  }
+
+  private Pair<TspService, X509Certificate> getIssuerTspServiceAndIssuerCert(
+      @NonNull final X509Certificate x509EeCert) throws GemPkiException {
     Optional<X509Certificate> foundX509IssuerCert = Optional.empty();
 
     for (final TspService tspService : tspServices) {
@@ -136,26 +155,14 @@ public class TspInformationProvider {
                 .getServiceDigitalIdentity()
                 .getDigitalId()) {
           final X509Certificate x509IssuerCert =
-              getX509CertificateFromByteArray(dit.getX509Certificate());
+              CertReader.readX509(productType, dit.getX509Certificate());
 
           if (x509EeCert
               .getIssuerX500Principal()
               .equals(x509IssuerCert.getSubjectX500Principal())) {
 
             if (verifyAkiMatchesSki(x509EeCert, x509IssuerCert)) {
-              return TspServiceSubset.builder()
-                  .x509IssuerCert(x509IssuerCert)
-                  .serviceStatus(
-                      tspService.getTspServiceType().getServiceInformation().getServiceStatus())
-                  .statusStartingTime(getCertificateAuthorityStatusStartingTime(tspService))
-                  .serviceSupplyPoint(getFirstServiceSupplyPointFromTspService(tspService))
-                  .extensions(
-                      tspService
-                          .getTspServiceType()
-                          .getServiceInformation()
-                          .getServiceInformationExtensions()
-                          .getExtension())
-                  .build();
+              return Pair.of(tspService, x509IssuerCert);
             }
             foundX509IssuerCert = Optional.of(x509IssuerCert);
           }
@@ -181,20 +188,15 @@ public class TspInformationProvider {
   }
 
   /**
-   * Get a certificate from a given byte array.
+   * Returns a TspService if one of its issuers signed the given end-entity certificate.
    *
-   * @param bytes certificate as byte array
-   * @return X509Certificate
-   * @throws GemPkiException exception thrown if certificate cannot be extracted
+   * @param x509EeCert The end-entity certificate
+   * @return tspService
+   * @throws GemPkiException exception thrown if certificate cannot be found
    */
-  private X509Certificate getX509CertificateFromByteArray(final byte[] bytes)
+  public TspService getIssuerTspService(@NonNull final X509Certificate x509EeCert)
       throws GemPkiException {
-    try (final InputStream in = new ByteArrayInputStream(bytes)) {
-      final CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-      return (X509Certificate) certFactory.generateCertificate(in);
-    } catch (final CertificateException | IOException e) {
-      throw new GemPkiException(productType, ErrorCode.TE_1002_TSL_CERT_EXTRACTION_ERROR, e);
-    }
+    return getIssuerTspServiceAndIssuerCert(x509EeCert).getLeft();
   }
 
   /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getBasicOcspResp;
 import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getFirstSingleReq;
 import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getFirstSingleResp;
 import static de.gematik.pki.gemlibpki.utils.CertReader.readX509;
-import static de.gematik.pki.gemlibpki.utils.GemlibPkiUtils.calculateSha256;
+import static de.gematik.pki.gemlibpki.utils.GemLibPkiUtils.calculateSha256;
 import static org.bouncycastle.internal.asn1.isismtt.ISISMTTObjectIdentifiers.id_isismtt_at_certHash;
 
 import de.gematik.pki.gemlibpki.error.ErrorCode;
@@ -30,7 +30,7 @@ import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.tsl.TslConstants;
 import de.gematik.pki.gemlibpki.tsl.TspService;
-import de.gematik.pki.gemlibpki.utils.GemlibPkiUtils;
+import de.gematik.pki.gemlibpki.utils.GemLibPkiUtils;
 import eu.europa.esig.trustedlist.jaxb.tsl.DigitalIdentityType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TSPServiceType;
 import java.security.cert.CertificateEncodingException;
@@ -43,11 +43,13 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.isismtt.ocsp.CertHash;
 import org.bouncycastle.asn1.ocsp.OCSPResponseStatus;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -61,7 +63,6 @@ import org.bouncycastle.cert.ocsp.OCSPResp;
 import org.bouncycastle.cert.ocsp.Req;
 import org.bouncycastle.cert.ocsp.RevokedStatus;
 import org.bouncycastle.cert.ocsp.SingleResp;
-import org.bouncycastle.cert.ocsp.UnknownStatus;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentVerifierProvider;
 import org.bouncycastle.operator.OperatorCreationException;
@@ -90,7 +91,7 @@ public class TucPki006OcspVerifier {
    * @throws GemPkiException thrown in case of failed verification against gemSpec_PKI TUC_PKI_006
    */
   public void performOcspChecks(@NonNull final OCSPReq ocspReq) throws GemPkiException {
-    performOcspChecks(ocspReq, GemlibPkiUtils.now());
+    performOcspChecks(ocspReq, GemLibPkiUtils.now());
   }
   /**
    * Performs TUC_PKI_006 checks (OCSP verification) against given date time as reference date
@@ -106,8 +107,8 @@ public class TucPki006OcspVerifier {
     log.info("Performing OCSP checks...");
 
     verifyOcspResponseSignature();
-    verifyCertHash();
     verifyStatus(referenceDate);
+    verifyCertHash();
 
     verifyThisUpdate(referenceDate);
     verifyProducedAt(referenceDate);
@@ -145,11 +146,9 @@ public class TucPki006OcspVerifier {
 
       throw new GemPkiException(productType, ErrorCode.SW_1047_CERT_REVOKED);
 
-    } else if (certificateStatus instanceof UnknownStatus) {
-      throw new GemPkiException(productType, ErrorCode.TW_1044_CERT_UNKNOWN);
     } else {
-      throw new GemPkiRuntimeException(
-          "OCSP Response Status ist nicht bekannt:: " + certificateStatus);
+      // the only remaining case: certificateStatus instanceof UnknownStatus
+      throw new GemPkiException(productType, ErrorCode.TW_1044_CERT_UNKNOWN);
     }
   }
 
@@ -159,7 +158,7 @@ public class TucPki006OcspVerifier {
    * @throws GemPkiException thrown if response status is not SUCCESSFUL (0)
    */
   protected void verifyStatus() throws GemPkiException {
-    verifyStatus(GemlibPkiUtils.now());
+    verifyStatus(GemLibPkiUtils.now());
   }
 
   /**
@@ -167,7 +166,7 @@ public class TucPki006OcspVerifier {
    * OcspConstants#OCSP_TIME_TOLERANCE_MILLISECONDS} in the future. Throws an exception if not.
    *
    * @param referenceDate a reference date to check thisUpdate against
-   * @throws GemPkiException
+   * @throws GemPkiException thrown if ocsp thisUpdate is in future out of tolerance
    */
   protected void verifyThisUpdate(@NonNull final ZonedDateTime referenceDate)
       throws GemPkiException {
@@ -184,7 +183,7 @@ public class TucPki006OcspVerifier {
    * OcspConstants#OCSP_TIME_TOLERANCE_MILLISECONDS} in pas and future. Throws an exception if not.
    *
    * @param referenceDate a reference date to check producedAt against
-   * @throws GemPkiException
+   * @throws GemPkiException thrown if ocsp producedAt is out of tolerance
    */
   protected void verifyProducedAt(@NonNull final ZonedDateTime referenceDate)
       throws GemPkiException {
@@ -203,7 +202,7 @@ public class TucPki006OcspVerifier {
    * verification is not performed, if nextUpdate is not available.
    *
    * @param referenceDate a reference date to check nextUpdate against
-   * @throws GemPkiException
+   * @throws GemPkiException thrown if ocsp nextUpdate is in past out of tolerance
    */
   protected void verifyNextUpdate(@NonNull final ZonedDateTime referenceDate)
       throws GemPkiException {
@@ -234,7 +233,7 @@ public class TucPki006OcspVerifier {
               + " future {}.",
           dateName,
           dateToVerify,
-          OCSP_TIME_TOLERANCE_MILLISECONDS / 1_000.0,
+          TimeUnit.MILLISECONDS.toSeconds(OCSP_TIME_TOLERANCE_MILLISECONDS),
           referenceDate);
       throw new GemPkiException(productType, ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR);
     }
@@ -253,7 +252,7 @@ public class TucPki006OcspVerifier {
               + " past {}.",
           dateName,
           dateToVerify,
-          OCSP_TIME_TOLERANCE_MILLISECONDS / 1_000.0,
+          TimeUnit.MILLISECONDS.toSeconds(OCSP_TIME_TOLERANCE_MILLISECONDS),
           referenceDate);
       throw new GemPkiException(productType, ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR);
     }
@@ -272,12 +271,12 @@ public class TucPki006OcspVerifier {
     }
     try {
 
-      final CertHash asn1CertHash =
-          CertHash.getInstance(
-              getFirstSingleResp(ocspResponse)
-                  .getExtension(id_isismtt_at_certHash)
-                  .getParsedValue());
-      if (!Arrays.equals(asn1CertHash.getCertificateHash(), calculateSha256(eeCert.getEncoded()))) {
+      final ASN1Encodable singleRespAsn1 =
+          getFirstSingleResp(ocspResponse).getExtension(id_isismtt_at_certHash).getParsedValue();
+      final CertHash asn1CertHash = CertHash.getInstance(singleRespAsn1);
+
+      final byte[] eeCertHash = calculateSha256(eeCert.getEncoded());
+      if (!Arrays.equals(asn1CertHash.getCertificateHash(), eeCertHash)) {
         throw new GemPkiException(productType, ErrorCode.SE_1041_CERTHASH_MISMATCH);
       }
     } catch (final NullPointerException e) {
@@ -316,7 +315,7 @@ public class TucPki006OcspVerifier {
             .filter(
                 digitalIdentityType -> {
                   final byte[] derX509EeCert2 =
-                      GemlibPkiUtils.calculateSha256(digitalIdentityType.getX509Certificate());
+                      GemLibPkiUtils.calculateSha256(digitalIdentityType.getX509Certificate());
                   return Arrays.equals(derX509EeCert, derX509EeCert2);
                 })
             .findAny();
@@ -329,7 +328,7 @@ public class TucPki006OcspVerifier {
 
     final byte[] derX509EeCert;
     try {
-      derX509EeCert = GemlibPkiUtils.calculateSha256(x509EeCert.getEncoded());
+      derX509EeCert = GemLibPkiUtils.calculateSha256(x509EeCert.getEncoded());
     } catch (final CertificateEncodingException e) {
       throw new GemPkiRuntimeException("Fehler beim lesen des OCSP Signers aus der Response.", e);
     }

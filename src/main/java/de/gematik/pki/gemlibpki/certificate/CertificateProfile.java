@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -36,11 +36,12 @@ import static de.gematik.pki.gemlibpki.certificate.KeyUsage.KEYUSAGE_KEY_ENCIPHE
 import static de.gematik.pki.gemlibpki.certificate.KeyUsage.KEYUSAGE_NON_REPUDIATION;
 
 import java.util.List;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /** Enum that host {@link CertificateProfile} information. */
-@RequiredArgsConstructor
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Getter
 public enum CertificateProfile {
   CERT_PROFILE_C_AK_AUT_RSA(

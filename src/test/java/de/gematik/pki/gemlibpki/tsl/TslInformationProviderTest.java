@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package de.gematik.pki.gemlibpki.tsl;
 
-import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
 import static de.gematik.pki.gemlibpki.TestConstants.GEMATIK_TEST_TSP_NAME;
 import static de.gematik.pki.gemlibpki.tsl.TslConstants.STI_CA_LIST;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,8 +32,7 @@ class TslInformationProviderTest {
 
   @BeforeEach
   void setUp() {
-    tslInformationProvider =
-        new TslInformationProvider(TestUtils.getTsl(FILE_NAME_TSL_ECC_DEFAULT));
+    tslInformationProvider = new TslInformationProvider(TestUtils.getDefaultTsl());
   }
 
   @Test

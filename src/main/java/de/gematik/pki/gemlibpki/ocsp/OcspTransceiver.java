@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import java.util.concurrent.TimeoutException;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import kong.unirest.UnirestException;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -48,13 +49,13 @@ import org.bouncycastle.cert.ocsp.OCSPResp;
 
 /** Class to send OCSP requests and receive OCSP responses */
 @Slf4j
-@RequiredArgsConstructor
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
-public class OcspTransceiver {
+public final class OcspTransceiver {
 
   public static final String OCSP_SEND_RECEIVE_FAILED = "OCSP senden/empfangen fehlgeschlagen.";
   @NonNull private final String productType;
-  @NonNull protected final List<TspService> tspServiceList;
+  @NonNull private final List<TspService> tspServiceList;
   @NonNull private final X509Certificate x509EeCert;
   @NonNull private final X509Certificate x509IssuerCert;
   @NonNull private final String ssp;
@@ -63,6 +64,20 @@ public class OcspTransceiver {
   private final int ocspTimeoutSeconds = OcspConstants.DEFAULT_OCSP_TIMEOUT_SECONDS;
 
   @Builder.Default private final boolean tolerateOcspFailure = false;
+
+  private void performOcspChecks(
+      final OCSPReq ocspReq, final ZonedDateTime referenceDate, final OCSPResp ocspResp)
+      throws GemPkiException {
+
+    final TucPki006OcspVerifier.TucPki006OcspVerifierBuilder verifierBuilder =
+        TucPki006OcspVerifier.builder()
+            .productType(productType)
+            .tspServiceList(tspServiceList)
+            .eeCert(x509EeCert);
+
+    verifierBuilder.ocspResponse(ocspResp).build();
+    verifierBuilder.build().performOcspChecks(ocspReq, referenceDate);
+  }
 
   /**
    * Verifies OCSP status of end-entity certificate. Sends OCSP request if OCSP response is not
@@ -75,54 +90,40 @@ public class OcspTransceiver {
   public void verifyOcspResponse(
       final OcspRespCache ocspRespCache, final ZonedDateTime referenceDate) throws GemPkiException {
 
-    final TucPki006OcspVerifier.TucPki006OcspVerifierBuilder verifierBuilder =
-        TucPki006OcspVerifier.builder()
-            .productType(productType)
-            .tspServiceList(tspServiceList)
-            .eeCert(x509EeCert);
-
-    final OCSPResp ocspResp;
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(x509EeCert, x509IssuerCert);
 
-    if (ocspRespCache != null) {
-
-      final Optional<OCSPResp> ocspRespCachedOpt =
-          ocspRespCache.getResponse(x509EeCert.getSerialNumber());
-
-      if (ocspRespCachedOpt.isEmpty()) {
-        log.debug("Send Ocsp req, because not in cache.");
-        final Optional<OCSPResp> ocspRespOpt = sendOcspRequest(ocspReq);
-
-        if (ocspRespOpt.isEmpty()) {
-          log.debug("No Ocsp resp received.");
-          return;
-        }
-
-        ocspResp = ocspRespOpt.get();
-        verifierBuilder.ocspResponse(ocspResp).build();
-        verifierBuilder.build().performOcspChecks(ocspReq, referenceDate);
-
-        ocspRespCache.saveResponse(x509EeCert.getSerialNumber(), ocspResp);
-        log.debug("Ocsp resp from server saved to cache.");
-        return;
-
-      } else {
-        log.debug("Ocsp resp from cache: verification is not performed");
-        return;
-      }
-    } else {
+    if (ocspRespCache == null) {
       log.debug("Send Ocsp req because no cache.");
       final Optional<OCSPResp> ocspRespOpt = sendOcspRequest(ocspReq);
       if (ocspRespOpt.isEmpty()) {
         return;
       }
       log.debug("Ocsp resp from server, because no cache.");
-      ocspResp = ocspRespOpt.get();
+      performOcspChecks(ocspReq, referenceDate, ocspRespOpt.get());
+      return;
     }
 
-    verifierBuilder.ocspResponse(ocspResp).build();
-    verifierBuilder.build().performOcspChecks(ocspReq, referenceDate);
+    final Optional<OCSPResp> ocspRespCachedOpt =
+        ocspRespCache.getResponse(x509EeCert.getSerialNumber());
+
+    if (ocspRespCachedOpt.isPresent()) {
+      log.debug("Ocsp resp from cache: verification is not performed");
+      return;
+    }
+
+    log.debug("Send Ocsp req, because not in cache.");
+    final Optional<OCSPResp> ocspRespOpt = sendOcspRequest(ocspReq);
+
+    if (ocspRespOpt.isEmpty()) {
+      log.debug("No Ocsp resp received.");
+      return;
+    }
+
+    performOcspChecks(ocspReq, referenceDate, ocspRespOpt.get());
+
+    ocspRespCache.saveResponse(x509EeCert.getSerialNumber(), ocspRespOpt.get());
+    log.debug("Ocsp resp from server saved to cache.");
   }
 
   /**
@@ -158,9 +159,10 @@ public class OcspTransceiver {
     return executor.submit(callableTask);
   }
 
-  OCSPResp getOcpsRespForBody(final byte[] body) throws IOException {
+  OCSPResp getOcspRespForBody(final byte[] body) throws IOException {
     return new OCSPResp(body);
   }
+
   /**
    * Sends given OCSP request to given SSP. For use without response validation.
    *
@@ -219,7 +221,7 @@ public class OcspTransceiver {
       final OCSPResp ocspResp;
 
       try {
-        ocspResp = getOcpsRespForBody(body);
+        ocspResp = getOcspRespForBody(body);
       } catch (final IOException e) {
         throw new GemPkiRuntimeException(OCSP_SEND_RECEIVE_FAILED, e);
       }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import org.w3c.dom.Document;
 
 public class TestUtils {
 
@@ -53,12 +54,19 @@ public class TestUtils {
   }
 
   public static TrustStatusListType getTsl(final String tslFilename) {
-    return TslReader.getTsl(ResourceReader.getFilePathFromResources(tslFilename)).orElseThrow();
+    return TslReader.getTsl(ResourceReader.getFilePathFromResources(tslFilename));
   }
 
   public static TrustStatusListType getDefaultTsl() {
-    return TslReader.getTsl(ResourceReader.getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT))
-        .orElseThrow();
+    return TslReader.getTsl(ResourceReader.getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT));
+  }
+
+  public static Document getDefaultTslAsDoc() {
+    return getTslAsDoc(FILE_NAME_TSL_ECC_DEFAULT);
+  }
+
+  public static Document getTslAsDoc(final String filename) {
+    return TslReader.getTslAsDoc(ResourceReader.getFilePathFromResources(filename));
   }
 
   public static List<TspService> getDefaultTspServiceList() {

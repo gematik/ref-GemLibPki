@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -37,13 +37,11 @@ public class TslInformationProvider {
   public List<TspService> getFilteredTspServices(@NonNull final List<String> stiFilterList) {
 
     return trustServiceStatusList.getTrustServiceProviderList().getTrustServiceProvider().stream()
-        .flatMap(
-            f ->
-                f.getTSPServices().getTSPService().stream()
-                    .filter(
-                        c ->
-                            stiFilterList.contains(
-                                c.getServiceInformation().getServiceTypeIdentifier())))
+        .flatMap(tspType -> tspType.getTSPServices().getTSPService().stream())
+        .filter(
+            tspServiceType ->
+                stiFilterList.contains(
+                    tspServiceType.getServiceInformation().getServiceTypeIdentifier()))
         .map(TspService::new)
         .toList();
   }
@@ -70,7 +68,11 @@ public class TslInformationProvider {
     final List<TSPType> tspTypes =
         trustServiceStatusList.getTrustServiceProviderList().getTrustServiceProvider().stream()
             .filter(
-                c -> tsp.contains(c.getTSPInformation().getTSPName().getName().get(0).getValue()))
+                tspType -> {
+                  final String tspName =
+                      tspType.getTSPInformation().getTSPName().getName().get(0).getValue();
+                  return tsp.equals(tspName);
+                })
             .toList();
 
     return tspTypes.stream()

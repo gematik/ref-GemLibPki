@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,20 @@
 
 package de.gematik.pki.gemlibpki.ocsp;
 
-import static de.gematik.pki.gemlibpki.utils.GemlibPkiUtils.calculateSha1;
-import static de.gematik.pki.gemlibpki.utils.GemlibPkiUtils.calculateSha256;
-import static de.gematik.pki.gemlibpki.utils.GemlibPkiUtils.setBouncyCastleProvider;
+import static de.gematik.pki.gemlibpki.utils.GemLibPkiUtils.calculateSha256;
+import static de.gematik.pki.gemlibpki.utils.GemLibPkiUtils.changeLast4Bytes;
+import static de.gematik.pki.gemlibpki.utils.GemLibPkiUtils.setBouncyCastleProvider;
 import static org.bouncycastle.internal.asn1.isismtt.ISISMTTObjectIdentifiers.id_isismtt_at_certHash;
 
 import com.google.common.primitives.Bytes;
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
+import de.gematik.pki.gemlibpki.utils.GemLibPkiUtils;
 import de.gematik.pki.gemlibpki.utils.P12Container;
 import eu.europa.esig.dss.spi.DSSRevocationUtils;
 import eu.europa.esig.dss.spi.x509.revocation.ocsp.OCSPRespStatus;
 import java.io.IOException;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
@@ -38,7 +41,9 @@ import javax.security.auth.x500.X500Principal;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ArrayUtils;
 import org.bouncycastle.asn1.ASN1Integer;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.DERNull;
 import org.bouncycastle.asn1.DEROctetString;
@@ -65,6 +70,7 @@ import org.bouncycastle.cert.ocsp.OCSPResp;
 import org.bouncycastle.cert.ocsp.OCSPRespBuilder;
 import org.bouncycastle.cert.ocsp.Req;
 import org.bouncycastle.cert.ocsp.RespID;
+import org.bouncycastle.cert.ocsp.UnknownStatus;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.DigestCalculatorProvider;
 import org.bouncycastle.operator.OperatorCreationException;
@@ -84,7 +90,11 @@ public class OcspResponseGenerator {
   @Builder.Default private final boolean withCertHash = true;
   @Builder.Default private final boolean validCertHash = true;
   @Builder.Default private final boolean validSignature = true;
-  @Builder.Default private final boolean validCertId = true;
+
+  @Builder.Default
+  private final CertificateIdGeneration certificateIdGeneration =
+      CertificateIdGeneration.VALID_CERTID;
+
   @NonNull @Builder.Default private final OCSPRespStatus respStatus = OCSPRespStatus.SUCCESSFUL;
   @Builder.Default private final boolean withResponseBytes = true;
   @NonNull @Builder.Default private final ResponderIdType responderIdType = ResponderIdType.BY_KEY;
@@ -97,6 +107,14 @@ public class OcspResponseGenerator {
 
   private final ZonedDateTime nextUpdate;
   @Builder.Default private final boolean withNullParameterHashAlgoOfCertId = false;
+
+  public enum CertificateIdGeneration {
+    VALID_CERTID,
+    INVALID_CERTID_SERIAL_NUMBER,
+    INVALID_CERTID_HASH_ALGO,
+    INVALID_CERTID_ISSUER_NAME_HASH,
+    INVALID_CERTID_ISSUER_KEY_HASH
+  }
 
   public enum ResponderIdType {
     BY_KEY,
@@ -173,24 +191,8 @@ public class OcspResponseGenerator {
 
     final List<Extension> extensionList = new ArrayList<>();
 
-    if (withCertHash) {
-      final byte[] certificateHash;
-      if (validCertHash) {
-        certificateHash = calculateSha256(eeCert.getEncoded());
-      } else {
-        log.warn(
-            "Invalid CertHash is generated because of user request. Parameter 'validCertHash' is"
-                + " set to false.");
-        certificateHash = calculateSha256("notAValidCertHash".getBytes());
-      }
-      final CertHash certHash =
-          new CertHash(new AlgorithmIdentifier(NISTObjectIdentifiers.id_sha256), certificateHash);
-      extensionList.add(new Extension(id_isismtt_at_certHash, false, certHash.getEncoded()));
-    } else {
-      log.warn(
-          "CertHash generation disabled because of user request. Parameter 'withCertHash' is set to"
-              + " false.");
-    }
+    addCertHashExtIfNecessary(eeCert, certificateStatus, extensionList);
+
     final Extensions extensions = new Extensions(extensionList.toArray(Extension[]::new));
     for (final Req singleRequest : ocspReq.getRequestList()) {
 
@@ -237,6 +239,35 @@ public class OcspResponseGenerator {
     return createOcspResp(respStatus, basicOcspResp);
   }
 
+  private void addCertHashExtIfNecessary(
+      final X509Certificate eeCert,
+      final CertificateStatus certificateStatus,
+      final List<Extension> extensionList)
+      throws CertificateEncodingException, IOException {
+    if (withCertHash) {
+      if (!(certificateStatus instanceof UnknownStatus)) {
+        final byte[] certificateHash;
+        if (validCertHash) {
+          certificateHash = calculateSha256(eeCert.getEncoded());
+        } else {
+          log.warn(
+              "Invalid CertHash is generated because of user request. Parameter 'validCertHash' is"
+                  + " set to false.");
+          certificateHash = calculateSha256("notAValidCertHash".getBytes(StandardCharsets.UTF_8));
+        }
+        final CertHash certHash =
+            new CertHash(new AlgorithmIdentifier(NISTObjectIdentifiers.id_sha256), certificateHash);
+        extensionList.add(new Extension(id_isismtt_at_certHash, false, certHash.getEncoded()));
+      } else {
+        log.warn("CertHash generation disabled. Certificate status is unknown.");
+      }
+    } else {
+      log.warn(
+          "CertHash generation disabled because of user request. Parameter 'withCertHash' is set to"
+              + " false.");
+    }
+  }
+
   private static OCSPResp createOcspResp(
       final OCSPRespStatus ocspRespStatus, final BasicOCSPResp basicOcspResp) throws OCSPException {
 
@@ -249,17 +280,61 @@ public class OcspResponseGenerator {
     return ocspRespBuilder.build(ocspRespStatus.getStatusCode(), basicOcspResp);
   }
 
-  private static CertificateID createCertificateIdWithInvalidIssuerHash(final Req singleRequest) {
-    final byte[] issuerNameHashBytes = calculateSha1("notValidIssuerHash".getBytes());
-    final ASN1OctetString issuerNameHash = new DEROctetString(issuerNameHashBytes);
-    final ASN1OctetString issuerKeyHash =
-        new DEROctetString(singleRequest.getCertID().getIssuerKeyHash());
-    final ASN1Integer serialNumber = new ASN1Integer(singleRequest.getCertID().getSerialNumber());
+  private static ASN1OctetString getIssuerNameHash(
+      final CertificateIdGeneration certificateIdGeneration, final Req singleRequest) {
+    final byte[] issuerNameHashBytes;
+    if (certificateIdGeneration == CertificateIdGeneration.INVALID_CERTID_ISSUER_NAME_HASH) {
+      issuerNameHashBytes = ArrayUtils.clone(singleRequest.getCertID().getIssuerNameHash());
+      changeLast4Bytes(issuerNameHashBytes);
+    } else {
+      issuerNameHashBytes = singleRequest.getCertID().getIssuerNameHash();
+    }
+    return new DEROctetString(issuerNameHashBytes);
+  }
 
-    final CertID certId =
-        new CertID(CertificateID.HASH_SHA1, issuerNameHash, issuerKeyHash, serialNumber);
+  private static ASN1OctetString getIssuerKeyHash(
+      final CertificateIdGeneration certificateIdGeneration, final Req singleRequest) {
 
-    return new CertificateID(certId);
+    final byte[] issuerKeyHashBytes;
+
+    if (certificateIdGeneration == CertificateIdGeneration.INVALID_CERTID_ISSUER_KEY_HASH) {
+      issuerKeyHashBytes = ArrayUtils.clone(singleRequest.getCertID().getIssuerKeyHash());
+      changeLast4Bytes(issuerKeyHashBytes);
+    } else {
+      issuerKeyHashBytes = singleRequest.getCertID().getIssuerKeyHash();
+    }
+    return new DEROctetString(issuerKeyHashBytes);
+  }
+
+  private static ASN1Integer getSerialNumber(
+      final CertificateIdGeneration certificateIdGeneration, final Req singleRequest) {
+    final BigInteger serialNumberBigInt;
+    if (certificateIdGeneration == CertificateIdGeneration.INVALID_CERTID_SERIAL_NUMBER) {
+      final byte[] serialNumberBytes =
+          ArrayUtils.clone(singleRequest.getCertID().getSerialNumber().toByteArray());
+      changeLast4Bytes(serialNumberBytes);
+      serialNumberBigInt = new BigInteger(1, serialNumberBytes);
+    } else {
+      serialNumberBigInt = singleRequest.getCertID().getSerialNumber();
+    }
+    return new ASN1Integer(serialNumberBigInt);
+  }
+
+  private AlgorithmIdentifier getAlgorithmIdentifier() {
+
+    final ASN1ObjectIdentifier asn1ObjectIdentifier;
+
+    if (certificateIdGeneration == CertificateIdGeneration.INVALID_CERTID_HASH_ALGO) {
+      asn1ObjectIdentifier = NISTObjectIdentifiers.id_sha256;
+    } else {
+      asn1ObjectIdentifier = OIWObjectIdentifiers.idSHA1;
+    }
+
+    if (withNullParameterHashAlgoOfCertId) {
+      return new AlgorithmIdentifier(asn1ObjectIdentifier, DERNull.INSTANCE);
+    }
+
+    return new AlgorithmIdentifier(asn1ObjectIdentifier);
   }
 
   private BasicOCSPResp invalidateOcspResponseSignature(final BasicOCSPResp basicOcspResp) {
@@ -268,7 +343,7 @@ public class OcspResponseGenerator {
       final int signatureStart = Bytes.indexOf(respBytes, basicOcspResp.getSignature());
       final int signatureEnd = signatureStart + basicOcspResp.getSignature().length;
 
-      changeLast4Bytes(respBytes, signatureEnd);
+      GemLibPkiUtils.change4Bytes(respBytes, signatureEnd);
 
       return DSSRevocationUtils.loadOCSPFromBinaries(respBytes);
     } catch (final IOException e) {
@@ -276,38 +351,20 @@ public class OcspResponseGenerator {
     }
   }
 
-  private void changeLast4Bytes(final byte[] respBytes, final int signatureEnd) {
-    for (int i = 1; i <= 4; i++) {
-      respBytes[signatureEnd - i] ^= 1;
-    }
-  }
-
   private CertificateID generateCertificateId(final Req singleRequest) {
-    CertificateID certificateId;
-    if (validCertId) {
-      certificateId = singleRequest.getCertID();
-    } else {
-      log.warn(
-          "OCSP response with invalid issuer hash of cert ID because of user request. Parameter"
-              + " 'validCertId' is set to false.");
-      certificateId = createCertificateIdWithInvalidIssuerHash(singleRequest);
-    }
 
-    final AlgorithmIdentifier algorithmIdentifier;
-    if (withNullParameterHashAlgoOfCertId) {
-      algorithmIdentifier = new AlgorithmIdentifier(OIWObjectIdentifiers.idSHA1, DERNull.INSTANCE);
-    } else {
-      algorithmIdentifier = new AlgorithmIdentifier(OIWObjectIdentifiers.idSHA1);
-    }
+    final ASN1OctetString issuerNameHash =
+        getIssuerNameHash(certificateIdGeneration, singleRequest);
 
-    final ASN1OctetString issuerNameHash = new DEROctetString(certificateId.getIssuerNameHash());
-    final ASN1OctetString issuerKeyHash = new DEROctetString(certificateId.getIssuerKeyHash());
-    final ASN1Integer serialNumber = new ASN1Integer(certificateId.getSerialNumber());
+    final ASN1OctetString issuerKeyHash = getIssuerKeyHash(certificateIdGeneration, singleRequest);
+
+    final ASN1Integer serialNumber = getSerialNumber(certificateIdGeneration, singleRequest);
+
+    final AlgorithmIdentifier algorithmIdentifier = getAlgorithmIdentifier();
+
     final CertID certId =
         new CertID(algorithmIdentifier, issuerNameHash, issuerKeyHash, serialNumber);
 
-    certificateId = new CertificateID(certId);
-
-    return certificateId;
+    return new CertificateID(certId);
   }
 }

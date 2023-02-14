@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -505,7 +505,7 @@ class OcspTransceiverTest {
     final OcspTransceiver transceiver = getOcspTransceiver();
 
     final OcspTransceiver transceiverSpy = Mockito.spy(transceiver);
-    Mockito.doThrow(IOException.class).when(transceiverSpy).getOcpsRespForBody(Mockito.any());
+    Mockito.doThrow(IOException.class).when(transceiverSpy).getOcspRespForBody(Mockito.any());
 
     assertThatThrownBy(() -> transceiverSpy.sendOcspRequest(ocspReq))
         .isInstanceOf(GemPkiRuntimeException.class)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -77,6 +77,6 @@ public final class P12Reader {
    */
   public static P12Container getContentFromP12(
       @NonNull final Path path, final @NonNull String p12Password) {
-    return getContentFromP12(GemlibPkiUtils.readContent(path), p12Password);
+    return getContentFromP12(GemLibPkiUtils.readContent(path), p12Password);
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,13 @@ import static org.bouncycastle.internal.asn1.isismtt.ISISMTTObjectIdentifiers.id
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
-import de.gematik.pki.gemlibpki.utils.GemlibPkiUtils;
+import de.gematik.pki.gemlibpki.ocsp.OcspResponseGenerator.CertificateIdGeneration;
+import de.gematik.pki.gemlibpki.utils.GemLibPkiUtils;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
 import eu.europa.esig.dss.spi.x509.revocation.ocsp.OCSPRespStatus;
 import java.io.IOException;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.NoSuchProviderException;
 import java.security.Security;
@@ -36,16 +39,20 @@ import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import org.apache.commons.lang3.ArrayUtils;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.DERNull;
 import org.bouncycastle.asn1.isismtt.ocsp.CertHash;
 import org.bouncycastle.asn1.ocsp.CertID;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.CRLReason;
 import org.bouncycastle.cert.ocsp.BasicOCSPResp;
+import org.bouncycastle.cert.ocsp.CertificateID;
 import org.bouncycastle.cert.ocsp.CertificateStatus;
 import org.bouncycastle.cert.ocsp.OCSPException;
 import org.bouncycastle.cert.ocsp.OCSPReq;
 import org.bouncycastle.cert.ocsp.OCSPResp;
+import org.bouncycastle.cert.ocsp.Req;
 import org.bouncycastle.cert.ocsp.RevokedStatus;
 import org.bouncycastle.cert.ocsp.SingleResp;
 import org.bouncycastle.cert.ocsp.UnknownStatus;
@@ -109,7 +116,7 @@ class OcspResponseGeneratorTest {
         .isInstanceOf(NoSuchProviderException.class)
         .hasMessage("no such provider: BC");
     // ... and then restore the BouncyCastleProvider
-    GemlibPkiUtils.setBouncyCastleProvider();
+    GemLibPkiUtils.setBouncyCastleProvider();
   }
 
   @Test
@@ -126,18 +133,23 @@ class OcspResponseGeneratorTest {
   @Test
   @DisplayName("Validate CertHash valid")
   void validateCertHashValid() {
+
     final OCSPResp ocspResp =
         OcspResponseGenerator.builder()
             .signer(OcspTestConstants.getOcspSignerEcc())
             .validCertHash(true)
             .build()
             .generate(ocspReq, VALID_X509_EE_CERT);
+
     final CertHash asn1CertHash =
         CertHash.getInstance(
             getFirstSingleResp(ocspResp).getExtension(id_isismtt_at_certHash).getParsedValue());
-    assertThat(new String(Hex.encode(asn1CertHash.getCertificateHash())))
-        .isEqualTo( // sha256 hash over der encoded end-entity certificate file
-            "6cda0ef261c36bc05cc66e809ea1621e1dafa794a8c8a04e114e9114689d2ff7");
+
+    // sha256 hash over der encoded end-entity certificate file
+    final String expectedHash = "6cda0ef261c36bc05cc66e809ea1621e1dafa794a8c8a04e114e9114689d2ff7";
+
+    assertThat(new String(Hex.encode(asn1CertHash.getCertificateHash()), StandardCharsets.UTF_8))
+        .isEqualTo(expectedHash);
   }
 
   @Test
@@ -153,7 +165,7 @@ class OcspResponseGeneratorTest {
     final CertHash asn1CertHash =
         CertHash.getInstance(
             getFirstSingleResp(ocspResp).getExtension(id_isismtt_at_certHash).getParsedValue());
-    assertThat(new String(Hex.encode(asn1CertHash.getCertificateHash())))
+    assertThat(new String(Hex.encode(asn1CertHash.getCertificateHash()), StandardCharsets.UTF_8))
         .isEqualTo(
             "65785b5437ef3a7a7521ba3ac418c8b05c036eeca88e53688ff460676f5288ba"); // sha256 hash from
     // string:
@@ -284,8 +296,100 @@ class OcspResponseGeneratorTest {
 
     final SingleResp singleResp = getFirstSingleResp(ocspResp);
     final CertID certId = singleResp.getCertID().toASN1Primitive();
+
     final ASN1Encodable params = certId.getHashAlgorithm().getParameters();
+
     assertThat(params).isEqualTo(DERNull.INSTANCE);
+  }
+
+  @Test
+  void withCertIdInvalidCertIdIssuerNameHash() {
+
+    final Req singleRequest = ocspReq.getRequestList()[0];
+    final byte[] expectedBytes = ArrayUtils.clone(singleRequest.getCertID().getIssuerNameHash());
+
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .certificateIdGeneration(CertificateIdGeneration.INVALID_CERTID_ISSUER_NAME_HASH)
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT);
+
+    final SingleResp singleResp = getFirstSingleResp(ocspResp);
+    final CertificateID certificateId = singleResp.getCertID();
+
+    final byte[] actualIssuerNameHashBytes = certificateId.getIssuerNameHash();
+
+    GemLibPkiUtils.change4Bytes(expectedBytes, expectedBytes.length);
+
+    assertThat(actualIssuerNameHashBytes).isEqualTo(expectedBytes);
+  }
+
+  @Test
+  void withCertIdInvalidCertIdIssuerKeyHash() {
+
+    final Req singleRequest = ocspReq.getRequestList()[0];
+    final byte[] expectedBytes = ArrayUtils.clone(singleRequest.getCertID().getIssuerKeyHash());
+
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .certificateIdGeneration(CertificateIdGeneration.INVALID_CERTID_ISSUER_KEY_HASH)
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT);
+
+    final SingleResp singleResp = getFirstSingleResp(ocspResp);
+    final CertificateID certificateId = singleResp.getCertID();
+
+    final byte[] actualIssuerKeyHashBytes = certificateId.getIssuerKeyHash();
+
+    GemLibPkiUtils.change4Bytes(expectedBytes, expectedBytes.length);
+
+    assertThat(actualIssuerKeyHashBytes).isEqualTo(expectedBytes);
+  }
+
+  @Test
+  void withCertIdInvalidCertIdSerialNumber() {
+
+    final Req singleRequest = ocspReq.getRequestList()[0];
+    final byte[] expectedBytes = singleRequest.getCertID().getSerialNumber().toByteArray();
+
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .certificateIdGeneration(CertificateIdGeneration.INVALID_CERTID_SERIAL_NUMBER)
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT);
+
+    final SingleResp singleResp = getFirstSingleResp(ocspResp);
+    final CertID certId = singleResp.getCertID().toASN1Primitive();
+
+    final BigInteger actualSerialNumber = certId.getSerialNumber().getValue();
+
+    GemLibPkiUtils.change4Bytes(expectedBytes, expectedBytes.length);
+    final BigInteger expectedSerialNumber = new BigInteger(1, expectedBytes);
+
+    assertThat(actualSerialNumber).isEqualTo(expectedSerialNumber);
+  }
+
+  @Test
+  void withCertIdInvalidCertIdAlgorithmIdentifier() {
+
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .certificateIdGeneration(CertificateIdGeneration.INVALID_CERTID_HASH_ALGO)
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT);
+
+    final SingleResp singleResp = getFirstSingleResp(ocspResp);
+    final CertID certId = singleResp.getCertID().toASN1Primitive();
+    final AlgorithmIdentifier actualAlgorithmIdentifier = certId.getHashAlgorithm();
+
+    final String actualAlgorithmId = actualAlgorithmIdentifier.getAlgorithm().getId();
+    final String expectedAlgorithmId = "2.16.840.1.101.3.4.2.1"; // SHA-256
+
+    assertThat(actualAlgorithmId).isEqualTo(expectedAlgorithmId);
   }
 
   private static void writeOcspRespToFile(final OCSPResp ocspResp) throws IOException {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -36,12 +36,12 @@ class TslReaderTest {
 
   @BeforeEach
   void setup() {
-    tsl = TestUtils.getTsl(FILE_NAME_TSL_ECC_DEFAULT);
+    tsl = TestUtils.getDefaultTsl();
   }
 
   @Test
   void verifyGetTrustStatusListTypeIsPresent() {
-    assertThat(TslReader.getTsl(getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT))).isPresent();
+    assertThat(TslReader.getTsl(getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT))).isNotNull();
   }
 
   @Test
@@ -95,7 +95,7 @@ class TslReaderTest {
         getFilePathFromResources("tsls/ecc/invalid/TSL_invalid_xmlMalformed_altCA.xml");
     assertThatThrownBy(() -> TslReader.getTsl(tslPath))
         .isInstanceOf(GemPkiRuntimeException.class)
-        .hasMessage("Lesen der TSL fehlgeschlagen.");
+        .hasMessage("Error reading TSL.");
   }
 
   @Test

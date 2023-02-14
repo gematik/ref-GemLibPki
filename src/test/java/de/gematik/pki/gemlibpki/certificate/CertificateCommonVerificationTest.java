@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Test;
  */
 class CertificateCommonVerificationTest {
 
-  private static ZonedDateTime DATETIME_TO_CHECK;
+  private ZonedDateTime zonedDateTime;
   private CertificateCommonVerification certificateCommonVerification;
   private X509Certificate validX509EeCertAltCa;
   private X509Certificate validX509IssuerCert;
@@ -51,7 +51,7 @@ class CertificateCommonVerificationTest {
         TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
     validX509EeCertAltCa = TestUtils.readCert("GEM.SMCB-CA33/DrMedGuntherKZV.pem");
     validX509IssuerCert = TestUtils.readCert("GEM.SMCB-CA10/GEM.SMCB-CA10_TEST-ONLY.pem");
-    DATETIME_TO_CHECK = ZonedDateTime.parse("2020-11-20T15:00:00Z");
+    zonedDateTime = ZonedDateTime.parse("2020-11-20T15:00:00Z");
     certificateCommonVerification =
         buildCertificateCommonVerifier(FILE_NAME_TSL_ECC_DEFAULT, VALID_X509_EE_CERT);
   }
@@ -116,7 +116,7 @@ class CertificateCommonVerificationTest {
         TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_expired.pem");
     final CertificateCommonVerification verifier =
         buildCertificateCommonVerifier(FILE_NAME_TSL_ECC_DEFAULT, expiredEeCert);
-    assertThatThrownBy(() -> verifier.verifyValidity(DATETIME_TO_CHECK))
+    assertThatThrownBy(() -> verifier.verifyValidity(zonedDateTime))
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.SE_1021_CERTIFICATE_NOT_VALID_TIME.getErrorMessage(PRODUCT_TYPE));
   }
@@ -127,18 +127,18 @@ class CertificateCommonVerificationTest {
         TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_not-yet-valid.pem");
     final CertificateCommonVerification verifier =
         buildCertificateCommonVerifier(FILE_NAME_TSL_ECC_DEFAULT, notYetValidEeCert);
-    assertThatThrownBy(() -> verifier.verifyValidity(DATETIME_TO_CHECK))
+    assertThatThrownBy(() -> verifier.verifyValidity(zonedDateTime))
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.SE_1021_CERTIFICATE_NOT_VALID_TIME.getErrorMessage(PRODUCT_TYPE));
   }
 
   @Test
   void verifyValidityCertificateValid() {
-    assertDoesNotThrow(() -> certificateCommonVerification.verifyValidity(DATETIME_TO_CHECK));
+    assertDoesNotThrow(() -> certificateCommonVerification.verifyValidity(zonedDateTime));
   }
 
   @Test
-  void verifyIssuerServiceStatusInaccord() {
+  void verifyIssuerServiceStatusNotRevoked() {
     assertDoesNotThrow(
         () ->
             buildCertificateCommonVerifier(FILE_NAME_TSL_ECC_ALT_CA, validX509EeCertAltCa)

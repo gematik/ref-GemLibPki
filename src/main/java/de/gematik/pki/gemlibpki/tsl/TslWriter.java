@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,9 @@ package de.gematik.pki.gemlibpki.tsl;
 
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import javax.xml.bind.JAXBException;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -39,18 +36,18 @@ public final class TslWriter {
   public static void write(
       @NonNull final TrustStatusListType tsl, @NonNull final Path tslFilePath) {
     try {
-      TslUtils.createMarshaller().marshal(TslUtils.createJaxbElement(tsl), tslFilePath.toFile());
-    } catch (final JAXBException e) {
+      final byte[] tslBytes = TslConverter.tslToBytes(tsl);
+      Files.write(tslFilePath, tslBytes);
+    } catch (final IOException e) {
       throw new GemPkiRuntimeException(STATUS_LIST_TO_FILE_FAILED, e);
     }
   }
 
-  public static void write(@NonNull final Document tsl, @NonNull final Path filePath) {
-    final TransformerFactory tf = TslUtils.getTransformerFactory();
+  public static void write(@NonNull final Document tslDoc, @NonNull final Path tslFilePath) {
     try {
-      tf.newTransformer()
-          .transform(new DOMSource(tsl.getDocumentElement()), new StreamResult(filePath.toFile()));
-    } catch (final TransformerException e) {
+      final byte[] tslBytes = TslConverter.docToBytes(tslDoc);
+      Files.write(tslFilePath, tslBytes);
+    } catch (final IOException e) {
       throw new GemPkiRuntimeException(STATUS_LIST_TO_FILE_FAILED, e);
     }
   }

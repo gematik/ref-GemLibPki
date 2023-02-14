@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import lombok.NoArgsConstructor;
 /** Utility class for constants related to tsl processing */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class TslConstants {
+
+  public static final String SVCSTATUS_REVOKED = "http://uri.etsi.org/TrstSvc/Svcstatus/revoked";
 
   public static final String STI_PKC = "http://uri.etsi.org/TrstSvc/Svctype/CA/PKC";
   public static final String STI_SRV_CERT_CHANGE =

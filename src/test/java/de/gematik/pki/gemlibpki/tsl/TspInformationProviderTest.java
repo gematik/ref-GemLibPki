@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -111,5 +111,10 @@ class TspInformationProviderTest {
                     .getIssuerTspServiceSubset(VALID_X509_EE_CERT_ALT_CA))
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.TE_1026_SERVICESUPPLYPOINT_MISSING.getErrorMessage(productType));
+  }
+
+  @Test
+  void verifyGetIssuerTspService() {
+    assertDoesNotThrow(() -> tspInformationProvider.getIssuerTspService(VALID_X509_EE_CERT));
   }
 }

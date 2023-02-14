@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ import org.junit.jupiter.params.support.AnnotationConsumer;
 @Slf4j
 public class CertificateProvider implements ArgumentsProvider, AnnotationConsumer<VariableSource> {
 
-  private static String certPathSwitch;
+  private String certPathSwitch;
   private static final String CERTIFICATE_SUBDIR = "/certificates/GEM.SMCB-CA10/";
 
   @Override
@@ -52,8 +52,7 @@ public class CertificateProvider implements ArgumentsProvider, AnnotationConsume
         .map(Arguments::of);
   }
 
-  public static Stream<X509Certificate> listFilesUsingFileWalkAndVisitor(
-      final String resourcesFolder) {
+  public Stream<X509Certificate> listFilesUsingFileWalkAndVisitor(final String resourcesFolder) {
     final List<X509Certificate> fileList = new ArrayList<>();
     try {
       Files.walkFileTree(
@@ -77,7 +76,7 @@ public class CertificateProvider implements ArgumentsProvider, AnnotationConsume
   }
 
   public static X509Certificate getX509Certificate(final Path path) {
-    return CertReader.readX509(GemlibPkiUtils.readContent(path));
+    return CertReader.readX509(GemLibPkiUtils.readContent(path));
   }
 
   public static X509Certificate getX509Certificate(final String path) {
@@ -89,7 +88,7 @@ public class CertificateProvider implements ArgumentsProvider, AnnotationConsume
     certPathSwitch = variableSource.value();
   }
 
-  private static boolean checkCertificateFilter() {
+  private boolean checkCertificateFilter() {
     return Optional.ofNullable(certPathSwitch)
         .map(String::trim)
         .map(string -> !certPathSwitch.isEmpty())

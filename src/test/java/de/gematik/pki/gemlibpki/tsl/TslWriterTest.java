@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ class TslWriterTest {
 
   @Test
   void writeFromTrustServiceStatusList() {
-    final TrustStatusListType tsl = TestUtils.getTsl(FILE_NAME_TSL_ECC_DEFAULT);
+    final TrustStatusListType tsl = TestUtils.getDefaultTsl();
     final Path destFile = Path.of("target/newTslTssl.xml");
     TslWriter.write(tsl, destFile);
     assertThat(documentsAreEqual(getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT), destFile))
@@ -42,8 +42,7 @@ class TslWriterTest {
 
   @Test
   void writeFromDocument() {
-    final Document tsl =
-        TslReader.getTslAsDoc(getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT)).orElseThrow();
+    final Document tsl = TestUtils.getDefaultTslAsDoc();
     final Path destFile = Path.of("target/newTslDoc.xml");
     TslWriter.write(tsl, destFile);
     assertThat(documentsAreEqual(getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT), destFile))
@@ -52,9 +51,8 @@ class TslWriterTest {
 
   @Test
   void verifyWriteDocAndTsslAreEqual() {
-    final TrustStatusListType tsl = TestUtils.getTsl(FILE_NAME_TSL_ECC_DEFAULT);
-    final Document tslAsDoc =
-        TslReader.getTslAsDoc(getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT)).orElseThrow();
+    final TrustStatusListType tsl = TestUtils.getDefaultTsl();
+    final Document tslAsDoc = TestUtils.getDefaultTslAsDoc();
     final Path doc = Path.of("target/tslAsDoc.xml");
     final Path tssl = Path.of("target/tslAsTssl.xml");
     TslWriter.write(tslAsDoc, doc);
@@ -64,9 +62,9 @@ class TslWriterTest {
 
   @Test
   void verifyConvert() {
-    final TrustStatusListType tsl = TestUtils.getTsl(FILE_NAME_TSL_ECC_DEFAULT);
+    final TrustStatusListType tsl = TestUtils.getDefaultTsl();
     final Path doc = Path.of("target/tslConvertToDoc.xml");
-    TslWriter.write(TslConverter.tslToDoc(tsl).orElseThrow(), doc);
+    TslWriter.write(TslConverter.tslToDoc(tsl), doc);
     assertThat(documentsAreEqual(doc, getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT)))
         .isTrue();
   }
@@ -87,10 +85,10 @@ class TslWriterTest {
 
     assertThatThrownBy(() -> TslWriter.write((Document) null, tslFilePath))
         .isInstanceOf(NullPointerException.class)
-        .hasMessage("tsl is marked non-null but is null");
+        .hasMessage("tslDoc is marked non-null but is null");
 
     assertThatThrownBy(() -> TslWriter.write(document, null))
         .isInstanceOf(NullPointerException.class)
-        .hasMessage("filePath is marked non-null but is null");
+        .hasMessage("tslFilePath is marked non-null but is null");
   }
 }

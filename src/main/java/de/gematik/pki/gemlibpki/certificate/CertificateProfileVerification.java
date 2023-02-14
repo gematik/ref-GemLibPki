@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,8 @@ public final class CertificateProfileVerification {
   /**
    * Perform all verification checks
    *
-   * @throws GemPkiException
+   * @throws GemPkiException thrown if cert cannot be verified according to KeyUsage, ExtKeyUsage or
+   *     CertType
    */
   public void verifyAll() throws GemPkiException {
     verifyKeyUsage();
@@ -137,7 +138,7 @@ public final class CertificateProfileVerification {
             .toList();
     if (filteredList.isEmpty()
         || eeExtendedKeyUsagesOid.size() != intendedExtendedKeyUsageOidList.size()) {
-      log.debug(ErrorCode.SE_1017_WRONG_EXTENDEDKEYUSAGE.getErrorMessage(productType));
+      log.debug("{}", ErrorCode.SE_1017_WRONG_EXTENDEDKEYUSAGE.getErrorMessage(productType));
       throw new GemPkiException(productType, ErrorCode.SE_1017_WRONG_EXTENDEDKEYUSAGE);
     }
   }

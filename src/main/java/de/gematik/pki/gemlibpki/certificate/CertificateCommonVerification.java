@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,11 @@
 
 package de.gematik.pki.gemlibpki.certificate;
 
-import static de.gematik.pki.gemlibpki.utils.GemlibPkiUtils.setBouncyCastleProvider;
+import static de.gematik.pki.gemlibpki.utils.GemLibPkiUtils.setBouncyCastleProvider;
 
 import de.gematik.pki.gemlibpki.error.ErrorCode;
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
+import de.gematik.pki.gemlibpki.tsl.TslConstants;
 import de.gematik.pki.gemlibpki.tsl.TspServiceSubset;
 import java.security.GeneralSecurityException;
 import java.security.cert.X509Certificate;
@@ -45,8 +46,6 @@ public final class CertificateCommonVerification {
     setBouncyCastleProvider();
   }
 
-  public static final String SVCSTATUS_REVOKED = "http://uri.etsi.org/TrstSvc/Svcstatus/revoked";
-
   @NonNull private final String productType;
   @NonNull private final TspServiceSubset tspServiceSubset;
   @NonNull private final X509Certificate x509EeCert;
@@ -54,7 +53,8 @@ public final class CertificateCommonVerification {
   /**
    * Perform verifications of validity, signature and issue service status
    *
-   * @throws GemPkiException
+   * @throws GemPkiException thrown if cert is not valid according to time, signature or issuer
+   *     service status
    */
   public void verifyAll() throws GemPkiException {
     verifyValidity();
@@ -65,7 +65,7 @@ public final class CertificateCommonVerification {
   /**
    * Verify validity period of parameterized end-entity certificate against current date.
    *
-   * @throws GemPkiException
+   * @throws GemPkiException thrown if cert is not valid in time
    */
   public void verifyValidity() throws GemPkiException {
     verifyValidity(ZonedDateTime.now());
@@ -73,6 +73,7 @@ public final class CertificateCommonVerification {
 
   /**
    * Verify validity period of parameterized end-entity certificate against a given reference date.
+   * TUC_PKI_002 „Gültigkeitsprüfung des Zertifikats“
    *
    * @param referenceDate date to check against
    * @throws GemPkiException if certificate is not valid in time
@@ -118,12 +119,15 @@ public final class CertificateCommonVerification {
    * @throws GemPkiException if certificate has been revoked
    */
   public void verifyIssuerServiceStatus() throws GemPkiException {
-    if (tspServiceSubset.getServiceStatus().equals(SVCSTATUS_REVOKED)) {
-      final ZonedDateTime statusStartingTime = tspServiceSubset.getStatusStartingTime();
-      if (statusStartingTime.isBefore(
-          x509EeCert.getNotBefore().toInstant().atZone(ZoneOffset.UTC))) {
-        throw new GemPkiException(productType, ErrorCode.SE_1036_CA_CERTIFICATE_REVOKED_IN_TSL);
-      }
+    if (!tspServiceSubset.getServiceStatus().equals(TslConstants.SVCSTATUS_REVOKED)) {
+      return;
+    }
+
+    final ZonedDateTime statusStartingTime = tspServiceSubset.getStatusStartingTime();
+    final ZonedDateTime notBefore = x509EeCert.getNotBefore().toInstant().atZone(ZoneOffset.UTC);
+
+    if (statusStartingTime.isBefore(notBefore)) {
+      throw new GemPkiException(productType, ErrorCode.SE_1036_CA_CERTIFICATE_REVOKED_IN_TSL);
     }
   }
   // ####################  End issuer checks ########################

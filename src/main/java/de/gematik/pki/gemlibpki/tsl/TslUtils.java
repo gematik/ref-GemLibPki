@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,14 @@ package de.gematik.pki.gemlibpki.tsl;
 
 import static javax.xml.crypto.dsig.XMLSignature.XMLNS;
 
+import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
+import de.gematik.pki.gemlibpki.utils.CertReader;
 import eu.europa.esig.trustedlist.jaxb.tsl.MultiLangStringType;
 import eu.europa.esig.trustedlist.jaxb.tsl.OtherTSLPointerType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
+import eu.europa.esig.xmldsig.jaxb.X509DataType;
+import java.security.cert.X509Certificate;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import javax.xml.XMLConstants;
@@ -28,6 +33,7 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -40,7 +46,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-final class TslUtils {
+public final class TslUtils {
 
   static Predicate<OtherTSLPointerType> tslDownloadUrlMatchesOid(@NonNull final String oid) {
     return p ->
@@ -70,6 +76,11 @@ final class TslUtils {
     return tf;
   }
 
+  static Unmarshaller createUnmarshaller() throws JAXBException {
+    final JAXBContext jaxbContext = JAXBContext.newInstance(TrustStatusListType.class);
+    return jaxbContext.createUnmarshaller();
+  }
+
   static Marshaller createMarshaller() throws JAXBException {
     final JAXBContext jaxbContext = JAXBContext.newInstance(TrustStatusListType.class);
     final Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
@@ -97,5 +108,27 @@ final class TslUtils {
    */
   public static Element getSignature(@NonNull final Document tsl) {
     return (Element) tsl.getElementsByTagNameNS(XMLNS, "Signature").item(0);
+  }
+
+  public static X509Certificate getFirstTslSignerCertificate(final TrustStatusListType tsl) {
+    final JAXBElement<byte[]> signatureCertificateJaxbElem =
+        getFirstSignatureCertificateJaxbElement(tsl);
+    return CertReader.readX509(signatureCertificateJaxbElem.getValue());
+  }
+
+  public static <T> JAXBElement<T> getFirstSignatureCertificateJaxbElement(
+      final TrustStatusListType tsl) {
+    return tsl.getSignature().getKeyInfo().getContent().stream()
+        .filter(JAXBElement.class::isInstance)
+        .map(JAXBElement.class::cast)
+        .map(JAXBElement::getValue)
+        .filter(X509DataType.class::isInstance)
+        .map(X509DataType.class::cast)
+        .map(X509DataType::getX509IssuerSerialOrX509SKIOrX509SubjectName)
+        .flatMap(List::stream)
+        .filter(JAXBElement.class::isInstance)
+        .map(z -> (JAXBElement<T>) z)
+        .findFirst()
+        .orElseThrow(() -> new GemPkiRuntimeException("tsl without a signer certificate element"));
   }
 }

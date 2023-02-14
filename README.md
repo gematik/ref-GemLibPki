@@ -1,4 +1,4 @@
-<img align="right" width="200" height="37" src="doc/images/Gematik_Logo_Flag.png"/> <br />
+<img align="right" width="250" height="47" src="doc/images/Gematik_Logo_Flag_With_Background.png"/> <br/>
 
 # GemLibPki
 
@@ -14,6 +14,8 @@ specification as a reference implementation.
 Please
 see [liability limitation](https://fachportal.gematik.de/default-titlegrundsaetzliche-nutzungsbedingungen)
 for further information.
+
+QES handling is not a part of this library.
 
 Specifications are published at [gematik Fachportal](https://fachportal.gematik.de/).
 
@@ -33,7 +35,7 @@ We are fully aware of the content and meaning of the test data. We never publish
 
 ##### Certificate checks
 
-- we check against certificate profiles specified by gematik, not against usages and contexts
+- we check against nonQES certificate profiles specified by gematik, not against usages and contexts
 - we provide several methods to get information about a certificate and its issuer
 - contains checks of all steps defined in TUC_PKI_018 „Zertifikatsprüfung in der TI“ specified in
   gematik document "Übergreifende Spezifikation PKI" (gemSpec_PKI)
@@ -50,7 +52,7 @@ We are fully aware of the content and meaning of the test data. We never publish
 
 ##### TSL handling
 
-- several methods for parsing, modifying, signing and signature validation of a TSL
+- several methods for parsing, modifying, signing and validation of a TSL
 
 ##### Error codes
 
@@ -58,7 +60,9 @@ We are fully aware of the content and meaning of the test data. We never publish
 
 ### Build
 
-The lib is developed and tested with **OpenJDK 17** and **Apache Maven 3.8.6**
+The lib is developed and tested
+with [Eclipse Adoptium Temurin JDK 17](https://github.com/adoptium/temurin17-binaries) and [Apache
+Maven 3.9.0](https://maven.apache.org/index.html)
 
 Build with:
 
@@ -95,6 +99,6 @@ in any compatible unix environment.
 
 ### ToDo
 
-- detailed TSL validation according to TUC_PKI_001
+- extend TSL validation according to TUC_PKI_001
 - offline mode for TUC_PKI_001 is not implemented
 - implement critical extension checks according to GS-A_4661 (RFC5280#4.2)

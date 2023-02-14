@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,12 @@
 
 package de.gematik.pki.gemlibpki.tsl;
 
-import static de.gematik.pki.gemlibpki.utils.GemlibPkiUtils.setBouncyCastleProvider;
+import static de.gematik.pki.gemlibpki.utils.GemLibPkiUtils.setBouncyCastleProvider;
 import static org.apache.xml.security.signature.XMLSignature.ALGO_ID_SIGNATURE_RSA_SHA256_MGF1;
 
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.utils.P12Container;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import lombok.Builder;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
@@ -44,27 +43,37 @@ import xades4j.utils.XadesProfileResolutionException;
 
 /** Class for signing tsl DOM Document structures */
 @Slf4j
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
 public final class TslSigner {
 
   static {
     setBouncyCastleProvider();
   }
-  /**
-   * Signs a given tsl
-   *
-   * @param tsl The tsl to sign
-   * @param tslSigner {@link P12Container} with x509certificate a key (RSA/ECC) for signature
-   */
-  public static void sign(@NonNull final Document tsl, @NonNull final P12Container tslSigner) {
 
-    final Element elemToSign = getTslWithoutSignature(tsl);
-    final KeyingDataProvider kdp =
-        new DirectKeyingDataProvider(tslSigner.getCertificate(), tslSigner.getPrivateKey());
-    final XadesSigner xSigner;
+  @NonNull final Document tslToSign;
+  @NonNull final P12Container tslSignerP12;
+  @Builder.Default private final boolean checkSignerKeyUsage = true;
+  @Builder.Default private final boolean checkSignerValidity = true;
+
+  /** Signs a given tsl */
+  public void sign() {
+
+    if (!checkSignerKeyUsage) {
+      log.info("WARNING! TSL is signed without signerKeyUsage check due to user request.");
+    }
+
+    if (!checkSignerValidity) {
+      log.info("WARNING! TSL is signed without signerValidityCheck check due to user request.");
+    }
+
+    final Element elementToSign = getTslWithoutSignature(tslToSign);
+
+    final KeyingDataProvider keyingDataProvider =
+        new DirectKeyingDataProvider(tslSignerP12.getCertificate(), tslSignerP12.getPrivateKey());
+
     try {
-      xSigner =
-          new XadesBesSigningProfile(kdp)
+      final XadesSigner xSigner =
+          new XadesBesSigningProfile(keyingDataProvider)
               .withSignatureAlgorithms(
                   new SignatureAlgorithms()
                       .withSignatureAlgorithm("RSA", ALGO_ID_SIGNATURE_RSA_SHA256_MGF1)
@@ -73,15 +82,21 @@ public final class TslSigner {
                       .withCanonicalizationAlgorithmForTimeStampProperties(
                           new ExclusiveCanonicalXMLWithoutComments()))
               .withBasicSignatureOptions(
-                  new BasicSignatureOptions().includeIssuerSerial(false).includeSubjectName(false))
+                  new BasicSignatureOptions()
+                      .includeIssuerSerial(false)
+                      .includeSubjectName(false)
+                      .checkKeyUsage(checkSignerKeyUsage)
+                      .checkCertificateValidity(checkSignerValidity))
               .newSigner();
 
-      final DataObjectDesc dod =
+      final DataObjectDesc dataObjectDesc =
           new DataObjectReference("")
               .withTransform(new EnvelopedSignatureTransform())
               .withTransform(new ExclusiveCanonicalXMLWithoutComments())
-              .withDataObjectFormat(new DataObjectFormatProperty("text/xml", ""));
-      xSigner.sign(new SignedDataObjects(dod), elemToSign);
+              .withDataObjectFormat(new DataObjectFormatProperty("text/xml"));
+
+      xSigner.sign(new SignedDataObjects(dataObjectDesc), elementToSign);
+
     } catch (final XadesProfileResolutionException e) {
       throw new GemPkiRuntimeException("Fehler beim erstellen des XAdES Profil Objektes.", e);
     } catch (final XAdES4jException e) {

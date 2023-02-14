@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ class CertReaderTest {
   @Test
   void readExistingX509DerCert() {
     final byte[] file =
-        GemlibPkiUtils.readContent(
+        GemLibPkiUtils.readContent(
             Path.of(TestConstants.CERT_DIR, "GEM.SMCB-CA10/valid/DrMedGunther.der"));
     assertThat(CertReader.readX509(file).getSubjectX500Principal().getName())
         .contains("Zahnarztpraxis Dr. med.Gunther");
@@ -59,7 +59,7 @@ class CertReaderTest {
   @Test
   void readExistingX509PemCert() {
     final byte[] file =
-        GemlibPkiUtils.readContent(
+        GemLibPkiUtils.readContent(
             Path.of(TestConstants.CERT_DIR, "GEM.SMCB-CA10/valid/DrMedGunther.pem"));
     assertThat(CertReader.readX509(file).getSubjectX500Principal().getName())
         .contains("Zahnarztpraxis Dr. med.Gunther");
@@ -68,7 +68,7 @@ class CertReaderTest {
   @SneakyThrows
   @Test
   void readInvalidCert() {
-    final byte[] file = GemlibPkiUtils.readContent(Path.of("src/test/resources/log4j2.xml"));
+    final byte[] file = GemLibPkiUtils.readContent(Path.of("src/test/resources/log4j2.xml"));
     assertThatThrownBy(() -> CertReader.readX509(file))
         .isInstanceOf(GemPkiRuntimeException.class)
         .hasMessage("Konnte Zertifikat nicht lesen.");

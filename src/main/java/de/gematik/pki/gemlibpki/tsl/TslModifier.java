@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -20,18 +20,28 @@ import static de.gematik.pki.gemlibpki.tsl.TslUtils.tslDownloadUrlMatchesOid;
 
 import eu.europa.esig.trustedlist.jaxb.tsl.AdditionalInformationType;
 import eu.europa.esig.trustedlist.jaxb.tsl.AttributedNonEmptyURIType;
+import eu.europa.esig.trustedlist.jaxb.tsl.MultiLangNormStringType;
 import eu.europa.esig.trustedlist.jaxb.tsl.MultiLangStringType;
 import eu.europa.esig.trustedlist.jaxb.tsl.NextUpdateType;
 import eu.europa.esig.trustedlist.jaxb.tsl.OtherTSLPointerType;
 import eu.europa.esig.trustedlist.jaxb.tsl.OtherTSLPointersType;
 import eu.europa.esig.trustedlist.jaxb.tsl.ServiceSupplyPointsType;
+import eu.europa.esig.trustedlist.jaxb.tsl.TSPInformationType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TSPServiceInformationType;
+import eu.europa.esig.trustedlist.jaxb.tsl.TSPServiceType;
+import eu.europa.esig.trustedlist.jaxb.tsl.TSPType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.math.BigInteger;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.GregorianCalendar;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
+import javax.xml.bind.JAXBElement;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeConstants;
 import javax.xml.datatype.DatatypeFactory;
@@ -217,11 +227,184 @@ public final class TslModifier {
     tsl.getSchemeInformation().setPointersToOtherTSL(otpt);
   }
 
-  private static XMLGregorianCalendar getXmlGregorianCalendar(final ZonedDateTime zdt)
+  public static XMLGregorianCalendar getXmlGregorianCalendar(final ZonedDateTime zdt)
       throws DatatypeConfigurationException {
     final XMLGregorianCalendar xmlCal =
         DatatypeFactory.newInstance().newXMLGregorianCalendar(GregorianCalendar.from(zdt));
     xmlCal.setMillisecond(DatatypeConstants.FIELD_UNDEFINED);
     return xmlCal;
+  }
+
+  public static byte[] modifiedSignerCert(
+      final byte[] tslBytes, final X509Certificate x509Certificate)
+      throws CertificateEncodingException {
+    return modifiedSignerCert(tslBytes, x509Certificate.getEncoded());
+  }
+
+  public static byte[] modifiedSignerCert(
+      final byte[] tslBytes, final byte[] x509CertificateEncoded) {
+
+    final TrustStatusListType tsl = TslConverter.bytesToTsl(tslBytes);
+
+    modifySignerCert(tsl, x509CertificateEncoded);
+
+    return TslConverter.tslToBytes(tsl);
+  }
+
+  public static void modifySignerCert(
+      final TrustStatusListType tsl, final byte @NonNull [] x509CertificateEncoded) {
+
+    final JAXBElement<byte[]> signatureCertificateJaxbElem =
+        TslUtils.getFirstSignatureCertificateJaxbElement(tsl);
+
+    signatureCertificateJaxbElem.setValue(x509CertificateEncoded);
+  }
+
+  /**
+   * @param tslBytes tsl as a byte[]
+   * @param tslId id of the tsl to modify
+   * @return a new tsl with id modified
+   */
+  public static byte[] modifiedTslId(final byte[] tslBytes, final String tslId) {
+
+    final TrustStatusListType tsl = TslConverter.bytesToTsl(tslBytes);
+
+    tsl.setId(tslId);
+
+    return TslConverter.tslToBytes(tsl);
+  }
+
+  /**
+   * @param tslBytes tsl as a byte[]
+   * @param seqNumber number of the tsl
+   * @param issueDate Timestamp of the issueDate element of the tsl
+   * @return a new tsl with id modified
+   */
+  public static byte[] modifiedTslId(
+      final byte[] tslBytes, final int seqNumber, @NonNull final ZonedDateTime issueDate) {
+    return modifiedTslId(tslBytes, generateTslId(seqNumber, issueDate));
+  }
+
+  private static List<MultiLangNormStringType> findTspTradeNames(
+      final TSPType trustServiceProvider, final String tspName, final String oldTspTradeName) {
+
+    final TSPInformationType tspInformation = trustServiceProvider.getTSPInformation();
+
+    final String nameTspName = tspInformation.getTSPName().getName().get(0).getValue();
+
+    final MultiLangNormStringType nameElement = tspInformation.getTSPTradeName().getName().get(0);
+    final String nameTspTradeName = nameElement.getValue();
+
+    final List<MultiLangNormStringType> selected = new ArrayList<>();
+    if (tspName.equals(nameTspName) && oldTspTradeName.equals(nameTspTradeName)) {
+      selected.add(nameElement);
+    }
+
+    return selected;
+  }
+
+  public static byte[] modifiedTspTradeName(
+      final byte[] tslBytes,
+      final String tspName,
+      final String oldTspTradeName,
+      final String newTspTradeName) {
+
+    final TrustStatusListType tsl = TslConverter.bytesToTsl(tslBytes);
+    modifyTspTradeName(tsl, tspName, oldTspTradeName, newTspTradeName);
+    return TslConverter.tslToBytes(tsl);
+  }
+
+  public static void modifyTspTradeName(
+      final TrustStatusListType tsl,
+      final String tspName,
+      final String oldTspTradeName,
+      final String newTspTradeName) {
+
+    final List<TSPType> trustServiceProviders =
+        tsl.getTrustServiceProviderList().getTrustServiceProvider();
+
+    for (final TSPType trustServiceProvider : trustServiceProviders) {
+      final List<MultiLangNormStringType> nameElements =
+          findTspTradeNames(trustServiceProvider, tspName, oldTspTradeName);
+
+      nameElements.forEach(nameElement -> nameElement.setValue(newTspTradeName));
+    }
+  }
+
+  /**
+   * @param tslBytes TSL as byte[]
+   * @param tspName Name of the trust service provider to change a service from
+   * @param serviceIdentifierToSelect if null, then value of ServiceIdentifier is not compared
+   * @param serviceStatusToSelect if null, then value of ServiceStatus is not compared
+   * @param newStatusStartingTime new value for StatusStartingTime
+   * @throws DatatypeConfigurationException thrown if the status starting time is in a wrong format
+   */
+  public static byte[] modifiedStatusStartingTime(
+      final byte[] tslBytes,
+      @NonNull final String tspName,
+      final String serviceIdentifierToSelect,
+      final String serviceStatusToSelect,
+      @NonNull final ZonedDateTime newStatusStartingTime)
+      throws DatatypeConfigurationException {
+
+    final TrustStatusListType tsl = TslConverter.bytesToTsl(tslBytes);
+
+    modifyStatusStartingTime(
+        tsl, tspName, serviceIdentifierToSelect, serviceStatusToSelect, newStatusStartingTime);
+
+    return TslConverter.tslToBytes(tsl);
+  }
+
+  /**
+   * @param tsl TSL to change status starting time in
+   * @param tspName Name of the trust service provider to change a service from
+   * @param serviceIdentifierToSelect if null, then value of ServiceIdentifier is not compared
+   * @param serviceStatusToSelect if null, then value of ServiceStatus is not compared
+   * @param newStatusStartingTime new value for StatusStartingTime
+   * @throws DatatypeConfigurationException thrown if the status starting time is in a wrong format
+   */
+  public static void modifyStatusStartingTime(
+      final TrustStatusListType tsl,
+      @NonNull final String tspName,
+      final String serviceIdentifierToSelect,
+      final String serviceStatusToSelect,
+      @NonNull final ZonedDateTime newStatusStartingTime)
+      throws DatatypeConfigurationException {
+
+    final XMLGregorianCalendar newStatusStartingTimeGreg =
+        TslModifier.getXmlGregorianCalendar(newStatusStartingTime);
+
+    final List<TSPType> trustServiceProviders =
+        tsl.getTrustServiceProviderList().getTrustServiceProvider();
+
+    final Predicate<TSPServiceType> tspServicePredicate =
+        tspService -> {
+          final TSPServiceInformationType serviceInformation = tspService.getServiceInformation();
+          final String serviceTypeIdentifier = serviceInformation.getServiceTypeIdentifier();
+          final String serviceStatus = serviceInformation.getServiceStatus();
+
+          final boolean b1 =
+              (serviceIdentifierToSelect == null)
+                  || serviceIdentifierToSelect.equals(serviceTypeIdentifier);
+
+          final boolean b2 =
+              (serviceStatusToSelect == null) || serviceStatusToSelect.equals(serviceStatus);
+
+          return b1 && b2;
+        };
+
+    final List<TSPServiceType> tpsServices =
+        trustServiceProviders.stream()
+            .filter(
+                tsp ->
+                    tspName.equals(
+                        tsp.getTSPInformation().getTSPName().getName().get(0).getValue()))
+            .flatMap(tspType -> tspType.getTSPServices().getTSPService().stream())
+            .filter(tspServicePredicate)
+            .toList();
+
+    tpsServices.forEach(
+        tspService ->
+            tspService.getServiceInformation().setStatusStartingTime(newStatusStartingTimeGreg));
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -78,10 +78,6 @@ class GemPkiExceptionTest {
         .hasMessage(
             "Cannot invoke \"de.gematik.pki.gemlibpki.error.ErrorCode.getErrorMessage(String)\""
                 + " because \"error\" is null");
-    assertThatThrownBy(
-            () -> new GemPkiException(PRODUCT_TYPE, ErrorCode.SE_1003_MULTIPLE_TRUST_ANCHOR, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("exception is marked non-null but is null");
 
     assertThatThrownBy(() -> new GemPkiException(null, "blub", exception))
         .isInstanceOf(NullPointerException.class)
@@ -90,9 +86,5 @@ class GemPkiExceptionTest {
             () -> new GemPkiException(ErrorCode.SE_1003_MULTIPLE_TRUST_ANCHOR, null, exception))
         .isInstanceOf(NullPointerException.class)
         .hasMessage("message is marked non-null but is null");
-    assertThatThrownBy(
-            () -> new GemPkiException(ErrorCode.SE_1003_MULTIPLE_TRUST_ANCHOR, "blub", null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("exception is marked non-null but is null");
   }
 }

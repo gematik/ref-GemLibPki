@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 gematik GmbH
+ * Copyright (c) 2023 gematik GmbH
  * 
  * Licensed under the Apache License, Version 2.0 (the License);
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ public class TestConstants {
   public static final String FILE_NAME_TSL_ECC_ALT_CA = "tsls/ecc/valid/TSL_altCA.xml";
   public static final String FILE_NAME_TSL_RSA_DEFAULT = "tsls/rsa/valid/TSL_default.xml";
   public static final String FILE_NAME_TSL_RSA_NOSIG = "tsls/rsa/valid/TSL_default_noSig.xml";
-  public static final String FILE_NAME_TSL_RSA_ALT_CA = "tsls/rsa/valid/TSL_altCA.xml";
   public static final String FILE_NAME_TSL_RSA_ALT_TA = "tsls/rsa/valid/TSL_altTA.xml";
   public static final String LOCAL_SSP_DIR = "/services/ocsp";
   public static final String OCSP_HOST = "http://localhost:";
