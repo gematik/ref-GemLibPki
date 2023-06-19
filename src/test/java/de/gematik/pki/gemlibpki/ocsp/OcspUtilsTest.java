@@ -16,7 +16,7 @@
 
 package de.gematik.pki.gemlibpki.ocsp;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 
 import org.junit.jupiter.api.Test;
 
@@ -24,16 +24,10 @@ class OcspUtilsTest {
 
   @Test
   void nonNullTests() {
-    assertThatThrownBy(() -> OcspUtils.getBasicOcspResp(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("ocspResponse is marked non-null but is null");
+    assertNonNullParameter(() -> OcspUtils.getBasicOcspResp(null), "ocspResponse");
 
-    assertThatThrownBy(() -> OcspUtils.getFirstSingleResp(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("ocspResponse is marked non-null but is null");
+    assertNonNullParameter(() -> OcspUtils.getFirstSingleResp(null), "ocspResponse");
 
-    assertThatThrownBy(() -> OcspUtils.getFirstSingleReq(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("ocspReq is marked non-null but is null");
+    assertNonNullParameter(() -> OcspUtils.getFirstSingleReq(null), "ocspReq");
   }
 }

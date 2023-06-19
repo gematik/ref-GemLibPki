@@ -18,6 +18,7 @@ package de.gematik.pki.gemlibpki.utils;
 
 import static de.gematik.pki.gemlibpki.utils.GemLibPkiUtils.calculateSha1;
 import static de.gematik.pki.gemlibpki.utils.GemLibPkiUtils.calculateSha256;
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.charset.StandardCharsets;
@@ -74,5 +75,10 @@ class GemLibPkiUtilsTest {
                 Hex.encode(calculateSha256("test".getBytes(StandardCharsets.UTF_8))),
                 StandardCharsets.UTF_8))
         .isEqualTo("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08");
+  }
+
+  @Test
+  void verifyNonNulls() {
+    assertNonNullParameter(() -> GemLibPkiUtils.certToBytes(null), "certificate");
   }
 }

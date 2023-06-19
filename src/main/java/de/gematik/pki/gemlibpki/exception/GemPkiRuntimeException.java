@@ -23,6 +23,10 @@ public class GemPkiRuntimeException extends RuntimeException {
 
   @Serial private static final long serialVersionUID = 2308412157734345439L;
 
+  public GemPkiRuntimeException(final Throwable e) {
+    super(e);
+  }
+
   public GemPkiRuntimeException(final String message) {
     super(message);
   }

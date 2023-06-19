@@ -19,10 +19,10 @@ package de.gematik.pki.gemlibpki.tsl;
 import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
 import static de.gematik.pki.gemlibpki.tsl.TslSignerTest.SIGNER_PATH_ECC;
 import static de.gematik.pki.gemlibpki.utils.ResourceReader.getFilePathFromResources;
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.readP12;
 import static de.gematik.pki.gemlibpki.utils.XmlCompare.documentsAreEqual;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import de.gematik.pki.gemlibpki.tsl.TslConverter.DocToBytesOption;
 import de.gematik.pki.gemlibpki.tsl.TslSigner.TslSignerBuilder;
@@ -40,7 +40,8 @@ import org.w3c.dom.Document;
 
 class TslConverterTest {
 
-  private static final Path TSL_PATH = getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT);
+  private static final Path TSL_PATH =
+      getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, TslConverter.class);
 
   @Test
   void tslToDoc() {
@@ -66,8 +67,6 @@ class TslConverterTest {
     final Document tslDoc = TslReader.getTslAsDoc(TSL_PATH);
     final byte[] tslBytes = TslConverter.docToBytes(tslDoc, docToBytesOption);
     assertThat(documentsAreEqual(tslBytes, TSL_PATH)).isTrue();
-
-    // TODO we also should test if formatting was applied
   }
 
   @Test
@@ -120,9 +119,8 @@ class TslConverterTest {
     // the original xml remains as is, in this case - a single line
     assertThat(
             StringUtils.countMatches(
-                    new String(signedTslBytes, StandardCharsets.UTF_8), indentationIndicator)
-                < 100)
-        .isTrue();
+                new String(signedTslBytes, StandardCharsets.UTF_8), indentationIndicator))
+        .isLessThan(100);
 
     final Document tslDoc2 = TslConverter.bytesToDoc(tslBytes);
 
@@ -133,16 +131,18 @@ class TslConverterTest {
 
     final byte[] signedAndPrettyPrintedTslBytes = TslConverter.docToBytes(tslDocPrettyPrinted);
 
+    final int nrOfMinIdents = 5000;
+
     int countIndentationIndicator =
         StringUtils.countMatches(
             new String(tslBytesPrettyPrinted, StandardCharsets.UTF_8), indentationIndicator);
-    assertThat(countIndentationIndicator > 5000).isTrue();
+    assertThat(countIndentationIndicator).isGreaterThan(nrOfMinIdents);
 
     countIndentationIndicator =
         StringUtils.countMatches(
             new String(signedAndPrettyPrintedTslBytes, StandardCharsets.UTF_8),
             indentationIndicator);
-    assertThat(countIndentationIndicator > 5000).isTrue();
+    assertThat(countIndentationIndicator).isGreaterThan(nrOfMinIdents);
   }
 
   @Test
@@ -154,11 +154,7 @@ class TslConverterTest {
 
   @Test
   void nonNullTests() {
-    assertThatThrownBy(() -> TslConverter.tslToDoc(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tsl is marked non-null but is null");
-    assertThatThrownBy(() -> TslConverter.docToBytes(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tslDoc is marked non-null but is null");
+    assertNonNullParameter(() -> TslConverter.tslToDoc(null), "tsl");
+    assertNonNullParameter(() -> TslConverter.docToBytes(null), "tslDoc");
   }
 }

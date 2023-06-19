@@ -36,9 +36,19 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import lombok.NonNull;
+import org.assertj.core.api.AssertionsForClassTypes;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.w3c.dom.Document;
 
 public class TestUtils {
+
+  public static void assertNonNullParameter(
+      final ThrowingCallable shouldRaiseThrowable, @NonNull final String paramName) {
+    AssertionsForClassTypes.assertThatThrownBy(shouldRaiseThrowable)
+        .isInstanceOf(NullPointerException.class)
+        .hasMessage(paramName + " is marked non-null but is null");
+  }
 
   public static void overwriteSspUrls(final List<TspService> tspServiceList, final String newSsp) {
     final ServiceSupplyPointsType serviceSupplyPointsType = new ServiceSupplyPointsType();
@@ -54,11 +64,12 @@ public class TestUtils {
   }
 
   public static TrustStatusListType getTsl(final String tslFilename) {
-    return TslReader.getTsl(ResourceReader.getFilePathFromResources(tslFilename));
+    return TslReader.getTsl(ResourceReader.getFilePathFromResources(tslFilename, TestUtils.class));
   }
 
   public static TrustStatusListType getDefaultTsl() {
-    return TslReader.getTsl(ResourceReader.getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT));
+    return TslReader.getTsl(
+        ResourceReader.getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, TestUtils.class));
   }
 
   public static Document getDefaultTslAsDoc() {
@@ -66,7 +77,8 @@ public class TestUtils {
   }
 
   public static Document getTslAsDoc(final String filename) {
-    return TslReader.getTslAsDoc(ResourceReader.getFilePathFromResources(filename));
+    return TslReader.getTslAsDoc(
+        ResourceReader.getFilePathFromResources(filename, TestUtils.class));
   }
 
   public static List<TspService> getDefaultTspServiceList() {

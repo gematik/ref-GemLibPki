@@ -18,11 +18,15 @@ package de.gematik.pki.gemlibpki.tsl;
 
 import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
 import static de.gematik.pki.gemlibpki.TestConstants.GEMATIK_TEST_TSP_NAME;
+import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
 import static de.gematik.pki.gemlibpki.tsl.TslSignerTest.SIGNER_PATH_ECC;
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.readP12;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import de.gematik.pki.gemlibpki.exception.GemPkiException;
+import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.tsl.TslConverter.DocToBytesOption;
 import de.gematik.pki.gemlibpki.tsl.TslSigner.TslSignerBuilder;
 import de.gematik.pki.gemlibpki.utils.GemLibPkiUtils;
@@ -34,7 +38,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.time.Month;
 import java.time.ZoneOffset;
@@ -50,7 +53,6 @@ import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
 import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
@@ -65,9 +67,40 @@ class TslModifierTest {
   }
 
   @Test
+  void deleteAllSspsOfOneTspAsBytes() throws GemPkiException {
+
+    final X509Certificate eeCert = TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
+
+    final byte[] tslBytes =
+        TslModifier.deleteSspsForCAsOfEndEntity(TslConverter.tslToBytes(tsl), eeCert, PRODUCT_TYPE);
+    final TspService tspService =
+        new TspInformationProvider(
+                new TslInformationProvider(TslConverter.bytesToTsl(tslBytes)).getTspServices(),
+                PRODUCT_TYPE)
+            .getIssuerTspService(eeCert);
+
+    assertThat(tspService.getTspServiceType().getServiceInformation().getServiceSupplyPoints())
+        .isNull();
+  }
+
+  @Test
+  void deleteAllSspsOfOneTsp() throws GemPkiException {
+
+    final X509Certificate eeCert = TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
+
+    TslModifier.deleteSspsForCAsOfEndEntity(tsl, eeCert, PRODUCT_TYPE);
+    final TspService tspService =
+        new TspInformationProvider(new TslInformationProvider(tsl).getTspServices(), PRODUCT_TYPE)
+            .getIssuerTspService(eeCert);
+
+    assertThat(tspService.getTspServiceType().getServiceInformation().getServiceSupplyPoints())
+        .isNull();
+  }
+
+  @Test
   void modifyAllSspsOfOneTsp() throws IOException {
     final Path destFilePath = Path.of("target/TSL-test_modifiedSsp.xml");
-    final int modifiedSspAmountexpected = 29;
+    final int modifiedSspAmountExpected = 28;
     final String newSsp = "http://my.new-service-supply-point:8080/ocsp";
     final String newSspElement = "<ServiceSupplyPoint>" + newSsp + "</ServiceSupplyPoint>";
 
@@ -91,7 +124,7 @@ class TslModifierTest {
         .isEqualTo(newSsp);
 
     TslWriter.write(tsl, destFilePath);
-    assertThat(countStringInFile(destFilePath, newSspElement)).isEqualTo(modifiedSspAmountexpected);
+    assertThat(countStringInFile(destFilePath, newSspElement)).isEqualTo(modifiedSspAmountExpected);
   }
 
   @Test
@@ -105,7 +138,7 @@ class TslModifierTest {
   }
 
   @Test
-  void modifyNextUpdate() throws DatatypeConfigurationException {
+  void modifyNextUpdate() {
     final Path path = Path.of("target/TSL-test_modifiedNextUpdate.xml");
     // 2028-12-24T17:30:00
 
@@ -119,7 +152,7 @@ class TslModifierTest {
   }
 
   @Test
-  void modifyIssueDate() throws DatatypeConfigurationException {
+  void modifyIssueDate() {
     final Path path = Path.of("target/TSL-test_modifiedIssueDate.xml");
     final ZonedDateTime issueDateZdUtc =
         ZonedDateTime.of(2027, Month.APRIL.getValue(), 30, 3, 42, 0, 0, ZoneOffset.UTC);
@@ -130,7 +163,7 @@ class TslModifierTest {
   }
 
   @Test
-  void setNextUpdateToNextMonthAfterIssueDate() throws DatatypeConfigurationException {
+  void setNextUpdateToNextMonthAfterIssueDate() {
     final Path path = Path.of("target/TSL-test_modifiedIssueDateAndNextUpdate.xml");
     final ZonedDateTime issueDateZdUtc = ZonedDateTime.parse("2030-04-22T10:00:00Z");
 
@@ -180,7 +213,7 @@ class TslModifierTest {
 
     assertThat(TslReader.getTslDownloadUrlPrimary(tsl)).isEqualTo(tslDnlUrlPrimary);
     assertThatThrownBy(() -> TslReader.getTslDownloadUrlBackup(tsl))
-        .isInstanceOf(IllegalArgumentException.class)
+        .isInstanceOf(GemPkiRuntimeException.class)
         .hasMessageContaining(TslConstants.TSL_DOWNLOAD_URL_OID_BACKUP);
   }
 
@@ -224,101 +257,105 @@ class TslModifierTest {
   }
 
   @Test
-  void nonNullTests() {
-    AssertionsForClassTypes.assertThatThrownBy(
-            () ->
-                TslModifier.modifySspForCAsOfTsp(
-                    null, "gematik", "http://my.new-service-supply-point:8080/ocsp"))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tsl is marked non-null but is null");
+  void nonNullTestsPart1() {
+    assertNonNullParameter(
+        () ->
+            TslModifier.modifySspForCAsOfTsp(
+                null, "gematik", "http://my.new-service-supply-point:8080/ocsp"),
+        "tsl");
 
-    AssertionsForClassTypes.assertThatThrownBy(
-            () ->
-                TslModifier.modifySspForCAsOfTsp(
-                    tsl, null, "http://my.new-service-supply-point:8080/ocsp"))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tspName is marked non-null but is null");
+    assertNonNullParameter(
+        () ->
+            TslModifier.modifySspForCAsOfTsp(
+                tsl, null, "http://my.new-service-supply-point:8080/ocsp"),
+        "tspName");
 
-    AssertionsForClassTypes.assertThatThrownBy(
-            () -> TslModifier.modifySspForCAsOfTsp(tsl, "gematik", null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("newSsp is marked non-null but is null");
+    assertNonNullParameter(() -> TslModifier.modifySspForCAsOfTsp(tsl, "gematik", null), "newSsp");
 
-    AssertionsForClassTypes.assertThatThrownBy(() -> TslModifier.modifySequenceNr(null, 42))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tsl is marked non-null but is null");
+    assertNonNullParameter(() -> TslModifier.modifySequenceNr(null, 42), "tsl");
 
-    AssertionsForClassTypes.assertThatThrownBy(
-            () -> TslModifier.modifyNextUpdate(null, ZonedDateTime.now()))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tsl is marked non-null but is null");
+    assertNonNullParameter(() -> TslModifier.modifyNextUpdate(null, ZonedDateTime.now()), "tsl");
 
-    AssertionsForClassTypes.assertThatThrownBy(() -> TslModifier.modifyNextUpdate(tsl, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("zdt is marked non-null but is null");
+    assertNonNullParameter(() -> TslModifier.modifyNextUpdate(tsl, null), "zdt");
 
-    AssertionsForClassTypes.assertThatThrownBy(() -> TslModifier.generateTslId(42, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("issueDate is marked non-null but is null");
+    assertNonNullParameter(() -> TslModifier.generateTslId(42, null), "issueDate");
 
-    AssertionsForClassTypes.assertThatThrownBy(
-            () ->
-                TslModifier.setOtherTSLPointers(
-                    null,
-                    Map.of(
-                        TslConstants.TSL_DOWNLOAD_URL_OID_PRIMARY,
-                        "foo",
-                        TslConstants.TSL_DOWNLOAD_URL_OID_BACKUP,
-                        "bar")))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tsl is marked non-null but is null");
+    assertNonNullParameter(
+        () ->
+            TslModifier.setOtherTSLPointers(
+                null,
+                Map.of(
+                    TslConstants.TSL_DOWNLOAD_URL_OID_PRIMARY,
+                    "foo",
+                    TslConstants.TSL_DOWNLOAD_URL_OID_BACKUP,
+                    "bar")),
+        "tsl");
 
-    AssertionsForClassTypes.assertThatThrownBy(() -> TslModifier.setOtherTSLPointers(tsl, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tslPointerValues is marked non-null but is null");
+    assertNonNullParameter(() -> TslModifier.setOtherTSLPointers(tsl, null), "tslPointerValues");
 
-    AssertionsForClassTypes.assertThatThrownBy(
-            () -> TslModifier.modifyTslDownloadUrlPrimary(null, "foo"))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tsl is marked non-null but is null");
+    assertNonNullParameter(() -> TslModifier.modifyTslDownloadUrlPrimary(null, "foo"), "tsl");
 
-    AssertionsForClassTypes.assertThatThrownBy(
-            () -> TslModifier.modifyTslDownloadUrlPrimary(tsl, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("url is marked non-null but is null");
+    assertNonNullParameter(() -> TslModifier.modifyTslDownloadUrlPrimary(tsl, null), "url");
 
-    AssertionsForClassTypes.assertThatThrownBy(
-            () -> TslModifier.modifyTslDownloadUrlBackup(null, "foo"))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tsl is marked non-null but is null");
+    assertNonNullParameter(() -> TslModifier.modifyTslDownloadUrlBackup(null, "foo"), "tsl");
 
-    AssertionsForClassTypes.assertThatThrownBy(
-            () -> TslModifier.modifyTslDownloadUrlBackup(tsl, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("url is marked non-null but is null");
-
-    AssertionsForClassTypes.assertThatThrownBy(
-            () -> TslModifier.modifyIssueDate(null, ZonedDateTime.now()))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tsl is marked non-null but is null");
-
-    AssertionsForClassTypes.assertThatThrownBy(() -> TslModifier.modifyIssueDate(tsl, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("zdt is marked non-null but is null");
-
-    AssertionsForClassTypes.assertThatThrownBy(
-            () -> TslModifier.modifyIssueDateAndRelatedNextUpdate(null, ZonedDateTime.now(), 42))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tsl is marked non-null but is null");
-
-    AssertionsForClassTypes.assertThatThrownBy(
-            () -> TslModifier.modifyIssueDateAndRelatedNextUpdate(tsl, null, 42))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("issueDate is marked non-null but is null");
+    assertNonNullParameter(() -> TslModifier.modifyTslDownloadUrlBackup(tsl, null), "url");
+    assertNonNullParameter(() -> TslModifier.modifySignerCert(tsl, null), "x509CertificateEncoded");
   }
 
-  private void assertSignerCertInTsl(final String tslStr, final X509Certificate signerCert)
-      throws CertificateEncodingException {
+  @Test
+  void nonNullTestsPart2() {
+    assertNonNullParameter(
+        () -> TslModifier.modifiedStatusStartingTime(null, null, null, null, null), "tspName");
+    assertNonNullParameter(
+        () -> TslModifier.modifiedStatusStartingTime(null, "", null, null, null),
+        "newStatusStartingTime");
+
+    assertNonNullParameter(
+        () -> TslModifier.modifyStatusStartingTime(null, null, null, null, null), "tspName");
+    assertNonNullParameter(
+        () -> TslModifier.modifyStatusStartingTime(null, "", null, null, null),
+        "newStatusStartingTime");
+
+    assertNonNullParameter(() -> TslModifier.modifyIssueDate(null, ZonedDateTime.now()), "tsl");
+
+    assertNonNullParameter(() -> TslModifier.modifyIssueDate(tsl, null), "zdt");
+
+    assertNonNullParameter(
+        () -> TslModifier.modifyIssueDateAndRelatedNextUpdate(null, ZonedDateTime.now(), 42),
+        "tsl");
+
+    assertNonNullParameter(
+        () -> TslModifier.modifyIssueDateAndRelatedNextUpdate(tsl, null, 42), "issueDate");
+
+    final X509Certificate eeCert = TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
+
+    final byte[] tslBytes = new byte[0];
+
+    assertNonNullParameter(
+        () -> TslModifier.deleteSspsForCAsOfEndEntity((byte[]) null, eeCert, PRODUCT_TYPE),
+        "tslBytes");
+
+    assertNonNullParameter(
+        () -> TslModifier.deleteSspsForCAsOfEndEntity(tslBytes, null, PRODUCT_TYPE), "x509EeCert");
+
+    assertNonNullParameter(
+        () -> TslModifier.deleteSspsForCAsOfEndEntity(tslBytes, eeCert, null), "productType");
+
+    assertNonNullParameter(
+        () ->
+            TslModifier.deleteSspsForCAsOfEndEntity(
+                (TrustStatusListType) null, eeCert, PRODUCT_TYPE),
+        "tsl");
+
+    assertNonNullParameter(
+        () -> TslModifier.deleteSspsForCAsOfEndEntity(tsl, null, PRODUCT_TYPE), "x509EeCert");
+
+    assertNonNullParameter(
+        () -> TslModifier.deleteSspsForCAsOfEndEntity(tsl, eeCert, null), "productType");
+  }
+
+  private void assertSignerCertInTsl(final String tslStr, final X509Certificate signerCert) {
 
     String tslSignerRegexFormat =
         "<ds:KeyInfo>\\s*<ds:X509Data>\\s*<ds:X509Certificate>"
@@ -337,13 +374,13 @@ class TslModifierTest {
   }
 
   @Test
-  void testModifySignerCert() throws CertificateEncodingException {
+  void testModifySignerCert() {
 
     tsl = TestUtils.getTsl(FILE_NAME_TSL_ECC_DEFAULT);
     final String tslStr =
         new String(
             GemLibPkiUtils.readContent(
-                ResourceReader.getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT)),
+                ResourceReader.getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, getClass())),
             StandardCharsets.UTF_8);
 
     final X509Certificate eeCert =
@@ -368,13 +405,13 @@ class TslModifierTest {
   }
 
   @Test
-  void testModifyWithSameSignerCert() throws CertificateEncodingException {
+  void testModifyWithSameSignerCert() {
 
     tsl = TestUtils.getTsl(FILE_NAME_TSL_ECC_DEFAULT);
     final String tslStr =
         new String(
             GemLibPkiUtils.readContent(
-                ResourceReader.getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT)),
+                ResourceReader.getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, getClass())),
             StandardCharsets.UTF_8);
 
     final X509Certificate signerCert = TslUtils.getFirstTslSignerCertificate(tsl);
@@ -442,9 +479,8 @@ class TslModifierTest {
     // the original xml remains as is, in this case - a single line
     assertThat(
             StringUtils.countMatches(
-                    new String(signedTslBytes, StandardCharsets.UTF_8), indentationIndicator)
-                < 100)
-        .isTrue();
+                new String(signedTslBytes, StandardCharsets.UTF_8), indentationIndicator))
+        .isLessThan(100);
 
     final Document tslDoc2 = TslConverter.bytesToDoc(tslBytes);
 
@@ -455,16 +491,18 @@ class TslModifierTest {
 
     final byte[] signedAndPrettyPrintedTslBytes = TslConverter.docToBytes(tslDocPrettyPrinted);
 
+    final int nrOfMinIdent = 5000;
+
     int countIndentationIndicator =
         StringUtils.countMatches(
             new String(tslBytesPrettyPrinted, StandardCharsets.UTF_8), indentationIndicator);
-    assertThat(countIndentationIndicator > 5000).isTrue();
+    assertThat(countIndentationIndicator).isGreaterThan(nrOfMinIdent);
 
     countIndentationIndicator =
         StringUtils.countMatches(
             new String(signedAndPrettyPrintedTslBytes, StandardCharsets.UTF_8),
             indentationIndicator);
-    assertThat(countIndentationIndicator > 5000).isTrue();
+    assertThat(countIndentationIndicator).isGreaterThan(nrOfMinIdent);
   }
 
   @Test
@@ -492,9 +530,7 @@ class TslModifierTest {
     assertThat(tsl.getId()).isEqualTo(expectedTslId);
 
     final byte[] tslBytes = TslConverter.tslToBytes(tsl);
-    assertThatThrownBy(() -> TslModifier.modifiedTslId(tslBytes, seqNr, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("issueDate is marked non-null but is null");
+    assertNonNullParameter(() -> TslModifier.modifiedTslId(tslBytes, seqNr, null), "issueDate");
   }
 
   @Test
@@ -503,8 +539,7 @@ class TslModifierTest {
     final byte[] tslBytes = TslConverter.tslToBytes(tsl);
     final String tslStr = new String(tslBytes, StandardCharsets.UTF_8);
 
-    final String gematikTspName =
-        "gematik Gesellschaft fuer Telematikanwendungen der Gesundheitskarte mbH TSL Signer CA4";
+    final String gematikTspName = "gematik GmbH - PKI TEST TSP";
     final String gematikOldTspTradeName = "gematik Test-TSL: TSL_default";
     final String gematikNewTspTradeName = "gematik Test-TSL: DUMMY VALUE";
 
@@ -535,7 +570,7 @@ class TslModifierTest {
     final String serviceStatusToSelect = null;
 
     final XMLGregorianCalendar oldStartingStatusTimeGreg =
-        DatatypeFactory.newInstance().newXMLGregorianCalendar("2022-09-12T16:44:34Z");
+        DatatypeFactory.newInstance().newXMLGregorianCalendar("2023-04-20T14:47:40Z");
 
     final ZonedDateTime newStartingStatusTime = GemLibPkiUtils.now();
     final XMLGregorianCalendar newStartingStatusTimeGreg =

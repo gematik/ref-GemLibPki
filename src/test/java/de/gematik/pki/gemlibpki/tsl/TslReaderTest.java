@@ -18,6 +18,7 @@ package de.gematik.pki.gemlibpki.tsl;
 
 import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
 import static de.gematik.pki.gemlibpki.utils.ResourceReader.getFilePathFromResources;
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -41,7 +42,8 @@ class TslReaderTest {
 
   @Test
   void verifyGetTrustStatusListTypeIsPresent() {
-    assertThat(TslReader.getTsl(getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT))).isNotNull();
+    assertThat(TslReader.getTsl(getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, getClass())))
+        .isNotNull();
   }
 
   @Test
@@ -52,6 +54,14 @@ class TslReaderTest {
   @Test
   void getNextUpdate() {
     assertThat(TslReader.getNextUpdate(tsl)).isNotNull();
+  }
+
+  @Test
+  void getNextUpdateIsNull() {
+    tsl.getSchemeInformation().setNextUpdate(null);
+    assertThatThrownBy(() -> TslReader.getNextUpdate(tsl))
+        .isInstanceOf(GemPkiRuntimeException.class)
+        .hasMessage("NextUpdate not found in TSL.");
   }
 
   @Test
@@ -92,7 +102,7 @@ class TslReaderTest {
   @Test
   void verifyGetTrustStatusListTypeFailed() {
     final Path tslPath =
-        getFilePathFromResources("tsls/ecc/invalid/TSL_invalid_xmlMalformed_altCA.xml");
+        getFilePathFromResources("tsls/ecc/invalid/TSL_invalid_xmlMalformed_altCA.xml", getClass());
     assertThatThrownBy(() -> TslReader.getTsl(tslPath))
         .isInstanceOf(GemPkiRuntimeException.class)
         .hasMessage("Error reading TSL.");
@@ -100,36 +110,20 @@ class TslReaderTest {
 
   @Test
   void nonNullTests() {
-    assertThatThrownBy(() -> TslReader.getTslAsDoc(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tslPath is marked non-null but is null");
+    assertNonNullParameter(() -> TslReader.getTslAsDoc(null), "tslPath");
 
-    assertThatThrownBy(() -> TslReader.getTsl(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tslPath is marked non-null but is null");
+    assertNonNullParameter(() -> TslReader.getTsl(null), "tslPath");
 
-    assertThatThrownBy(() -> TslReader.getSequenceNumber(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tsl is marked non-null but is null");
+    assertNonNullParameter(() -> TslReader.getSequenceNumber(null), "tsl");
 
-    assertThatThrownBy(() -> TslReader.getNextUpdate(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tsl is marked non-null but is null");
+    assertNonNullParameter(() -> TslReader.getNextUpdate(null), "tsl");
 
-    assertThatThrownBy(() -> TslReader.getIssueDate(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tsl is marked non-null but is null");
+    assertNonNullParameter(() -> TslReader.getIssueDate(null), "tsl");
 
-    assertThatThrownBy(() -> TslReader.getOtherTslPointers(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tsl is marked non-null but is null");
+    assertNonNullParameter(() -> TslReader.getOtherTslPointers(null), "tsl");
 
-    assertThatThrownBy(() -> TslReader.getTslDownloadUrlPrimary(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tsl is marked non-null but is null");
+    assertNonNullParameter(() -> TslReader.getTslDownloadUrlPrimary(null), "tsl");
 
-    assertThatThrownBy(() -> TslReader.getTslDownloadUrlBackup(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tsl is marked non-null but is null");
+    assertNonNullParameter(() -> TslReader.getTslDownloadUrlBackup(null), "tsl");
   }
 }

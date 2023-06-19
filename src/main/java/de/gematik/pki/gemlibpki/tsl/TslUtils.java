@@ -48,7 +48,7 @@ import org.w3c.dom.Element;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class TslUtils {
 
-  static Predicate<OtherTSLPointerType> tslDownloadUrlMatchesOid(@NonNull final String oid) {
+  public static Predicate<OtherTSLPointerType> tslDownloadUrlMatchesOid(@NonNull final String oid) {
     return p ->
         ((MultiLangStringType)
                 Optional.of(p.getAdditionalInformation())

@@ -17,7 +17,7 @@
 package de.gematik.pki.gemlibpki.tsl;
 
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_TSL_CA8;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 
 import de.gematik.pki.gemlibpki.utils.TestUtils;
 import org.junit.jupiter.api.Test;
@@ -28,18 +28,14 @@ class TslValidatorTest {
   @Test
   void nonNullCheck() {
     final Document nullTslDoc = null;
-    assertThatThrownBy(() -> TslValidator.checkSignature(nullTslDoc, VALID_ISSUER_CERT_TSL_CA8))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tsl is marked non-null but is null");
+    assertNonNullParameter(
+        () -> TslValidator.checkSignature(nullTslDoc, VALID_ISSUER_CERT_TSL_CA8), "tsl");
 
     final byte[] nullTslBytes = null;
-    assertThatThrownBy(() -> TslValidator.checkSignature(nullTslBytes, VALID_ISSUER_CERT_TSL_CA8))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tsl is marked non-null but is null");
+    assertNonNullParameter(
+        () -> TslValidator.checkSignature(nullTslBytes, VALID_ISSUER_CERT_TSL_CA8), "tsl");
 
     final Document tslAsDoc = TestUtils.getDefaultTslAsDoc();
-    assertThatThrownBy(() -> TslValidator.checkSignature(tslAsDoc, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("trustAnchor is marked non-null but is null");
+    assertNonNullParameter(() -> TslValidator.checkSignature(tslAsDoc, null), "trustAnchor");
   }
 }

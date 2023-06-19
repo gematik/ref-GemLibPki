@@ -16,7 +16,7 @@
 
 package de.gematik.pki.gemlibpki.tsl;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 
 import org.junit.jupiter.api.Test;
 
@@ -24,16 +24,10 @@ class TslUtilsTest {
 
   @Test
   void nonNullTests() {
-    assertThatThrownBy(() -> TslUtils.tslDownloadUrlMatchesOid(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("oid is marked non-null but is null");
+    assertNonNullParameter(() -> TslUtils.tslDownloadUrlMatchesOid(null), "oid");
 
-    assertThatThrownBy(() -> TslUtils.createJaxbElement(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("trustServiceStatusList is marked non-null but is null");
+    assertNonNullParameter(() -> TslUtils.createJaxbElement(null), "trustServiceStatusList");
 
-    assertThatThrownBy(() -> TslUtils.getSignature(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tsl is marked non-null but is null");
+    assertNonNullParameter(() -> TslUtils.getSignature(null), "tsl");
   }
 }

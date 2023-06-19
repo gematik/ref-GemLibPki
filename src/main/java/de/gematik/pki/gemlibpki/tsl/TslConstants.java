@@ -25,7 +25,10 @@ import lombok.NoArgsConstructor;
 public final class TslConstants {
 
   public static final String SVCSTATUS_REVOKED = "http://uri.etsi.org/TrstSvc/Svcstatus/revoked";
+  public static final String SVCSTATUS_INACCORD = "http://uri.etsi.org/TrstSvc/Svcstatus/inaccord";
 
+  public static final String STI_QC = "http://uri.etsi.org/TrstSvc/Svctype/CA/QC";
+  public static final String STI_UNSPECIFIED = "http://uri.etsi.org/TrstSvc/Svctype/unspecified";
   public static final String STI_PKC = "http://uri.etsi.org/TrstSvc/Svctype/CA/PKC";
   public static final String STI_SRV_CERT_CHANGE =
       "http://uri.etsi.org/TrstSvc/Svctype/TSLServiceCertChange";

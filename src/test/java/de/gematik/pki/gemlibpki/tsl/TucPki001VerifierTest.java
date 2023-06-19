@@ -20,6 +20,8 @@ import static de.gematik.pki.gemlibpki.TestConstants.LOCAL_SSP_DIR;
 import static de.gematik.pki.gemlibpki.TestConstants.OCSP_HOST;
 import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_TSL_CA8;
+import static de.gematik.pki.gemlibpki.utils.ResourceReader.getFileFromResourceAsBytes;
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.overwriteSspUrls;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -30,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import de.gematik.pki.gemlibpki.common.OcspResponderMock;
 import de.gematik.pki.gemlibpki.error.ErrorCode;
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
+import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.ocsp.OcspRequestGenerator;
 import de.gematik.pki.gemlibpki.ocsp.OcspResponseGenerator;
 import de.gematik.pki.gemlibpki.ocsp.OcspTestConstants;
@@ -94,6 +97,32 @@ class TucPki001VerifierTest {
   }
 
   @Test
+  void verifyInvalidTslSig() {
+
+    final OcspResponderMock ocspResponderMock = new OcspResponderMock(LOCAL_SSP_DIR, OCSP_HOST);
+    final X509Certificate tslSigner =
+        TestUtils.readP12(TslSignerTest.SIGNER_PATH_ECC).getCertificate();
+    ocspResponderMock.configureForOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA8);
+    overwriteSspUrls(tspServicesInTruststore, ocspResponderMock.getSspUrl());
+
+    final TrustStatusListType tslToCheck = TestUtils.getTsl("tsls/ecc/invalid/TSL_invalid_xmlSignature_altCA.xml");
+    final byte[] tslBytes = TslConverter.tslToBytes(tslToCheck);
+
+    final TucPki001Verifier tucPki001Verifier =
+        TucPki001Verifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tslToCheck(tslBytes)
+            .currentTrustedServices(tspServicesInTruststore)
+            .currentTslId("dummyTslId")
+            .currentSeqNr(BigInteger.ZERO)
+            .build();
+
+    assertThatThrownBy(tucPki001Verifier::performTucPki001Checks)
+        .isInstanceOf(GemPkiException.class)
+        .hasMessage(ErrorCode.SE_1013_XML_SIGNATURE_ERROR.getErrorMessage(PRODUCT_TYPE));
+  }
+
+  @Test
   void verifyGetTslSignerCertificateInvalidFindFirst() {
 
     final TrustStatusListType tslToCheck = TestUtils.getDefaultTsl();
@@ -149,13 +178,9 @@ class TucPki001VerifierTest {
     final JAXBElement<byte[]> signatureCertificateJaxbElem =
         TslUtils.getFirstSignatureCertificateJaxbElement(tslToCheck);
 
-    // TODO warum nicht change4byte()?
     final byte[] bytes = signatureCertificateJaxbElem.getValue();
+    GemLibPkiUtils.change4Bytes(bytes, 4);
 
-    // change content
-    for (int i = 0; i < 9; ++i) {
-      bytes[i] = '*';
-    }
     final byte[] tslBytes = TslConverter.tslToBytes(tslToCheck);
 
     final TucPki001Verifier tucPki001Verifier =
@@ -238,17 +263,11 @@ class TucPki001VerifierTest {
   void verifyNullChecks() {
     final TucPki001VerifierBuilder builder = TucPki001Verifier.builder();
 
-    assertThatThrownBy(() -> builder.productType(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("productType is marked non-null but is null");
+    assertNonNullParameter(() -> builder.productType(null), "productType");
 
-    assertThatThrownBy(() -> builder.tslToCheck(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tslToCheck is marked non-null but is null");
+    assertNonNullParameter(() -> builder.tslToCheck(null), "tslToCheck");
 
-    assertThatThrownBy(() -> builder.currentTrustedServices(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("currentTrustedServices is marked non-null but is null");
+    assertNonNullParameter(() -> builder.currentTrustedServices(null), "currentTrustedServices");
   }
 
   private void verifyPerformTucPki001ChecksTslIdAndSeqNr_init() {
@@ -402,7 +421,7 @@ class TucPki001VerifierTest {
     final TrustAnchorUpdate trustAnchorUpdate =
         tucPki001Verifier.getVerifiedAnnouncedTrustAnchorUpdate().orElseThrow();
 
-    final ZonedDateTime zdt = ZonedDateTime.of(2022, 9, 12, 16, 44, 34, 0, ZoneOffset.UTC);
+    final ZonedDateTime zdt = ZonedDateTime.of(2023, 4, 20, 14, 47, 40, 0, ZoneOffset.UTC);
     final X509Certificate taCert = TestUtils.readCert("GEM.TSL-CA9/GEM.TSL-CA9_TEST-ONLY.cer");
     assertThat(trustAnchorUpdate.getStatusStartingTime()).isEqualToIgnoringNanos(zdt);
     assertThat(trustAnchorUpdate.getFutureTrustAnchor()).isEqualTo(taCert);
@@ -425,8 +444,9 @@ class TucPki001VerifierTest {
             .currentTslId("dummyId")
             .currentSeqNr(BigInteger.ZERO)
             .build();
+
     assertThat(tucPki001Verifier.getVerifiedAnnouncedTrustAnchorUpdate())
-        .isEmpty(); // TODO check warn message
+        .isEmpty(); // NOTE: warn messages are not automatically checked
   }
 
   @Test
@@ -449,4 +469,60 @@ class TucPki001VerifierTest {
 
     assertThat(tucPki001Verifier.getVerifiedAnnouncedTrustAnchorUpdate()).isEmpty();
   }
+
+  @Test
+  void verifyValidateSchemesValid() {
+
+    final TucPki001Verifier tucPki001Verifier =
+        TucPki001Verifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tslToCheck(tslToCheck)
+            .currentTrustedServices(tspServicesInTruststore)
+            .currentTslId("dummyId")
+            .currentSeqNr(BigInteger.ZERO)
+            .build();
+
+    assertDoesNotThrow(tucPki001Verifier::validateAgainstXsdSchemas);
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "tsls/ecc/invalid/TSL_invalid_xmlNonEtsiTag_altCA.xml",
+        "tsls/ecc/invalid/TSL_invalid_xmlNamespace_altCA.xml"
+      })
+  void verifyValidateSchemesInvalid(final String tslFilename) {
+    final byte[] tslBytes = getFileFromResourceAsBytes(tslFilename, TucPki001VerifierTest.class);
+
+    final TucPki001Verifier tucPki001Verifier =
+        TucPki001Verifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tslToCheck(tslBytes)
+            .currentTrustedServices(tspServicesInTruststore)
+            .currentTslId("dummyId")
+            .currentSeqNr(BigInteger.ZERO)
+            .build();
+
+    assertThatThrownBy(tucPki001Verifier::validateAgainstXsdSchemas)
+        .isInstanceOf(GemPkiException.class)
+        .hasMessage(ErrorCode.TE_1012_TSL_SCHEMA_NOT_VALID.getErrorMessage(PRODUCT_TYPE));
+  }
+
+  @Test
+  void verifyInvalidSchema() {
+
+    final TucPki001Verifier tucPki001Verifier =
+        TucPki001Verifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tslToCheck(tslToCheck)
+            .currentTrustedServices(tspServicesInTruststore)
+            .currentTslId("dummyId")
+            .currentSeqNr(BigInteger.ZERO)
+            .build();
+
+    assertThatThrownBy(()->tucPki001Verifier.validateAgainstXsd("schemas/invalid.xsd"))
+        .isInstanceOf(GemPkiRuntimeException.class)
+        .hasMessage("Error during parsing of schema file.");
+  }
+
 }

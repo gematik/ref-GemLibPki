@@ -20,6 +20,7 @@ import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_RSA_ALT_TA;
 import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_RSA_DEFAULT;
 import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_RSA_NOSIG;
 import static de.gematik.pki.gemlibpki.tsl.TslConverter.docToBytes;
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.readP12;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -219,12 +220,8 @@ class TslSignerTest {
   @Test
   void nonNull() {
 
-    assertThatThrownBy(() -> tslSignerBuilder.tslToSign(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tslToSign is marked non-null but is null");
+    assertNonNullParameter(() -> tslSignerBuilder.tslToSign(null), "tslToSign");
 
-    assertThatThrownBy(() -> tslSignerBuilder.tslSignerP12(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tslSignerP12 is marked non-null but is null");
+    assertNonNullParameter(() -> tslSignerBuilder.tslSignerP12(null), "tslSignerP12");
   }
 }

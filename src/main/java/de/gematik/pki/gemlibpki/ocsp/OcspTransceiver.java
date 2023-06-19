@@ -69,14 +69,15 @@ public final class OcspTransceiver {
       final OCSPReq ocspReq, final ZonedDateTime referenceDate, final OCSPResp ocspResp)
       throws GemPkiException {
 
-    final TucPki006OcspVerifier.TucPki006OcspVerifierBuilder verifierBuilder =
+    final TucPki006OcspVerifier verifier =
         TucPki006OcspVerifier.builder()
             .productType(productType)
             .tspServiceList(tspServiceList)
-            .eeCert(x509EeCert);
+            .eeCert(x509EeCert)
+            .ocspResponse(ocspResp)
+            .build();
 
-    verifierBuilder.ocspResponse(ocspResp).build();
-    verifierBuilder.build().performOcspChecks(ocspReq, referenceDate);
+    verifier.performOcspChecks(ocspReq, referenceDate);
   }
 
   /**

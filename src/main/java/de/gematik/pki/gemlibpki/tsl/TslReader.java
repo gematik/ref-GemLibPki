@@ -18,6 +18,7 @@ package de.gematik.pki.gemlibpki.tsl;
 
 import static de.gematik.pki.gemlibpki.tsl.TslUtils.tslDownloadUrlMatchesOid;
 
+import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.utils.GemLibPkiUtils;
 import eu.europa.esig.trustedlist.jaxb.tsl.NextUpdateType;
 import eu.europa.esig.trustedlist.jaxb.tsl.OtherTSLPointersType;
@@ -74,7 +75,7 @@ public final class TslReader {
   public static ZonedDateTime getNextUpdate(@NonNull final TrustStatusListType tsl) {
     final NextUpdateType nextUpdate = tsl.getSchemeInformation().getNextUpdate();
     if (nextUpdate == null) {
-      throw new IllegalArgumentException("NextUpdate not found in TSL.");
+      throw new GemPkiRuntimeException("NextUpdate not found in TSL.");
     }
     return (nextUpdate.getDateTime().toGregorianCalendar().toZonedDateTime());
   }
@@ -124,7 +125,7 @@ public final class TslReader {
     return getOtherTslPointers(tsl).getOtherTSLPointer().stream()
         .filter(tslDownloadUrlMatchesOid(oid))
         .findFirst()
-        .orElseThrow(() -> new IllegalArgumentException("TSL enthaelt nicht OID: " + oid))
+        .orElseThrow(() -> new GemPkiRuntimeException("TSL enthaelt nicht OID: " + oid))
         .getTSLLocation();
   }
 }

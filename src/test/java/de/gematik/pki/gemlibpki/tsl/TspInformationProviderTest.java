@@ -16,6 +16,7 @@
 
 package de.gematik.pki.gemlibpki.tsl;
 
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -53,9 +54,8 @@ class TspInformationProviderTest {
 
   @Test
   void getIssuerTspServiceSubsetNonNull() {
-    assertThatThrownBy(() -> tspInformationProvider.getIssuerTspServiceSubset(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("x509EeCert is marked non-null but is null");
+    assertNonNullParameter(
+        () -> tspInformationProvider.getIssuerTspServiceSubset(null), "x509EeCert");
   }
 
   @Test

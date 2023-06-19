@@ -24,7 +24,6 @@ import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.tsl.TspServiceSubset;
 import eu.europa.esig.trustedlist.jaxb.tsl.ExtensionType;
 import java.io.IOException;
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.util.List;
@@ -50,6 +49,7 @@ public final class CertificateProfileVerification {
   @NonNull private final TspServiceSubset tspServiceSubset;
   @NonNull private final CertificateProfile certificateProfile;
   @NonNull private final X509Certificate x509EeCert;
+
   // ####################  Start KeyUsage ########################################################
 
   /**
@@ -63,6 +63,7 @@ public final class CertificateProfileVerification {
     verifyExtendedKeyUsage();
     verifyCertificateType();
   }
+
   /**
    * Verify that all intended KeyUsage bit(s) of certificate profile {@link CertificateProfile}
    * match against KeyUsage(s) of parameterized end-entity certificate.
@@ -70,12 +71,14 @@ public final class CertificateProfileVerification {
    * @throws GemPkiException if the certificate has a wrong key usage
    */
   public void verifyKeyUsage() throws GemPkiException {
-    if (x509EeCert.getKeyUsage() == null) {
+    final boolean[] certKeyUsage = x509EeCert.getKeyUsage();
+    if (certKeyUsage == null) {
       throw new GemPkiException(productType, ErrorCode.SE_1016_WRONG_KEYUSAGE);
     }
     int nrBitsEe = 0;
-    for (final boolean b : x509EeCert.getKeyUsage()) {
-      if (b) {
+
+    for (final boolean bit : certKeyUsage) {
+      if (bit) {
         nrBitsEe++;
       }
     }
@@ -84,8 +87,8 @@ public final class CertificateProfileVerification {
     if (nrBitsEe != intendedKeyUsageList.size()) {
       throw new GemPkiException(productType, ErrorCode.SE_1016_WRONG_KEYUSAGE);
     }
-    for (final KeyUsage ku : intendedKeyUsageList) {
-      if (!x509EeCert.getKeyUsage()[ku.getBit()]) {
+    for (final KeyUsage keyUsage : intendedKeyUsageList) {
+      if (!certKeyUsage[keyUsage.getBit()]) {
         throw new GemPkiException(productType, ErrorCode.SE_1016_WRONG_KEYUSAGE);
       }
     }
@@ -101,6 +104,7 @@ public final class CertificateProfileVerification {
       final CertificateProfile certificateProfile) {
     return CertificateProfile.valueOf(certificateProfile.name()).getKeyUsages();
   }
+
   // ####################  End KeyUsage ########################################################
   // ####################  Start ExtendedKeyUsage ##############################################
 
@@ -155,6 +159,7 @@ public final class CertificateProfileVerification {
         .map(ExtendedKeyUsage::getOid)
         .toList();
   }
+
   // ####################  End ExtendedKeyUsage #####################
   // ############## Start certificate type checks ###################
 
@@ -204,9 +209,9 @@ public final class CertificateProfileVerification {
     for (final ExtensionType extensionType : tspServiceSubset.getExtensions()) {
       final List<Object> content = extensionType.getContent();
       for (final Object object : content) {
-        if (object instanceof Node node) {
-          node = ((Node) object).getFirstChild();
-          if (certificateTypeOidList.contains(node.getNodeValue().trim())) {
+        if (object instanceof final Node node) {
+          final Node firstChild = node.getFirstChild();
+          if (certificateTypeOidList.contains(firstChild.getNodeValue().trim())) {
             return;
           }
         }
@@ -234,7 +239,7 @@ public final class CertificateProfileVerification {
       return policies.getPolicyOids();
     } catch (final IllegalArgumentException e) {
       throw new GemPkiException(productType, ErrorCode.SE_1033_CERT_TYPE_INFO_MISSING);
-    } catch (final CertificateEncodingException | IOException e) {
+    } catch (final IOException e) {
       throw new GemPkiException(
           productType, ErrorCode.TE_1019_CERT_READ_ERROR); // difficult to reach
     }

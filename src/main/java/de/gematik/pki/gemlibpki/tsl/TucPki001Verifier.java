@@ -16,22 +16,32 @@
 
 package de.gematik.pki.gemlibpki.tsl;
 
+import static de.gematik.pki.gemlibpki.utils.ResourceReader.getUrlFromResources;
+import static javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI;
+
 import de.gematik.pki.gemlibpki.certificate.CertificateCommonVerification;
 import de.gematik.pki.gemlibpki.certificate.CertificateProfile;
 import de.gematik.pki.gemlibpki.certificate.TucPki018Verifier;
 import de.gematik.pki.gemlibpki.error.ErrorCode;
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
+import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.ocsp.OcspConstants;
 import de.gematik.pki.gemlibpki.ocsp.OcspRespCache;
 import de.gematik.pki.gemlibpki.utils.CertReader;
 import de.gematik.pki.gemlibpki.utils.GemLibPkiUtils;
 import eu.europa.esig.trustedlist.jaxb.tsl.TSPServiceType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
+import java.io.IOException;
 import java.math.BigInteger;
+import java.net.URL;
 import java.security.cert.X509Certificate;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
+import javax.xml.validation.Validator;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -40,6 +50,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
 
 /**
  * Entry point to access a verification of TSLs regarding standard process called TucPki001. This
@@ -80,9 +91,12 @@ public class TucPki001Verifier {
   public Optional<TrustAnchorUpdate> performTucPki001Checks() throws GemPkiException {
     log.debug("TUC_PKI_001 Checks...");
 
-    final X509Certificate tslSigner = getTslSignerCertificate();
+    // check for well formed xml
 
     // TUC_PKI_020 „XML-Dokument validieren“
+    validateAgainstXsdSchemas();
+
+    final X509Certificate tslSigner = getTslSignerCertificate();
 
     // TUC_PKI_011 „Prüfung des TSL-Signer-Zertifikates“
     final TucPki018Verifier certVerifier =
@@ -105,6 +119,47 @@ public class TucPki001Verifier {
 
     // Step 5 - TUC_PKI_013 Import TI-Vertrauensanker aus TSL
     return getVerifiedAnnouncedTrustAnchorUpdate();
+  }
+
+  protected void validateAgainstXsdSchemas() throws GemPkiException {
+    validateXsd();
+    validateAdditionalTypes();
+    validateSie();
+    log.info("Schema validation successful!");
+  }
+
+  void validateAgainstXsd(final String scheme) throws GemPkiException {
+
+    final SchemaFactory sf = SchemaFactory.newInstance(W3C_XML_SCHEMA_NS_URI); // NOSONAR
+    final URL schemaUrl = getUrlFromResources(scheme, TucPki001Verifier.class);
+    final Schema compiledSchema;
+    try {
+      compiledSchema = sf.newSchema(schemaUrl);
+    } catch (final SAXException e) {
+      throw new GemPkiRuntimeException("Error during parsing of schema file.", e);
+    }
+
+    final Validator validator = compiledSchema.newValidator();
+    final Document tslToCheckDoc = TslConverter.bytesToDoc(tslToCheck);
+    try {
+      validator.validate(new DOMSource(tslToCheckDoc));
+    } catch (final SAXException e) {
+      throw new GemPkiException(productType, ErrorCode.TE_1012_TSL_SCHEMA_NOT_VALID, e);
+    } catch (final IOException e) {
+      throw new GemPkiRuntimeException("Error reading schema file.", e);
+    }
+  }
+
+  private void validateAdditionalTypes() throws GemPkiException {
+    validateAgainstXsd("schemas/ts_102231v030102_additionaltypes_xsd.xsd");
+  }
+
+  private void validateXsd() throws GemPkiException {
+    validateAgainstXsd("schemas/ts_102231v030102_xsd.xsd");
+  }
+
+  private void validateSie() throws GemPkiException {
+    validateAgainstXsd("schemas/ts_102231v030102_sie_xsd.xsd");
   }
 
   @Getter
@@ -204,16 +259,7 @@ public class TucPki001Verifier {
 
   protected X509Certificate getTslSignerCertificate() throws GemPkiException {
     try {
-
-      final X509Certificate cert =
-          TslUtils.getFirstTslSignerCertificate(TslConverter.bytesToTsl(tslToCheck));
-
-      if (cert == null) {
-        throw new GemPkiException(productType, ErrorCode.TE_1002_TSL_CERT_EXTRACTION_ERROR);
-      }
-
-      return cert;
-
+      return TslUtils.getFirstTslSignerCertificate(TslConverter.bytesToTsl(tslToCheck));
     } catch (final RuntimeException e) {
       throw new GemPkiException(productType, ErrorCode.TE_1002_TSL_CERT_EXTRACTION_ERROR);
     }

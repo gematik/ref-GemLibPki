@@ -30,7 +30,6 @@ import eu.europa.esig.dss.spi.x509.revocation.ocsp.OCSPRespStatus;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -148,10 +147,7 @@ public class OcspResponseGenerator {
 
     try {
       return generate(ocspReq, eeCert, signer.getCertificate(), certificateStatus);
-    } catch (final OperatorCreationException
-        | IOException
-        | OCSPException
-        | CertificateEncodingException e) {
+    } catch (final OperatorCreationException | IOException | OCSPException e) {
       throw new GemPkiRuntimeException("Generieren der OCSP Response fehlgeschlagen.", e);
     }
   }
@@ -168,7 +164,7 @@ public class OcspResponseGenerator {
       final X509Certificate eeCert,
       final X509Certificate ocspResponseSignerCert,
       final CertificateStatus certificateStatus)
-      throws OperatorCreationException, IOException, OCSPException, CertificateEncodingException {
+      throws OperatorCreationException, IOException, OCSPException {
 
     final BasicOCSPRespBuilder basicOcspRespBuilder;
     switch (responderIdType) {
@@ -206,7 +202,7 @@ public class OcspResponseGenerator {
     }
 
     final X509CertificateHolder[] chain = {
-      new X509CertificateHolder(ocspResponseSignerCert.getEncoded())
+      new X509CertificateHolder(GemLibPkiUtils.certToBytes(ocspResponseSignerCert))
     };
 
     final String sigAlgo =
@@ -243,12 +239,12 @@ public class OcspResponseGenerator {
       final X509Certificate eeCert,
       final CertificateStatus certificateStatus,
       final List<Extension> extensionList)
-      throws CertificateEncodingException, IOException {
+      throws IOException {
     if (withCertHash) {
       if (!(certificateStatus instanceof UnknownStatus)) {
         final byte[] certificateHash;
         if (validCertHash) {
-          certificateHash = calculateSha256(eeCert.getEncoded());
+          certificateHash = calculateSha256(GemLibPkiUtils.certToBytes(eeCert));
         } else {
           log.warn(
               "Invalid CertHash is generated because of user request. Parameter 'validCertHash' is"

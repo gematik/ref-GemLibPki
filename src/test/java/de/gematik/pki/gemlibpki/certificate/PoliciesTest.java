@@ -16,19 +16,19 @@
 
 package de.gematik.pki.gemlibpki.certificate;
 
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import de.gematik.pki.gemlibpki.utils.TestUtils;
 import java.io.IOException;
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import org.junit.jupiter.api.Test;
 
 class PoliciesTest {
 
   @Test
-  void getPolicyOids() throws IOException, CertificateEncodingException {
+  void getPolicyOids() throws IOException {
     final X509Certificate policyOids = TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
     assertThat(new Policies(policyOids).getPolicyOids())
         .contains(CertificateType.CERT_TYPE_SMC_B_AUT.getOid());
@@ -36,9 +36,7 @@ class PoliciesTest {
 
   @Test
   void policiesCertNull() {
-    assertThatThrownBy(() -> new Policies(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("x509EeCert is marked non-null but is null");
+    assertNonNullParameter(() -> new Policies(null), "x509EeCert");
   }
 
   @Test
@@ -50,7 +48,7 @@ class PoliciesTest {
   }
 
   @Test
-  void getPolicyOidsEmpty() throws CertificateEncodingException, IOException {
+  void getPolicyOidsEmpty() throws IOException {
     final X509Certificate emptyPolicyId =
         TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_missing-certificate-type.pem");
     assertThat(new Policies(emptyPolicyId).getPolicyOids()).isEmpty();

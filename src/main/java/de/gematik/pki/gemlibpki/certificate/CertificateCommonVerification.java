@@ -110,6 +110,7 @@ public final class CertificateCommonVerification {
           productType, ErrorCode.SE_1024_CERTIFICATE_NOT_VALID_MATH, verifyFailed);
     }
   }
+
   // ####################  Start issuer checks ######################
 
   /**

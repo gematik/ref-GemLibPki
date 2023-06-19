@@ -133,6 +133,7 @@ public final class TslConverter {
   public static byte[] docToBytes(@NonNull final Document tslDoc) {
     return docToBytes(tslDoc, DocToBytesOption.UNDEFINED);
   }
+
   /**
    * @param tslDoc A TSL as Document
    * @param docToBytesOption a {@link DocToBytesOption}

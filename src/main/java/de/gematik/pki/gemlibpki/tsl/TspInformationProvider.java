@@ -145,7 +145,8 @@ public class TspInformationProvider {
   private Pair<TspService, X509Certificate> getIssuerTspServiceAndIssuerCert(
       @NonNull final X509Certificate x509EeCert) throws GemPkiException {
     Optional<X509Certificate> foundX509IssuerCert = Optional.empty();
-
+    log.info(
+        "Looking for issuer {} in trust store.", x509EeCert.getIssuerX500Principal().getName());
     for (final TspService tspService : tspServices) {
       try {
         for (final DigitalIdentityType dit :

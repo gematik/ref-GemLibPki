@@ -21,8 +21,8 @@ import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_MILLISECONDS;
 import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.TIMEOUT_DELTA_MILLISECONDS;
-import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.OCSP_RESPONSE_ERROR;
 import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getBasicOcspResp;
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -179,57 +179,33 @@ class TucPki006OcspVerifierTest {
     final TucPki006OcspVerifier.TucPki006OcspVerifierBuilder builder =
         TucPki006OcspVerifier.builder();
 
-    assertThatThrownBy(() -> builder.productType(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("productType is marked non-null but is null");
+    assertNonNullParameter(() -> builder.productType(null), "productType");
 
-    assertThatThrownBy(() -> builder.eeCert(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("eeCert is marked non-null but is null");
+    assertNonNullParameter(() -> builder.eeCert(null), "eeCert");
 
-    assertThatThrownBy(() -> builder.ocspResponse(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("ocspResponse is marked non-null but is null");
+    assertNonNullParameter(() -> builder.ocspResponse(null), "ocspResponse");
 
-    assertThatThrownBy(() -> builder.tspServiceList(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tspServiceList is marked non-null but is null");
+    assertNonNullParameter(() -> builder.tspServiceList(null), "tspServiceList");
 
     final TucPki006OcspVerifier verifier = genDefaultOcspVerifier();
     final ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
-    assertThatThrownBy(() -> verifier.performOcspChecks(null, now))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("ocspReq is marked non-null but is null");
+    assertNonNullParameter(() -> verifier.performOcspChecks(null, now), "ocspReq");
 
     final OCSPReq req =
         OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
-    assertThatThrownBy(() -> verifier.performOcspChecks(req, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("referenceDate is marked non-null but is null");
+    assertNonNullParameter(() -> verifier.performOcspChecks(req, null), "referenceDate");
 
-    assertThatThrownBy(() -> verifier.performOcspChecks(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("ocspReq is marked non-null but is null");
+    assertNonNullParameter(() -> verifier.performOcspChecks(null), "ocspReq");
 
-    assertThatThrownBy(() -> verifier.verifyStatus(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("referenceDate is marked non-null but is null");
+    assertNonNullParameter(() -> verifier.verifyStatus(null), "referenceDate");
 
-    assertThatThrownBy(() -> verifier.verifyOcspResponseCertId(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("ocspReq is marked non-null but is null");
+    assertNonNullParameter(() -> verifier.verifyOcspResponseCertId(null), "ocspReq");
 
-    assertThatThrownBy(() -> verifier.verifyThisUpdate(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("referenceDate is marked non-null but is null");
+    assertNonNullParameter(() -> verifier.verifyThisUpdate(null), "referenceDate");
 
-    assertThatThrownBy(() -> verifier.verifyProducedAt(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("referenceDate is marked non-null but is null");
+    assertNonNullParameter(() -> verifier.verifyProducedAt(null), "referenceDate");
 
-    assertThatThrownBy(() -> verifier.verifyNextUpdate(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("referenceDate is marked non-null but is null");
+    assertNonNullParameter(() -> verifier.verifyNextUpdate(null), "referenceDate");
   }
 
   private static OCSPResp genDefaultOcspResp() {
@@ -968,7 +944,7 @@ class TucPki006OcspVerifierTest {
                 Mockito.when(mock.getCertificate(Mockito.any())).thenReturn(x509CertSpy))) {
       assertThatThrownBy(verifier::verifyCertHash)
           .isInstanceOf(GemPkiRuntimeException.class)
-          .hasMessage(OCSP_RESPONSE_ERROR);
+          .hasMessage("Cannot convert certificate to bytes");
     }
   }
 }

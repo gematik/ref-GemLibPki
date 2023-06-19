@@ -2,6 +2,15 @@
 
 # Release notes GemLibPki
 
+## Release 0.12.0
+
+- add scheme validation tests
+  in [TucPki001Verifier](src/main/java/de/gematik/pki/gemlibpki/tsl/TucPki001Verifier.java)
+- add missing certificate types
+- add some convenience methods
+- update test data
+- update dependencies
+
 ## Release 0.11.0
 
 - API change: modify [TslSigner](src/main/java/de/gematik/pki/gemlibpki/tsl/TslSigner.java) to be a

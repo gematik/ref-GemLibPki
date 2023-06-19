@@ -16,8 +16,8 @@
 
 package de.gematik.pki.gemlibpki.certificate;
 
+import de.gematik.pki.gemlibpki.utils.GemLibPkiUtils;
 import java.io.IOException;
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Set;
@@ -43,14 +43,12 @@ public class Policies {
    * Uses policy information from extensions of the provided certificate
    *
    * @param x509EeCert end-entity certificate
-   * @throws CertificateEncodingException thrown if an encoding error in the cert occurs
    * @throws IOException thrown if cert cannot be read
    */
-  public Policies(@NonNull final X509Certificate x509EeCert)
-      throws CertificateEncodingException, IOException {
+  public Policies(@NonNull final X509Certificate x509EeCert) throws IOException {
     policyExtensions =
         CertificatePolicies.fromExtensions(
-                new X509CertificateHolder(x509EeCert.getEncoded()).getExtensions())
+                new X509CertificateHolder(GemLibPkiUtils.certToBytes(x509EeCert)).getExtensions())
             .getPolicyInformation();
   }
 

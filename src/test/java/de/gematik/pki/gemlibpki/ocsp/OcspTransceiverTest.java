@@ -21,6 +21,7 @@ import static de.gematik.pki.gemlibpki.TestConstants.OCSP_HOST;
 import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.ocsp.OcspTransceiver.OCSP_SEND_RECEIVE_FAILED;
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -362,9 +363,7 @@ class OcspTransceiverTest {
   @Test
   void nonNull() {
     final OcspTransceiver ocspTransceiver = getOcspTransceiver();
-    assertThatThrownBy(() -> ocspTransceiver.sendOcspRequest(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("ocspReq is marked non-null but is null");
+    assertNonNullParameter(() -> ocspTransceiver.sendOcspRequest(null), "ocspReq");
   }
 
   private OCSPReq configureOcspResponderMockForOcspRequest() {

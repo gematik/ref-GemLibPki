@@ -16,6 +16,7 @@
 
 package de.gematik.pki.gemlibpki.utils;
 
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -39,9 +40,7 @@ class CertReaderTest {
 
   @Test
   void readX509NonNull() {
-    assertThatThrownBy(() -> CertReader.readX509((Path) null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("path is marked non-null but is null");
+    assertNonNullParameter(() -> CertReader.readX509((Path) null), "path");
   }
 
   @SneakyThrows
@@ -99,12 +98,8 @@ class CertReaderTest {
   void nullTest() {
     final Path path = Path.of("unimportant");
 
-    assertThatThrownBy(() -> CertReader.getX509FromP12(null, "foo"))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("path is marked non-null but is null");
+    assertNonNullParameter(() -> CertReader.getX509FromP12(null, "foo"), "path");
 
-    assertThatThrownBy(() -> CertReader.getX509FromP12(path, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("password is marked non-null but is null");
+    assertNonNullParameter(() -> CertReader.getX509FromP12(path, null), "password");
   }
 }

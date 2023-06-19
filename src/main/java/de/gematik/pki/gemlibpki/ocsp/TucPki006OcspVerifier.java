@@ -17,7 +17,6 @@
 package de.gematik.pki.gemlibpki.ocsp;
 
 import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_MILLISECONDS;
-import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.OCSP_RESPONSE_ERROR;
 import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getBasicOcspResp;
 import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getFirstSingleReq;
 import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getFirstSingleResp;
@@ -93,6 +92,7 @@ public class TucPki006OcspVerifier {
   public void performOcspChecks(@NonNull final OCSPReq ocspReq) throws GemPkiException {
     performOcspChecks(ocspReq, GemLibPkiUtils.now());
   }
+
   /**
    * Performs TUC_PKI_006 checks (OCSP verification) against given date time as reference date
    *
@@ -135,7 +135,7 @@ public class TucPki006OcspVerifier {
       return;
     }
 
-    if (certificateStatus instanceof RevokedStatus revokedStatus) {
+    if (certificateStatus instanceof final RevokedStatus revokedStatus) {
 
       final ZonedDateTime revocationTime =
           ZonedDateTime.ofInstant(revokedStatus.getRevocationTime().toInstant(), ZoneOffset.UTC);
@@ -275,14 +275,12 @@ public class TucPki006OcspVerifier {
           getFirstSingleResp(ocspResponse).getExtension(id_isismtt_at_certHash).getParsedValue();
       final CertHash asn1CertHash = CertHash.getInstance(singleRespAsn1);
 
-      final byte[] eeCertHash = calculateSha256(eeCert.getEncoded());
+      final byte[] eeCertHash = calculateSha256(GemLibPkiUtils.certToBytes(eeCert));
       if (!Arrays.equals(asn1CertHash.getCertificateHash(), eeCertHash)) {
         throw new GemPkiException(productType, ErrorCode.SE_1041_CERTHASH_MISMATCH);
       }
     } catch (final NullPointerException e) {
       throw new GemPkiException(productType, ErrorCode.SE_1040_CERTHASH_EXTENSION_MISSING);
-    } catch (final CertificateEncodingException e) {
-      throw new GemPkiRuntimeException(OCSP_RESPONSE_ERROR, e);
     }
   }
 

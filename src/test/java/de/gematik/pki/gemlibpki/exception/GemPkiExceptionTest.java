@@ -17,6 +17,7 @@
 package de.gematik.pki.gemlibpki.exception;
 
 import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import de.gematik.pki.gemlibpki.error.ErrorCode;
@@ -59,9 +60,8 @@ class GemPkiExceptionTest {
 
   @Test
   void nonNullTests() {
-    assertThatThrownBy(() -> new GemPkiException(null, ErrorCode.SE_1003_MULTIPLE_TRUST_ANCHOR))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("productType is marked non-null but is null");
+    assertNonNullParameter(
+        () -> new GemPkiException(null, ErrorCode.SE_1003_MULTIPLE_TRUST_ANCHOR), "productType");
     assertThatThrownBy(() -> new GemPkiException(PRODUCT_TYPE, null))
         .isInstanceOf(NullPointerException.class)
         .hasMessage(
@@ -69,22 +69,18 @@ class GemPkiExceptionTest {
                 + " because \"error\" is null");
 
     final Exception exception = new Exception();
-    assertThatThrownBy(
-            () -> new GemPkiException(null, ErrorCode.SE_1003_MULTIPLE_TRUST_ANCHOR, exception))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("productType is marked non-null but is null");
+    assertNonNullParameter(
+        () -> new GemPkiException(null, ErrorCode.SE_1003_MULTIPLE_TRUST_ANCHOR, exception),
+        "productType");
     assertThatThrownBy(() -> new GemPkiException(PRODUCT_TYPE, null, exception))
         .isInstanceOf(NullPointerException.class)
         .hasMessage(
             "Cannot invoke \"de.gematik.pki.gemlibpki.error.ErrorCode.getErrorMessage(String)\""
                 + " because \"error\" is null");
 
-    assertThatThrownBy(() -> new GemPkiException(null, "blub", exception))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("error is marked non-null but is null");
-    assertThatThrownBy(
-            () -> new GemPkiException(ErrorCode.SE_1003_MULTIPLE_TRUST_ANCHOR, null, exception))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("message is marked non-null but is null");
+    assertNonNullParameter(() -> new GemPkiException(null, "blub", exception), "error");
+    assertNonNullParameter(
+        () -> new GemPkiException(ErrorCode.SE_1003_MULTIPLE_TRUST_ANCHOR, null, exception),
+        "message");
   }
 }

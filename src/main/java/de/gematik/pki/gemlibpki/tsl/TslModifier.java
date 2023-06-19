@@ -18,6 +18,9 @@ package de.gematik.pki.gemlibpki.tsl;
 
 import static de.gematik.pki.gemlibpki.tsl.TslUtils.tslDownloadUrlMatchesOid;
 
+import de.gematik.pki.gemlibpki.exception.GemPkiException;
+import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
+import de.gematik.pki.gemlibpki.utils.GemLibPkiUtils;
 import eu.europa.esig.trustedlist.jaxb.tsl.AdditionalInformationType;
 import eu.europa.esig.trustedlist.jaxb.tsl.AttributedNonEmptyURIType;
 import eu.europa.esig.trustedlist.jaxb.tsl.MultiLangNormStringType;
@@ -32,7 +35,6 @@ import eu.europa.esig.trustedlist.jaxb.tsl.TSPServiceType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TSPType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.math.BigInteger;
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -41,6 +43,7 @@ import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import javax.xml.bind.JAXBElement;
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeConstants;
@@ -53,6 +56,63 @@ import lombok.NonNull;
 /** Class for handling tsl modifications */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class TslModifier {
+
+  private static Stream<TSPServiceInformationType> getCaServiceInformation(
+      @NonNull final TrustStatusListType tsl, @NonNull final String tspName) {
+    return tsl.getTrustServiceProviderList().getTrustServiceProvider().stream()
+        .filter(
+            tsp -> {
+              final String tslTspName =
+                  tsp.getTSPInformation().getTSPName().getName().get(0).getValue();
+              return tslTspName.contains(tspName);
+            })
+        .flatMap(tsp -> tsp.getTSPServices().getTSPService().stream())
+        .map(TSPServiceType::getServiceInformation)
+        .filter(
+            serviceInformation -> {
+              final String identifier = serviceInformation.getServiceTypeIdentifier();
+              return TslConstants.STI_CA_LIST.contains(identifier);
+            });
+  }
+
+  /**
+   * Deletes the service supply points (OCSP addresses) of a CA (PKC and SrvCertChange) entry for a
+   * given TSP. Other services, such as CRL, OCSP, CVC are not altered
+   *
+   * @param tslBytes Source TSL
+   * @param x509EeCert The end-entity certificate
+   */
+  public static byte[] deleteSspsForCAsOfEndEntity(
+      final byte @NonNull [] tslBytes,
+      @NonNull final X509Certificate x509EeCert,
+      @NonNull final String productType)
+      throws GemPkiException {
+
+    final TrustStatusListType tsl = TslConverter.bytesToTsl(tslBytes);
+    deleteSspsForCAsOfEndEntity(tsl, x509EeCert, productType);
+
+    return TslConverter.tslToBytes(tsl);
+  }
+
+  /**
+   * Deletes the service supply points (OCSP addresses) of a CA (PKC and SrvCertChange) entry for a
+   * given TSP. Other services, such as CRL, OCSP, CVC are not altered
+   *
+   * @param tsl Source TSL
+   * @param x509EeCert The end-entity certificate
+   */
+  public static void deleteSspsForCAsOfEndEntity(
+      @NonNull final TrustStatusListType tsl,
+      @NonNull final X509Certificate x509EeCert,
+      @NonNull final String productType)
+      throws GemPkiException {
+
+    final TspService tspServiceSubset =
+        new TspInformationProvider(new TslInformationProvider(tsl).getTspServices(), productType)
+            .getIssuerTspService(x509EeCert);
+
+    tspServiceSubset.getTspServiceType().getServiceInformation().setServiceSupplyPoints(null);
+  }
 
   /**
    * Modifies the service supply points (OCSP addresses) of a CA (PKC and SrvCertChange) entry for a
@@ -73,29 +133,8 @@ public final class TslModifier {
     final ServiceSupplyPointsType newSspType = new ServiceSupplyPointsType();
     newSspType.getServiceSupplyPoint().add(newSspXml);
 
-    tsl.getTrustServiceProviderList()
-        .getTrustServiceProvider()
-        .forEach(
-            tsp -> {
-              final String tslTspName =
-                  tsp.getTSPInformation().getTSPName().getName().get(0).getValue();
-
-              if (tslTspName.contains(tspName)) {
-
-                tsp.getTSPServices()
-                    .getTSPService()
-                    .forEach(
-                        service -> {
-                          final TSPServiceInformationType infoType =
-                              service.getServiceInformation();
-                          final String identifier = infoType.getServiceTypeIdentifier();
-
-                          if (TslConstants.STI_CA_LIST.contains(identifier)) {
-                            infoType.setServiceSupplyPoints(newSspType);
-                          }
-                        });
-              }
-            });
+    getCaServiceInformation(tsl, tspName)
+        .forEach(serviceInformation -> serviceInformation.setServiceSupplyPoints(newSspType));
   }
 
   /**
@@ -113,11 +152,9 @@ public final class TslModifier {
    *
    * @param tsl The tsl to modify
    * @param zdt Utc timestamp of the new nextUpdate value
-   * @throws DatatypeConfigurationException if timestamp cannot be parsed
    */
   public static void modifyNextUpdate(
-      @NonNull final TrustStatusListType tsl, @NonNull final ZonedDateTime zdt)
-      throws DatatypeConfigurationException {
+      @NonNull final TrustStatusListType tsl, @NonNull final ZonedDateTime zdt) {
     final XMLGregorianCalendar xmlCal = getXmlGregorianCalendar(zdt);
     final NextUpdateType nextUpdate = new NextUpdateType();
     nextUpdate.setDateTime(xmlCal);
@@ -132,13 +169,11 @@ public final class TslModifier {
    * @param issueDate Utc timestamp of the new issueDate value
    * @param daysUntilNextUpdate Integer of the duration in days the tsl will be valid
    *     (issue+duration=nextUpdate)
-   * @throws DatatypeConfigurationException if timestamp cannot be parsed
    */
   public static void modifyIssueDateAndRelatedNextUpdate(
       @NonNull final TrustStatusListType tsl,
       @NonNull final ZonedDateTime issueDate,
-      final int daysUntilNextUpdate)
-      throws DatatypeConfigurationException {
+      final int daysUntilNextUpdate) {
     modifyIssueDate(tsl, issueDate);
     modifyNextUpdate(tsl, issueDate.plusDays(daysUntilNextUpdate));
   }
@@ -148,11 +183,9 @@ public final class TslModifier {
    *
    * @param tsl The tsl to modify
    * @param zdt Utc timestamp of the nes issueDate value
-   * @throws DatatypeConfigurationException if timestamp cannot be parsed
    */
   public static void modifyIssueDate(
-      @NonNull final TrustStatusListType tsl, @NonNull final ZonedDateTime zdt)
-      throws DatatypeConfigurationException {
+      @NonNull final TrustStatusListType tsl, @NonNull final ZonedDateTime zdt) {
     final XMLGregorianCalendar xmlCal = getXmlGregorianCalendar(zdt);
     tsl.getSchemeInformation().setListIssueDateTime(xmlCal);
   }
@@ -223,22 +256,30 @@ public final class TslModifier {
   }
 
   private static void setElementOtherTSLPointer(
-      final TrustStatusListType tsl, final OtherTSLPointersType otpt) {
-    tsl.getSchemeInformation().setPointersToOtherTSL(otpt);
+      final TrustStatusListType tsl, final OtherTSLPointersType otherTSLPointersType) {
+    tsl.getSchemeInformation().setPointersToOtherTSL(otherTSLPointersType);
   }
 
-  public static XMLGregorianCalendar getXmlGregorianCalendar(final ZonedDateTime zdt)
-      throws DatatypeConfigurationException {
+  public static XMLGregorianCalendar getXmlGregorianCalendar(@NonNull final ZonedDateTime zdt) {
+
+    final DatatypeFactory datatypeFactory;
+
+    try {
+      datatypeFactory = DatatypeFactory.newInstance();
+    } catch (final DatatypeConfigurationException e) {
+      throw new GemPkiRuntimeException(e);
+    }
+
     final XMLGregorianCalendar xmlCal =
-        DatatypeFactory.newInstance().newXMLGregorianCalendar(GregorianCalendar.from(zdt));
+        datatypeFactory.newXMLGregorianCalendar(GregorianCalendar.from(zdt));
     xmlCal.setMillisecond(DatatypeConstants.FIELD_UNDEFINED);
+
     return xmlCal;
   }
 
   public static byte[] modifiedSignerCert(
-      final byte[] tslBytes, final X509Certificate x509Certificate)
-      throws CertificateEncodingException {
-    return modifiedSignerCert(tslBytes, x509Certificate.getEncoded());
+      final byte[] tslBytes, final X509Certificate x509Certificate) {
+    return modifiedSignerCert(tslBytes, GemLibPkiUtils.certToBytes(x509Certificate));
   }
 
   public static byte[] modifiedSignerCert(
@@ -337,15 +378,13 @@ public final class TslModifier {
    * @param serviceIdentifierToSelect if null, then value of ServiceIdentifier is not compared
    * @param serviceStatusToSelect if null, then value of ServiceStatus is not compared
    * @param newStatusStartingTime new value for StatusStartingTime
-   * @throws DatatypeConfigurationException thrown if the status starting time is in a wrong format
    */
   public static byte[] modifiedStatusStartingTime(
       final byte[] tslBytes,
       @NonNull final String tspName,
       final String serviceIdentifierToSelect,
       final String serviceStatusToSelect,
-      @NonNull final ZonedDateTime newStatusStartingTime)
-      throws DatatypeConfigurationException {
+      @NonNull final ZonedDateTime newStatusStartingTime) {
 
     final TrustStatusListType tsl = TslConverter.bytesToTsl(tslBytes);
 
@@ -361,15 +400,13 @@ public final class TslModifier {
    * @param serviceIdentifierToSelect if null, then value of ServiceIdentifier is not compared
    * @param serviceStatusToSelect if null, then value of ServiceStatus is not compared
    * @param newStatusStartingTime new value for StatusStartingTime
-   * @throws DatatypeConfigurationException thrown if the status starting time is in a wrong format
    */
   public static void modifyStatusStartingTime(
       final TrustStatusListType tsl,
       @NonNull final String tspName,
       final String serviceIdentifierToSelect,
       final String serviceStatusToSelect,
-      @NonNull final ZonedDateTime newStatusStartingTime)
-      throws DatatypeConfigurationException {
+      @NonNull final ZonedDateTime newStatusStartingTime) {
 
     final XMLGregorianCalendar newStatusStartingTimeGreg =
         TslModifier.getXmlGregorianCalendar(newStatusStartingTime);

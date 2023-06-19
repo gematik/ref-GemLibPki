@@ -3,10 +3,10 @@
 # GemLibPki
 
 --- 
+<img align="left" height="150" src="doc/images/logo.svg" />
+
 A java library for functionalities in PKI (Public Key Infrastructure) of products specified by
 gematik
-
----
 
 Products specified by gematik which have to deal with PKI will have to handle certificates and
 TSLs (TrustedServiceProvider Status List). This library may help to understand the intention of the
@@ -15,11 +15,13 @@ Please
 see [liability limitation](https://fachportal.gematik.de/default-titlegrundsaetzliche-nutzungsbedingungen)
 for further information.
 
-QES handling is not a part of this library.
+* QES handling is not a part of this library.
 
-Specifications are published at [gematik Fachportal](https://fachportal.gematik.de/).
+* Specifications are published at [gematik Fachportal](https://fachportal.gematik.de/).
 
-[Link to Maven Repository](https://mvnrepository.com/artifact/de.gematik.pki/gemLibPki)
+* [Link to Maven Repository](https://mvnrepository.com/artifact/de.gematik.pki/gemLibPki)
+
+---
 
 ### Versioning
 
@@ -52,6 +54,8 @@ We are fully aware of the content and meaning of the test data. We never publish
 
 ##### TSL handling
 
+- contains checks defined in TUC_PKI_001 „Periodische Aktualisierung TI-Vertrauensraum“ specified in
+  gematik document "Übergreifende Spezifikation PKI" (gemSpec_PKI)
 - several methods for parsing, modifying, signing and validation of a TSL
 
 ##### Error codes
@@ -62,7 +66,7 @@ We are fully aware of the content and meaning of the test data. We never publish
 
 The lib is developed and tested
 with [Eclipse Adoptium Temurin JDK 17](https://github.com/adoptium/temurin17-binaries) and [Apache
-Maven 3.9.0](https://maven.apache.org/index.html)
+Maven 3.9.2](https://maven.apache.org/index.html)
 
 Build with:
 
@@ -99,6 +103,5 @@ in any compatible unix environment.
 
 ### ToDo
 
-- extend TSL validation according to TUC_PKI_001
 - offline mode for TUC_PKI_001 is not implemented
 - implement critical extension checks according to GS-A_4661 (RFC5280#4.2)

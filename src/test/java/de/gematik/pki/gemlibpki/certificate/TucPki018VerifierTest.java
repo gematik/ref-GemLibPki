@@ -35,6 +35,7 @@ import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFI
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_HCI_OSIG;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_HP_AUT_ECC;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_TSL_SIG;
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.overwriteSspUrls;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.readCert;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -267,13 +268,9 @@ class TucPki018VerifierTest {
   @Test
   void nonNullTests() throws GemPkiException {
 
-    assertThatThrownBy(() -> tucPki018Verifier.performTucPki18Checks(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("x509EeCert is marked non-null but is null");
+    assertNonNullParameter(() -> tucPki018Verifier.performTucPki18Checks(null), "x509EeCert");
 
-    assertThatThrownBy(() -> buildTucPki18Verifier(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("certificateProfiles is marked non-null but is null");
+    assertNonNullParameter(() -> buildTucPki18Verifier(null), "certificateProfiles");
 
     final TspServiceSubset tspServiceSubset =
         new TspInformationProvider(
@@ -281,55 +278,45 @@ class TucPki018VerifierTest {
                 PRODUCT_TYPE)
             .getIssuerTspServiceSubset(VALID_X509_EE_CERT);
 
-    assertThatThrownBy(() -> tucPki018Verifier.tucPki018ProfileChecks(null, tspServiceSubset))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("x509EeCert is marked non-null but is null");
+    assertNonNullParameter(
+        () -> tucPki018Verifier.tucPki018ProfileChecks(null, tspServiceSubset), "x509EeCert");
 
-    assertThatThrownBy(() -> tucPki018Verifier.tucPki018ProfileChecks(VALID_X509_EE_CERT, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tspServiceSubset is marked non-null but is null");
+    assertNonNullParameter(
+        () -> tucPki018Verifier.tucPki018ProfileChecks(VALID_X509_EE_CERT, null),
+        "tspServiceSubset");
 
-    assertThatThrownBy(
-            () ->
-                tucPki018Verifier.tucPki018ChecksForProfile(
-                    null, certificateProfile, tspServiceSubset))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("x509EeCert is marked non-null but is null");
-    assertThatThrownBy(
-            () ->
-                tucPki018Verifier.tucPki018ChecksForProfile(
-                    VALID_X509_EE_CERT, null, tspServiceSubset))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("certificateProfile is marked non-null but is null");
+    assertNonNullParameter(
+        () ->
+            tucPki018Verifier.tucPki018ChecksForProfile(null, certificateProfile, tspServiceSubset),
+        "x509EeCert");
+    assertNonNullParameter(
+        () ->
+            tucPki018Verifier.tucPki018ChecksForProfile(VALID_X509_EE_CERT, null, tspServiceSubset),
+        "certificateProfile");
 
-    assertThatThrownBy(
-            () ->
-                tucPki018Verifier.tucPki018ChecksForProfile(
-                    VALID_X509_EE_CERT, certificateProfile, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tspServiceSubset is marked non-null but is null");
+    assertNonNullParameter(
+        () ->
+            tucPki018Verifier.tucPki018ChecksForProfile(
+                VALID_X509_EE_CERT, certificateProfile, null),
+        "tspServiceSubset");
 
-    assertThatThrownBy(() -> tucPki018Verifier.commonChecks(null, tspServiceSubset))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("x509EeCert is marked non-null but is null");
+    assertNonNullParameter(
+        () -> tucPki018Verifier.commonChecks(null, tspServiceSubset), "x509EeCert");
 
-    assertThatThrownBy(() -> tucPki018Verifier.commonChecks(VALID_X509_EE_CERT, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tspServiceSubset is marked non-null but is null");
+    assertNonNullParameter(
+        () -> tucPki018Verifier.commonChecks(VALID_X509_EE_CERT, null), "tspServiceSubset");
 
     final ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
-    assertThatThrownBy(() -> tucPki018Verifier.doOcspIfConfigured(null, tspServiceSubset, now))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("x509EeCert is marked non-null but is null");
+    assertNonNullParameter(
+        () -> tucPki018Verifier.doOcspIfConfigured(null, tspServiceSubset, now), "x509EeCert");
 
-    assertThatThrownBy(() -> tucPki018Verifier.doOcspIfConfigured(VALID_X509_EE_CERT, null, now))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tspServiceSubset is marked non-null but is null");
+    assertNonNullParameter(
+        () -> tucPki018Verifier.doOcspIfConfigured(VALID_X509_EE_CERT, null, now),
+        "tspServiceSubset");
 
-    assertThatThrownBy(
-            () -> tucPki018Verifier.doOcspIfConfigured(VALID_X509_EE_CERT, tspServiceSubset, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("referenceDate is marked non-null but is null");
+    assertNonNullParameter(
+        () -> tucPki018Verifier.doOcspIfConfigured(VALID_X509_EE_CERT, tspServiceSubset, null),
+        "referenceDate");
   }
 
   @Test

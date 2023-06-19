@@ -17,6 +17,7 @@
 package de.gematik.pki.gemlibpki.exception;
 
 import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import de.gematik.pki.gemlibpki.certificate.CertificateProfile;
@@ -42,9 +43,7 @@ class GemPkiParsingExceptionTest {
         CertificateProfile.CERT_PROFILE_C_HCI_AUT_ECC,
         new GemPkiException(PRODUCT_TYPE, ErrorCode.TE_1002_TSL_CERT_EXTRACTION_ERROR));
 
-    assertThatThrownBy(() -> new GemPkiParsingException(null, error))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("productType is marked non-null but is null");
+    assertNonNullParameter(() -> new GemPkiParsingException(null, error), "productType");
 
     assertThatThrownBy(() -> new GemPkiParsingException(PRODUCT_TYPE, null))
         .isInstanceOf(NullPointerException.class)

@@ -88,8 +88,12 @@ public final class TslValidator {
 
   private static Optional<XAdESVerificationResult> getVerificationResult(
       final Document tsl, final X509Certificate trustAnchor)
-      throws XAdES4jException, NoSuchAlgorithmException, NoSuchProviderException,
-          CertificateException, KeyStoreException, IOException {
+      throws XAdES4jException,
+          NoSuchAlgorithmException,
+          NoSuchProviderException,
+          CertificateException,
+          KeyStoreException,
+          IOException {
     final KeyStore trustAnchorStore = KeyStore.getInstance(KeyStore.getDefaultType());
     trustAnchorStore.load(null);
     trustAnchorStore.setCertificateEntry(

@@ -30,6 +30,7 @@ import java.time.ZonedDateTime;
 import java.util.Base64;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import org.bouncycastle.crypto.digests.SHA1Digest;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -49,6 +50,14 @@ public final class GemLibPkiUtils {
       return Files.readAllBytes(path);
     } catch (final IOException e) {
       throw new GemPkiRuntimeException("Cannot read path: " + path, e);
+    }
+  }
+
+  public static byte[] certToBytes(@NonNull final X509Certificate certificate) {
+    try {
+      return certificate.getEncoded();
+    } catch (final CertificateEncodingException e) {
+      throw new GemPkiRuntimeException("Cannot convert certificate to bytes", e);
     }
   }
 
@@ -95,9 +104,8 @@ public final class GemLibPkiUtils {
     return ZonedDateTime.now(ZoneOffset.UTC);
   }
 
-  public static String toMimeBase64NoLineBreaks(final X509Certificate x509Certificate)
-      throws CertificateEncodingException {
-    return toMimeBase64NoLineBreaks(x509Certificate.getEncoded());
+  public static String toMimeBase64NoLineBreaks(final X509Certificate x509Certificate) {
+    return toMimeBase64NoLineBreaks(GemLibPkiUtils.certToBytes(x509Certificate));
   }
 
   // https://www.w3.org/TR/xmlschema-2/#base64Binary

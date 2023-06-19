@@ -17,7 +17,7 @@
 package de.gematik.pki.gemlibpki.ocsp;
 
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB_RSA;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import de.gematik.pki.gemlibpki.utils.TestUtils;
@@ -158,17 +158,12 @@ class OcspRespCacheTest {
   @Test
   void nonNull() {
     final OcspRespCache ocspRespCache = new OcspRespCache(30);
-    assertThatThrownBy(() -> ocspRespCache.getResponse(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("x509EeCertSerialNumber is marked non-null but is null");
+    assertNonNullParameter(() -> ocspRespCache.getResponse(null), "x509EeCertSerialNumber");
 
     final OCSPResp ocspResp = getOcspResp();
-    assertThatThrownBy(() -> ocspRespCache.saveResponse(null, ocspResp))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("x509EeCertSerialNumber is marked non-null but is null");
+    assertNonNullParameter(
+        () -> ocspRespCache.saveResponse(null, ocspResp), "x509EeCertSerialNumber");
     final BigInteger SERIAL_NUMBER = BigInteger.valueOf(1);
-    assertThatThrownBy(() -> ocspRespCache.saveResponse(SERIAL_NUMBER, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("ocspResp is marked non-null but is null");
+    assertNonNullParameter(() -> ocspRespCache.saveResponse(SERIAL_NUMBER, null), "ocspResp");
   }
 }

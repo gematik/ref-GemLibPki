@@ -16,6 +16,7 @@
 
 package de.gematik.pki.gemlibpki.utils;
 
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -57,17 +58,11 @@ class P12ReaderTest {
 
   @Test
   void verifyGetContentFromP12NonNull() {
-    assertThatThrownBy(() -> P12Reader.getContentFromP12((byte[]) null, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("p12Password is marked non-null but is null");
+    assertNonNullParameter(() -> P12Reader.getContentFromP12((byte[]) null, null), "p12Password");
 
-    assertThatThrownBy(() -> P12Reader.getContentFromP12((Path) null, "foo"))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("path is marked non-null but is null");
+    assertNonNullParameter(() -> P12Reader.getContentFromP12((Path) null, "foo"), "path");
 
     final Path path = Path.of("foo");
-    assertThatThrownBy(() -> P12Reader.getContentFromP12(path, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("p12Password is marked non-null but is null");
+    assertNonNullParameter(() -> P12Reader.getContentFromP12(path, null), "p12Password");
   }
 }

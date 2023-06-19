@@ -20,6 +20,7 @@ import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_HCI_AUT_ECC;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_HCI_AUT_RSA;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_HP_AUT_ECC;
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
@@ -78,18 +79,16 @@ class CertificateProfileVerificationTest {
 
   @Test
   void verifyCertificateProfileNull() {
-    assertThatThrownBy(
-            () -> buildCertificateProfileVerifier(FILE_NAME_TSL_ECC_DEFAULT, null, validX509EeCert))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("certificateProfile is marked non-null but is null");
+    assertNonNullParameter(
+        () -> buildCertificateProfileVerifier(FILE_NAME_TSL_ECC_DEFAULT, null, validX509EeCert),
+        "certificateProfile");
   }
 
   @Test
   void verifyTspProfileNull() {
-    assertThatThrownBy(
-            () -> buildCertificateProfileVerifier(null, certificateProfile, validX509EeCert))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tslFilename is marked non-null but is null");
+    assertNonNullParameter(
+        () -> buildCertificateProfileVerifier(null, certificateProfile, validX509EeCert),
+        "tslFilename");
   }
 
   @Test

@@ -16,8 +16,8 @@
 
 package de.gematik.pki.gemlibpki.ocsp;
 
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import de.gematik.pki.gemlibpki.utils.TestUtils;
@@ -47,15 +47,13 @@ class OcspRequestGeneratorTest {
 
   @Test
   void nonNullTests() {
-    assertThatThrownBy(
-            () -> OcspRequestGenerator.generateSingleOcspRequest(null, VALID_X509_ISSUER_CERT))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("x509EeCert is marked non-null but is null");
+    assertNonNullParameter(
+        () -> OcspRequestGenerator.generateSingleOcspRequest(null, VALID_X509_ISSUER_CERT),
+        "x509EeCert");
 
-    assertThatThrownBy(
-            () -> OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("x509IssuerCert is marked non-null but is null");
+    assertNonNullParameter(
+        () -> OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, null),
+        "x509IssuerCert");
   }
 
   private static void writeOcspReqToFile(final OCSPReq ocspReq) throws IOException {

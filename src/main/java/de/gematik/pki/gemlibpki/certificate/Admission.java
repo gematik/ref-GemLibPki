@@ -18,8 +18,8 @@ package de.gematik.pki.gemlibpki.certificate;
 
 import static org.bouncycastle.asn1.isismtt.ISISMTTObjectIdentifiers.id_isismtt_at_admission;
 
+import de.gematik.pki.gemlibpki.utils.GemLibPkiUtils;
 import java.io.IOException;
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collections;
@@ -47,13 +47,11 @@ public class Admission {
    * Constructor
    *
    * @param x509EeCert end entity certificate to get admission information from
-   * @throws CertificateEncodingException if certificate cannot be parsed
    * @throws IOException if certificate cannot be read
    */
-  public Admission(@NonNull final X509Certificate x509EeCert)
-      throws CertificateEncodingException, IOException {
+  public Admission(@NonNull final X509Certificate x509EeCert) throws IOException {
     asn1Admission =
-        new X509CertificateHolder(x509EeCert.getEncoded())
+        new X509CertificateHolder(GemLibPkiUtils.certToBytes(x509EeCert))
             .getExtensions()
             .getExtensionParsedValue(id_isismtt_at_admission);
   }

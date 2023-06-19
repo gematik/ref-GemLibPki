@@ -19,6 +19,7 @@ package de.gematik.pki.gemlibpki.certificate;
 import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_ALT_CA;
 import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
 import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
@@ -74,16 +75,14 @@ class CertificateCommonVerificationTest {
 
   @Test
   void verifyCertificateEndEntityNull() {
-    assertThatThrownBy(() -> buildCertificateCommonVerifier(FILE_NAME_TSL_ECC_DEFAULT, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("x509EeCert is marked non-null but is null");
+    assertNonNullParameter(
+        () -> buildCertificateCommonVerifier(FILE_NAME_TSL_ECC_DEFAULT, null), "x509EeCert");
   }
 
   @Test
   void verifySignatureIssuerNull() {
-    assertThatThrownBy(() -> certificateCommonVerification.verifySignature(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("x509IssuerCert is marked non-null but is null");
+    assertNonNullParameter(
+        () -> certificateCommonVerification.verifySignature(null), "x509IssuerCert");
   }
 
   @Test
@@ -105,9 +104,8 @@ class CertificateCommonVerificationTest {
 
   @Test
   void verifyValidityReferenceDateNull() {
-    assertThatThrownBy(() -> certificateCommonVerification.verifyValidity(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("referenceDate is marked non-null but is null");
+    assertNonNullParameter(
+        () -> certificateCommonVerification.verifyValidity(null), "referenceDate");
   }
 
   @Test

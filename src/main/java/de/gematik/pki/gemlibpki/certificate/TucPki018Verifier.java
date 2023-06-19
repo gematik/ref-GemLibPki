@@ -29,7 +29,6 @@ import de.gematik.pki.gemlibpki.tsl.TspInformationProvider;
 import de.gematik.pki.gemlibpki.tsl.TspService;
 import de.gematik.pki.gemlibpki.tsl.TspServiceSubset;
 import java.io.IOException;
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -134,13 +133,16 @@ public class TucPki018Verifier {
         final OCSPReq ocspReq =
             OcspRequestGenerator.generateSingleOcspRequest(x509EeCert, x509IssuerCert);
         try {
-          TucPki006OcspVerifier.builder()
-              .productType(productType)
-              .tspServiceList(tspServiceList)
-              .eeCert(x509EeCert)
-              .ocspResponse(ocspResponse)
-              .build()
-              .performOcspChecks(ocspReq, referenceDate);
+          final TucPki006OcspVerifier verifier =
+              TucPki006OcspVerifier.builder()
+                  .productType(productType)
+                  .tspServiceList(tspServiceList)
+                  .eeCert(x509EeCert)
+                  .ocspResponse(ocspResponse)
+                  .build();
+
+          verifier.performOcspChecks(ocspReq, referenceDate);
+
         } catch (final GemPkiException e) {
           log.warn(ErrorCode.TW_1050_PROVIDED_OCSP_RESPONSE_NOT_VALID.getErrorMessage(productType));
           transceiver.verifyOcspResponse(ocspRespCache, referenceDate);
@@ -177,7 +179,7 @@ public class TucPki018Verifier {
             certificateProfile);
         log.debug("Rolle(n): {}", new Admission(x509EeCert).getProfessionItems());
         return new Admission(x509EeCert);
-      } catch (final CertificateEncodingException | IOException e) {
+      } catch (final IOException e) {
         throw new GemPkiRuntimeException(
             "Fehler bei der Verarbeitung der Admission des Zertifikats: "
                 + x509EeCert.getSubjectX500Principal().getName(),

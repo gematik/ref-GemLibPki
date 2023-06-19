@@ -18,8 +18,8 @@ package de.gematik.pki.gemlibpki.tsl;
 
 import static de.gematik.pki.gemlibpki.TestConstants.GEMATIK_TEST_TSP_NAME;
 import static de.gematik.pki.gemlibpki.tsl.TslConstants.STI_CA_LIST;
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import de.gematik.pki.gemlibpki.utils.TestUtils;
 import java.util.Collections;
@@ -40,26 +40,23 @@ class TslInformationProviderTest {
     assertThat(
             tslInformationProvider.getFilteredTspServices(
                 Collections.singletonList(TslConstants.STI_PKC)))
-        .hasSize(136);
+        .hasSize(135);
   }
 
   @Test
   void readAllTspServices_providerSizeShouldBeCorrect() {
-    assertThat(tslInformationProvider.getTspServices()).hasSize(266);
+    assertThat(tslInformationProvider.getTspServices()).hasSize(271);
   }
 
   @Test
   void nonNull() {
-    assertThatThrownBy(() -> tslInformationProvider.getFilteredTspServices(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("stiFilterList is marked non-null but is null");
+    assertNonNullParameter(
+        () -> tslInformationProvider.getFilteredTspServices(null), "stiFilterList");
 
-    assertThatThrownBy(() -> tslInformationProvider.getTspServicesForTsp(null, STI_CA_LIST))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tsp is marked non-null but is null");
-    assertThatThrownBy(
-            () -> tslInformationProvider.getTspServicesForTsp(GEMATIK_TEST_TSP_NAME, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("stiFilterList is marked non-null but is null");
+    assertNonNullParameter(
+        () -> tslInformationProvider.getTspServicesForTsp(null, STI_CA_LIST), "tsp");
+    assertNonNullParameter(
+        () -> tslInformationProvider.getTspServicesForTsp(GEMATIK_TEST_TSP_NAME, null),
+        "stiFilterList");
   }
 }

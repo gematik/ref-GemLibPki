@@ -16,13 +16,12 @@
 
 package de.gematik.pki.gemlibpki.certificate;
 
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import de.gematik.pki.gemlibpki.utils.TestUtils;
 import java.io.IOException;
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import org.junit.jupiter.api.Test;
 
@@ -35,35 +34,33 @@ final class AdmissionTest {
 
   @Test
   void admissionNull() {
-    assertThatThrownBy(() -> new Admission(null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("x509EeCert is marked non-null but is null");
+    assertNonNullParameter(() -> new Admission(null), "x509EeCert");
   }
 
   @Test
-  void getAdmissionAuthority() throws CertificateEncodingException, IOException {
+  void getAdmissionAuthority() throws IOException {
     assertThat(new Admission(certValid).getAdmissionAuthority()).isEqualTo("C=DE,O=KZV Berlin");
   }
 
   @Test
-  void getProfessionItems() throws CertificateEncodingException, IOException {
+  void getProfessionItems() throws IOException {
     assertThat(new Admission(certValid).getProfessionItems())
         .contains(Role.OID_ZAHNARZTPRAXIS.getProfessionItem());
   }
 
   @Test
-  void getProfessionOids() throws CertificateEncodingException, IOException {
+  void getProfessionOids() throws IOException {
     assertThat(new Admission(certValid).getProfessionOids())
         .contains(Role.OID_ZAHNARZTPRAXIS.getProfessionOid());
   }
 
   @Test
-  void getRegistrationNumber() throws IOException, CertificateEncodingException {
+  void getRegistrationNumber() throws IOException {
     assertThat(new Admission(certValid).getRegistrationNumber()).isEqualTo("2-2.30.1.16.TestOnly");
   }
 
   @Test
-  void verifyMissingProfOid() throws CertificateEncodingException, IOException {
+  void verifyMissingProfOid() throws IOException {
     final X509Certificate missingProfOid =
         TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther_missing-prof-oid.pem");
     assertDoesNotThrow(() -> new Admission(missingProfOid));

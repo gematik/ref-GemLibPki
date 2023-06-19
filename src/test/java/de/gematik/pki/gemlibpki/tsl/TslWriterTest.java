@@ -18,8 +18,8 @@ package de.gematik.pki.gemlibpki.tsl;
 
 import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
 import static de.gematik.pki.gemlibpki.utils.ResourceReader.getFilePathFromResources;
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static de.gematik.pki.gemlibpki.utils.XmlCompare.documentsAreEqual;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import de.gematik.pki.gemlibpki.utils.TestUtils;
@@ -36,7 +36,9 @@ class TslWriterTest {
     final TrustStatusListType tsl = TestUtils.getDefaultTsl();
     final Path destFile = Path.of("target/newTslTssl.xml");
     TslWriter.write(tsl, destFile);
-    assertThat(documentsAreEqual(getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT), destFile))
+    assertThat(
+            documentsAreEqual(
+                getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, getClass()), destFile))
         .isTrue();
   }
 
@@ -45,7 +47,9 @@ class TslWriterTest {
     final Document tsl = TestUtils.getDefaultTslAsDoc();
     final Path destFile = Path.of("target/newTslDoc.xml");
     TslWriter.write(tsl, destFile);
-    assertThat(documentsAreEqual(getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT), destFile))
+    assertThat(
+            documentsAreEqual(
+                getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, getClass()), destFile))
         .isTrue();
   }
 
@@ -65,7 +69,8 @@ class TslWriterTest {
     final TrustStatusListType tsl = TestUtils.getDefaultTsl();
     final Path doc = Path.of("target/tslConvertToDoc.xml");
     TslWriter.write(TslConverter.tslToDoc(tsl), doc);
-    assertThat(documentsAreEqual(doc, getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT)))
+    assertThat(
+            documentsAreEqual(doc, getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, getClass())))
         .isTrue();
   }
 
@@ -75,20 +80,12 @@ class TslWriterTest {
     final Document document = TslUtils.createDocBuilder().newDocument();
     final TrustStatusListType tsl = new TrustStatusListType();
 
-    assertThatThrownBy(() -> TslWriter.write((TrustStatusListType) null, tslFilePath))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tsl is marked non-null but is null");
+    assertNonNullParameter(() -> TslWriter.write((TrustStatusListType) null, tslFilePath), "tsl");
 
-    assertThatThrownBy(() -> TslWriter.write(tsl, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tslFilePath is marked non-null but is null");
+    assertNonNullParameter(() -> TslWriter.write(tsl, null), "tslFilePath");
 
-    assertThatThrownBy(() -> TslWriter.write((Document) null, tslFilePath))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tslDoc is marked non-null but is null");
+    assertNonNullParameter(() -> TslWriter.write((Document) null, tslFilePath), "tslDoc");
 
-    assertThatThrownBy(() -> TslWriter.write(document, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("tslFilePath is marked non-null but is null");
+    assertNonNullParameter(() -> TslWriter.write(document, null), "tslFilePath");
   }
 }

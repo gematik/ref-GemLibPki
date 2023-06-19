@@ -17,6 +17,7 @@
 package de.gematik.pki.gemlibpki.ocsp;
 
 import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getFirstSingleResp;
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.bouncycastle.internal.asn1.isismtt.ISISMTTObjectIdentifiers.id_isismtt_at_certHash;
@@ -192,20 +193,15 @@ class OcspResponseGeneratorTest {
     final OcspResponseGenerator ocspResponseGenerator =
         OcspResponseGenerator.builder().signer(OcspTestConstants.getOcspSignerEcc()).build();
 
-    assertThatThrownBy(() -> ocspResponseGenerator.generate(null, VALID_X509_EE_CERT))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("ocspReq is marked non-null but is null");
-    assertThatThrownBy(() -> ocspResponseGenerator.generate(ocspReq, null))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("eeCert is marked non-null but is null");
+    assertNonNullParameter(
+        () -> ocspResponseGenerator.generate(null, VALID_X509_EE_CERT), "ocspReq");
+    assertNonNullParameter(() -> ocspResponseGenerator.generate(ocspReq, null), "eeCert");
 
-    assertThatThrownBy(
-            () -> ocspResponseGenerator.generate(null, VALID_X509_EE_CERT, CertificateStatus.GOOD))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("ocspReq is marked non-null but is null");
-    assertThatThrownBy(() -> ocspResponseGenerator.generate(ocspReq, null, CertificateStatus.GOOD))
-        .isInstanceOf(NullPointerException.class)
-        .hasMessage("eeCert is marked non-null but is null");
+    assertNonNullParameter(
+        () -> ocspResponseGenerator.generate(null, VALID_X509_EE_CERT, CertificateStatus.GOOD),
+        "ocspReq");
+    assertNonNullParameter(
+        () -> ocspResponseGenerator.generate(ocspReq, null, CertificateStatus.GOOD), "eeCert");
   }
 
   @Test
