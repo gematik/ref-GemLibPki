@@ -31,15 +31,13 @@ public class GemPkiException extends Exception {
   @Serial private static final long serialVersionUID = 6802689240697358373L;
   private final ErrorCode error;
 
-  public GemPkiException(@NonNull final String productType, @NonNull final ErrorCode error) {
+  public GemPkiException(final String productType, final ErrorCode error) {
     super(error.getErrorMessage(productType));
     this.error = error;
   }
 
   public GemPkiException(
-      @NonNull final String productType,
-      @NonNull final ErrorCode error,
-      final Exception exception) {
+      final String productType, final ErrorCode error, final Exception exception) {
     super(error.getErrorMessage(productType), exception);
     this.error = error;
   }

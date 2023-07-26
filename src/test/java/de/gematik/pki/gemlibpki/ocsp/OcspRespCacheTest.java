@@ -158,12 +158,11 @@ class OcspRespCacheTest {
   @Test
   void nonNull() {
     final OcspRespCache ocspRespCache = new OcspRespCache(30);
-    assertNonNullParameter(() -> ocspRespCache.getResponse(null), "x509EeCertSerialNumber");
+    assertNonNullParameter(() -> ocspRespCache.getResponse(null), "certSerialNr");
 
     final OCSPResp ocspResp = getOcspResp();
-    assertNonNullParameter(
-        () -> ocspRespCache.saveResponse(null, ocspResp), "x509EeCertSerialNumber");
-    final BigInteger SERIAL_NUMBER = BigInteger.valueOf(1);
-    assertNonNullParameter(() -> ocspRespCache.saveResponse(SERIAL_NUMBER, null), "ocspResp");
+    assertNonNullParameter(() -> ocspRespCache.saveResponse(null, ocspResp), "certSerialNr");
+    final BigInteger certSerialNr = BigInteger.valueOf(1);
+    assertNonNullParameter(() -> ocspRespCache.saveResponse(certSerialNr, null), "ocspResp");
   }
 }

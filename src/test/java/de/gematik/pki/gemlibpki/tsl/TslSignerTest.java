@@ -25,19 +25,28 @@ import static de.gematik.pki.gemlibpki.utils.TestUtils.readP12;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.spy;
 
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.tsl.TslSigner.TslSignerBuilder;
 import de.gematik.pki.gemlibpki.utils.GemLibPkiUtils;
 import de.gematik.pki.gemlibpki.utils.P12Container;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
+import java.io.IOException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.Security;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -186,6 +195,24 @@ class TslSignerTest {
   @Test
   void verifySignatureEccValid() {
     assertThat(TslValidator.checkSignature(tslEcc, TRUST_ANCHOR_ECC)).isTrue();
+  }
+
+  @Test
+  void verifySignatureEccException()
+      throws CertificateException, IOException, NoSuchAlgorithmException, KeyStoreException {
+
+    final KeyStore trustAnchorStore = KeyStore.getInstance(KeyStore.getDefaultType());
+    final KeyStore trustAnchorStoreMock = spy(trustAnchorStore);
+
+    Mockito.doThrow(new IOException()).when(trustAnchorStoreMock).load(any());
+
+    try (final MockedStatic<KeyStore> keyStoreStatic = Mockito.mockStatic(KeyStore.class)) {
+      keyStoreStatic.when(() -> KeyStore.getInstance(any())).thenReturn(trustAnchorStoreMock);
+
+      assertThatThrownBy(() -> TslValidator.checkSignature(tslEcc, TRUST_ANCHOR_ECC))
+          .isInstanceOf(GemPkiRuntimeException.class)
+          .hasMessage("TSL signature verification failed.");
+    }
   }
 
   @Test

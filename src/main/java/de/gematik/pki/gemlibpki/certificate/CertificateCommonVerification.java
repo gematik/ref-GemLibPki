@@ -79,17 +79,26 @@ public final class CertificateCommonVerification {
    * @throws GemPkiException if certificate is not valid in time
    */
   public void verifyValidity(@NonNull final ZonedDateTime referenceDate) throws GemPkiException {
-    final boolean isValidBeforeReferenceDate =
-        x509EeCert.getNotBefore().toInstant().atZone(ZoneOffset.UTC).isAfter(referenceDate);
-    final boolean isValidAfterReferenceDate =
-        x509EeCert.getNotAfter().toInstant().atZone(ZoneOffset.UTC).isBefore(referenceDate);
 
-    if (isValidBeforeReferenceDate || isValidAfterReferenceDate) {
+    final boolean isValid =
+        isBetween(
+            referenceDate,
+            x509EeCert.getNotBefore().toInstant().atZone(ZoneOffset.UTC),
+            x509EeCert.getNotAfter().toInstant().atZone(ZoneOffset.UTC));
+
+    if (!isValid) {
       log.debug(
           "Das Referenzdatum {} liegt nicht innerhalb des Gültigkeitsbereichs des Zertifikates.",
           referenceDate);
       throw new GemPkiException(productType, ErrorCode.SE_1021_CERTIFICATE_NOT_VALID_TIME);
     }
+  }
+
+  private boolean isBetween(
+      final ZonedDateTime referenceDate,
+      final ZonedDateTime startDate,
+      final ZonedDateTime endDate) {
+    return referenceDate.isAfter(startDate) && referenceDate.isBefore(endDate);
   }
 
   /**

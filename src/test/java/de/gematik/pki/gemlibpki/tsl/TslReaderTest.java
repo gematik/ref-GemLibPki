@@ -48,7 +48,7 @@ class TslReaderTest {
 
   @Test
   void getSequenceNumber() {
-    assertThat(TslReader.getSequenceNumber(tsl)).isEqualTo(1);
+    assertThat(TslReader.getTslSeqNr(tsl)).isEqualTo(1);
   }
 
   @Test
@@ -114,7 +114,7 @@ class TslReaderTest {
 
     assertNonNullParameter(() -> TslReader.getTsl(null), "tslPath");
 
-    assertNonNullParameter(() -> TslReader.getSequenceNumber(null), "tsl");
+    assertNonNullParameter(() -> TslReader.getTslSeqNr(null), "tsl");
 
     assertNonNullParameter(() -> TslReader.getNextUpdate(null), "tsl");
 

@@ -206,14 +206,16 @@ public class TucPki018Verifier {
       @NonNull final CertificateProfile certificateProfile,
       @NonNull final TspServiceSubset tspServiceSubset)
       throws GemPkiException {
-    final CertificateProfileVerification cv =
+
+    final CertificateProfileVerification certificateProfileVerification =
         CertificateProfileVerification.builder()
             .productType(productType)
             .x509EeCert(x509EeCert)
             .certificateProfile(certificateProfile)
             .tspServiceSubset(tspServiceSubset)
             .build();
-    cv.verifyAll();
+
+    certificateProfileVerification.verifyAll();
   }
 
   /**

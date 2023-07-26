@@ -35,6 +35,8 @@ class TslValidatorTest {
     assertNonNullParameter(
         () -> TslValidator.checkSignature(nullTslBytes, VALID_ISSUER_CERT_TSL_CA8), "tsl");
 
+    assertNonNullParameter(() -> TslValidator.checkSignature(new byte[] {0}, null), "trustAnchor");
+
     final Document tslAsDoc = TestUtils.getDefaultTslAsDoc();
     assertNonNullParameter(() -> TslValidator.checkSignature(tslAsDoc, null), "trustAnchor");
   }

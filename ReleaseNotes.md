@@ -2,6 +2,19 @@
 
 # Release notes GemLibPki
 
+## Release 1.0.0
+
+- API change: harmonize variable names like tslSeqNr
+- add static method to check validity of the current TSL: `verifyTslValidity()`
+  in [TucPki001Verifier](src/main/java/de/gematik/pki/gemlibpki/tsl/TucPki001Verifier.java)
+- add tests of critical extensions according to RFC5280#4.2
+  in [CertificateProfileVerification](src/main/java/de/gematik/pki/gemlibpki/certificate/CertificateProfileVerification.java)
+- add tsl xml well-formed test
+  in [TucPki001Verifier](src/main/java/de/gematik/pki/gemlibpki/tsl/TucPki001Verifier.java)
+- rework some code for better readability
+- increase code coverage
+- update dependencies
+
 ## Release 0.12.0
 
 - add scheme validation tests

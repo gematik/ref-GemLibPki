@@ -26,14 +26,17 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import de.gematik.pki.gemlibpki.error.ErrorCode;
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
+import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.tsl.TslInformationProvider;
 import de.gematik.pki.gemlibpki.tsl.TspInformationProvider;
 import de.gematik.pki.gemlibpki.tsl.TspServiceSubset;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
+import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import lombok.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 class CertificateProfileVerificationTest {
 
@@ -190,6 +193,25 @@ class CertificateProfileVerificationTest {
   }
 
   @Test
+  void verifyExtendedKeyUsageCertificateParsingException()
+      throws GemPkiException, CertificateParsingException {
+
+    final X509Certificate cert = Mockito.spy(validX509EeCert);
+    Mockito.when(cert.getExtendedKeyUsage()).thenThrow(new CertificateParsingException());
+
+    certificateProfileVerification =
+        buildCertificateProfileVerifier(FILE_NAME_TSL_ECC_DEFAULT, certificateProfile, cert);
+
+    assertThatThrownBy(certificateProfileVerification::verifyExtendedKeyUsage)
+        .isInstanceOf(GemPkiRuntimeException.class)
+        .hasMessage(
+            "Fehler beim Lesen der ExtendedKeyUsages des Zertifikats: CN=Zahnarztpraxis Dr."
+                + " med.Gunther KZV"
+                + " TEST-ONLY,2.5.4.5=#131731372e3830323736383833313139313130303033333237,O=2-2.30.1.16.TestOnly"
+                + " NOT-VALID,C=DE");
+  }
+
+  @Test
   void multipleCertificateProfilesMultipleCertTypesInEe() {
     final X509Certificate eeMultipleCertTypes =
         TestUtils.readCert("GEM.SMCB-CA9/Aschoffsche_Apotheke_twoCertTypes.pem");
@@ -246,5 +268,19 @@ class CertificateProfileVerificationTest {
     assertThatThrownBy(verifier::verifyCertificateType)
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.SE_1061_CERT_TYPE_CA_NOT_AUTHORIZED.getErrorMessage(productType));
+  }
+
+  @Test
+  void verifyCriticalExtensions() throws GemPkiException {
+    final String certFilename = "GEM.SMCB-CA10/invalid/DrMedGunther_invalid-extension-crit.pem";
+    final X509Certificate certInvalidCriticalExtension = TestUtils.readCert(certFilename);
+
+    final CertificateProfileVerification verifier =
+        buildCertificateProfileVerifier(
+            FILE_NAME_TSL_ECC_DEFAULT, CERT_PROFILE_C_HCI_AUT_ECC, certInvalidCriticalExtension);
+
+    assertThatThrownBy(verifier::verifyCriticalExtensions)
+        .isInstanceOf(GemPkiException.class)
+        .hasMessage(ErrorCode.CUSTOM_CERTIFICATE_EXCEPTION.getErrorMessage(productType));
   }
 }

@@ -68,12 +68,7 @@ public final class GemLibPkiUtils {
    * @return SHA256 of the input content
    */
   public static byte[] calculateSha256(final byte[] byteArray) {
-    try {
-      final MessageDigest digest = MessageDigest.getInstance(new SHA256Digest().getAlgorithmName());
-      return digest.digest(byteArray);
-    } catch (final NoSuchAlgorithmException e) {
-      throw new GemPkiRuntimeException("Signaturalgorithmus nicht unterstützt.", e);
-    }
+    return calculateSha(byteArray, new SHA256Digest().getAlgorithmName());
   }
 
   /**
@@ -83,11 +78,23 @@ public final class GemLibPkiUtils {
    * @return SHA1 of the input content
    */
   public static byte[] calculateSha1(final byte[] byteArray) {
+    return calculateSha(byteArray, new SHA1Digest().getAlgorithmName());
+  }
+
+  /**
+   * Returns SHA1 of the input content
+   *
+   * @param byteArray content to generate SHA1 for
+   * @param algorithmName the name of the algorithm requested
+   * @return SHA1 of the input content
+   */
+  public static byte[] calculateSha(final byte[] byteArray, final String algorithmName) {
     try {
-      final MessageDigest digest = MessageDigest.getInstance(new SHA1Digest().getAlgorithmName());
+      final MessageDigest digest = MessageDigest.getInstance(algorithmName);
       return digest.digest(byteArray);
     } catch (final NoSuchAlgorithmException e) {
-      throw new GemPkiRuntimeException("Signaturalgorithmus nicht unterstützt.", e);
+      throw new GemPkiRuntimeException(
+          algorithmName + " - signaturalgorithmus nicht unterstützt.", e);
     }
   }
 

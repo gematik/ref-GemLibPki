@@ -260,7 +260,13 @@ public enum ErrorCode {
       SECURITY_ERROR,
       "CA_CERTIFICATE_REVOKED_IN_BNETZA_VL",
       "Das QES-EE-Zertifikat ist ungültig. Es wurde nach der Sperrung der ausgebenden QES-CA"
-          + " ausgestellt");
+          + " ausgestellt"),
+
+  CUSTOM_CERTIFICATE_EXCEPTION(
+      SEVERITY_ERROR,
+      SECURITY_ERROR,
+      "CUSTOM_CERTIFICATE_EXCEPTION",
+      "Custom certificate exception");
 
   private final ErrorSeverity errorSeverity;
   private final ErrorClassifier errorClassifier;

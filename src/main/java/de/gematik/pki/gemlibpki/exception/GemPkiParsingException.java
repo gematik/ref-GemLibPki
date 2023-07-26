@@ -36,8 +36,7 @@ public class GemPkiParsingException extends GemPkiException {
    * @param errorMap the error map
    */
   public GemPkiParsingException(
-      @NonNull final String productType,
-      @NonNull final Map<CertificateProfile, GemPkiException> errorMap) {
+      @NonNull final String productType, final Map<CertificateProfile, GemPkiException> errorMap) {
     super(
         // first ErrorCode
         extractFirstError(errorMap)

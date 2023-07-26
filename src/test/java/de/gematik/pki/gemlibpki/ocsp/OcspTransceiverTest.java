@@ -321,6 +321,24 @@ class OcspTransceiverTest {
   }
 
   @Test
+  void sendOcspRequestUnreachableUrlTolerate() {
+    final OCSPReq ocspReq = configureOcspResponderMockForOcspRequest();
+
+    final OcspTransceiver ocspTransceiver =
+        OcspTransceiver.builder()
+            .productType(PRODUCT_TYPE)
+            .tspServiceList(tspServiceList)
+            .x509EeCert(VALID_X509_EE_CERT)
+            .x509IssuerCert(VALID_X509_ISSUER_CERT)
+            .ssp("http://127.0.0.1:4545/unreachable")
+            .ocspTimeoutSeconds(ocspTimeoutSeconds)
+            .tolerateOcspFailure(true)
+            .build();
+
+    assertDoesNotThrow(() -> ocspTransceiver.sendOcspRequest(ocspReq));
+  }
+
+  @Test
   void sendOcspRequestUnreachableUrlTolerateOcspFailure() {
     final OCSPReq ocspReq = configureOcspResponderMockForOcspRequest();
 
@@ -358,6 +376,26 @@ class OcspTransceiverTest {
     assertThatThrownBy(() -> ocspTransceiver.sendOcspRequest(ocspReq))
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
+  }
+
+  @Test
+  void sendOcspRequestUnknownEndpointTolerate() {
+
+    final OCSPReq ocspReq = configureOcspResponderMockForOcspRequest();
+    final String ssp = ocspResponderMock.getSspUrl() + "unknownEndpoint";
+
+    final OcspTransceiver ocspTransceiver =
+        OcspTransceiver.builder()
+            .productType(PRODUCT_TYPE)
+            .tspServiceList(tspServiceList)
+            .x509EeCert(VALID_X509_EE_CERT)
+            .x509IssuerCert(VALID_X509_ISSUER_CERT)
+            .ssp(ssp)
+            .ocspTimeoutSeconds(ocspTimeoutSeconds)
+            .tolerateOcspFailure(true)
+            .build();
+
+    assertDoesNotThrow(() -> ocspTransceiver.sendOcspRequest(ocspReq));
   }
 
   @Test

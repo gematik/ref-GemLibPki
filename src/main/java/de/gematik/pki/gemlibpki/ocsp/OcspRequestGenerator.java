@@ -63,7 +63,7 @@ public final class OcspRequestGenerator {
       final DigestCalculator digestCalculator =
           digestCalculatorProvider.get(CertificateID.HASH_SHA1);
 
-      final CertificateID id =
+      final CertificateID certificateId =
           new CertificateID(
               digestCalculator,
               new JcaX509CertificateHolder(x509IssuerCert),
@@ -71,7 +71,7 @@ public final class OcspRequestGenerator {
 
       final OCSPReqBuilder ocspReqBuilder = new OCSPReqBuilder();
 
-      ocspReqBuilder.addRequest(id);
+      ocspReqBuilder.addRequest(certificateId);
 
       return ocspReqBuilder.build();
     } catch (final OperatorCreationException | CertificateEncodingException | OCSPException e) {

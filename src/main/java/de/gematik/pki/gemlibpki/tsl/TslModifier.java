@@ -141,10 +141,11 @@ public final class TslModifier {
    * Modifies the sequence number of a given tsl
    *
    * @param tsl the tsl to modify
-   * @param newSeqNr the sequence number to set
+   * @param newTslSeqNr the sequence number to set
    */
-  public static void modifySequenceNr(@NonNull final TrustStatusListType tsl, final int newSeqNr) {
-    tsl.getSchemeInformation().setTSLSequenceNumber(BigInteger.valueOf(newSeqNr));
+  public static void modifySequenceNr(
+      @NonNull final TrustStatusListType tsl, final int newTslSeqNr) {
+    tsl.getSchemeInformation().setTSLSequenceNumber(BigInteger.valueOf(newTslSeqNr));
   }
 
   /**
@@ -443,5 +444,9 @@ public final class TslModifier {
     tpsServices.forEach(
         tspService ->
             tspService.getServiceInformation().setStatusStartingTime(newStatusStartingTimeGreg));
+  }
+
+  public static void deleteSignature(final TrustStatusListType tsl) {
+    tsl.setSignature(null);
   }
 }

@@ -40,8 +40,23 @@ import lombok.NonNull;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.xmlunit.assertj3.XmlAssert;
+import org.xmlunit.util.Predicate;
 
 public class TestUtils {
+
+  public static void assertXmlEqual(final Object actual, final Object expected) {
+
+    final Predicate<Node> ignoreSignatureElement =
+        node -> !node.getNodeName().contains(":Signature");
+
+    XmlAssert.assertThat(actual)
+        .and(expected)
+        .withNodeFilter(ignoreSignatureElement)
+        .ignoreWhitespace()
+        .areIdentical();
+  }
 
   public static void assertNonNullParameter(
       final ThrowingCallable shouldRaiseThrowable, @NonNull final String paramName) {

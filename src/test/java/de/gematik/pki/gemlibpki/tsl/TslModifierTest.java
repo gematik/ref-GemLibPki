@@ -24,6 +24,7 @@ import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.readP12;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
@@ -55,6 +56,8 @@ import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.w3c.dom.Document;
 
 class TslModifierTest {
@@ -130,11 +133,11 @@ class TslModifierTest {
   @Test
   void modifySequenceNr() {
     final Path destFileName = Path.of("target/TSL-test_modifiedSequenceNr.xml");
-    final int newSequenceNr = 4732;
-    TslModifier.modifySequenceNr(tsl, newSequenceNr);
+    final int newTslSeqNr = 4732;
+    TslModifier.modifySequenceNr(tsl, newTslSeqNr);
     TslWriter.write(tsl, destFileName);
     assertThat(tsl.getSchemeInformation().getTSLSequenceNumber())
-        .isEqualTo(BigInteger.valueOf(newSequenceNr));
+        .isEqualTo(BigInteger.valueOf(newTslSeqNr));
   }
 
   @Test
@@ -405,6 +408,21 @@ class TslModifierTest {
   }
 
   @Test
+  void testGetXmlGregorianCalendarException() {
+    final ZonedDateTime now = GemLibPkiUtils.now();
+    try (final MockedStatic<DatatypeFactory> datatypeFactory =
+        Mockito.mockStatic(DatatypeFactory.class)) {
+      datatypeFactory
+          .when(DatatypeFactory::newInstance)
+          .thenThrow(new DatatypeConfigurationException());
+      assertThatThrownBy(() -> TslModifier.getXmlGregorianCalendar(now))
+          .isInstanceOf(GemPkiRuntimeException.class)
+          .cause()
+          .isInstanceOf(DatatypeConfigurationException.class);
+    }
+  }
+
+  @Test
   void testModifyWithSameSignerCert() {
 
     tsl = TestUtils.getTsl(FILE_NAME_TSL_ECC_DEFAULT);
@@ -517,20 +535,20 @@ class TslModifierTest {
   }
 
   @Test
-  void testModifiedTslIdSeqNrIssueDate() {
+  void testModifiedTslIdTslSeqNrIssueDate() {
     final ZonedDateTime issueDate = GemLibPkiUtils.now().minusYears(1);
-    final int seqNr = 900001;
-    final String expectedTslId = TslModifier.generateTslId(seqNr, issueDate);
+    final int tslSeqNr = 900001;
+    final String expectedTslId = TslModifier.generateTslId(tslSeqNr, issueDate);
 
     final byte[] modifiedTslBytes =
-        TslModifier.modifiedTslId(TslConverter.tslToBytes(tsl), seqNr, issueDate);
+        TslModifier.modifiedTslId(TslConverter.tslToBytes(tsl), tslSeqNr, issueDate);
 
     final TrustStatusListType tsl = TslConverter.bytesToTsl(modifiedTslBytes);
 
     assertThat(tsl.getId()).isEqualTo(expectedTslId);
 
     final byte[] tslBytes = TslConverter.tslToBytes(tsl);
-    assertNonNullParameter(() -> TslModifier.modifiedTslId(tslBytes, seqNr, null), "issueDate");
+    assertNonNullParameter(() -> TslModifier.modifiedTslId(tslBytes, tslSeqNr, null), "issueDate");
   }
 
   @Test
@@ -606,5 +624,26 @@ class TslModifierTest {
     statusStartingTimeAsserts.accept(oldTsl, oldStartingStatusTimeGreg);
     statusStartingTimeAsserts.accept(
         TslConverter.bytesToTsl(modifiedTslBytes), newStartingStatusTimeGreg);
+  }
+
+  @Test
+  void testDeleteSignature() {
+
+    final TrustStatusListType tsl = TestUtils.getTsl("tsls/ecc/valid/TSL_TAchange.xml");
+    assertThat(tsl.getSignature()).isNotNull();
+
+    TslModifier.deleteSignature(tsl);
+    assertThat(tsl.getSignature()).isNull();
+  }
+
+  @Test
+  void testModifyStatusStartingTime() {
+
+    final String gematikTspName = "gematik GmbH - PKI TEST TSP";
+    final ZonedDateTime now = GemLibPkiUtils.now();
+    assertDoesNotThrow(
+        () ->
+            TslModifier.modifyStatusStartingTime(
+                tsl, gematikTspName, TslConstants.STI_PKC, TslConstants.SVCSTATUS_INACCORD, now));
   }
 }

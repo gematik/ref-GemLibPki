@@ -28,11 +28,13 @@ import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.asn1.x509.Extension;
 import org.w3c.dom.Node;
 
 /**
@@ -62,6 +64,7 @@ public final class CertificateProfileVerification {
     verifyKeyUsage();
     verifyExtendedKeyUsage();
     verifyCertificateType();
+    verifyCriticalExtensions();
   }
 
   /**
@@ -141,7 +144,7 @@ public final class CertificateProfileVerification {
                         .anyMatch(intOid -> intOid.equals(eeOid)))
             .toList();
     if (filteredList.isEmpty()
-        || eeExtendedKeyUsagesOid.size() != intendedExtendedKeyUsageOidList.size()) {
+        || (eeExtendedKeyUsagesOid.size() != intendedExtendedKeyUsageOidList.size())) {
       log.debug("{}", ErrorCode.SE_1017_WRONG_EXTENDEDKEYUSAGE.getErrorMessage(productType));
       throw new GemPkiException(productType, ErrorCode.SE_1017_WRONG_EXTENDEDKEYUSAGE);
     }
@@ -174,6 +177,25 @@ public final class CertificateProfileVerification {
       final Set<String> certificatePolicyOids = getCertificatePolicyOids(x509EeCert);
       verifyCertificateProfileByCertificateTypeOid(certificatePolicyOids);
       verifyCertificateTypeOidInIssuerTspServiceExtension(certificatePolicyOids);
+    }
+  }
+
+  /** AFO GS-A_4661-01 (RFC5280#4.2) */
+  public void verifyCriticalExtensions() throws GemPkiException {
+    final Set<String> certCriticalExtensions = x509EeCert.getCriticalExtensionOIDs();
+
+    // NOTE: as specified in gemSpec_PKI 2.15.0 for all certificate profiles in Kapitel 5
+    // X.509-Zertifikate
+
+    final Set<String> expectedCriticalExtensions =
+        Set.of(Extension.basicConstraints.getId(), Extension.keyUsage.getId());
+
+    if (!expectedCriticalExtensions.equals(certCriticalExtensions)) {
+      log.error(
+          "Detected unknown / missing critical extensions in certificate {} vs expected {}",
+          new TreeSet<>(certCriticalExtensions),
+          new TreeSet<>(expectedCriticalExtensions));
+      throw new GemPkiException(productType, ErrorCode.CUSTOM_CERTIFICATE_EXCEPTION);
     }
   }
 

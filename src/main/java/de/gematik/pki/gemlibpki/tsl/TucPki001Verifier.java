@@ -35,9 +35,12 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URL;
 import java.security.cert.X509Certificate;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
+import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
@@ -71,7 +74,7 @@ public class TucPki001Verifier {
 
   @NonNull protected final String currentTslId;
 
-  @NonNull protected final BigInteger currentSeqNr;
+  @NonNull protected final BigInteger currentTslSeqNr;
 
   protected final byte @NonNull [] tslToCheck;
   @Builder.Default protected final boolean withOcspCheck = true;
@@ -83,6 +86,40 @@ public class TucPki001Verifier {
   @Builder.Default protected final boolean tolerateOcspFailure = false;
 
   /**
+   * Performs TSL validity verification: This method is implementad static, as it ist not part of
+   * the checks of TucPki001. The product has to call the method separately to decide if the current
+   * tsl can be used for checks according to the TUC
+   *
+   * @throws GemPkiException thrown when TSL is not valid in time anymore
+   */
+  public static void verifyTslValidity(
+      final ZonedDateTime referenceDate,
+      final int tslGracePeriod,
+      final TrustStatusListType tsl,
+      final String productType)
+      throws GemPkiException {
+
+    final XMLGregorianCalendar xmlNextUpdate =
+        tsl.getSchemeInformation().getNextUpdate().getDateTime();
+
+    final ZonedDateTime nextUpdate =
+        ZonedDateTime.ofInstant(xmlNextUpdate.toGregorianCalendar().toInstant(), ZoneOffset.UTC);
+
+    final ZonedDateTime tslValidityThreshold = referenceDate.minus(tslGracePeriod, ChronoUnit.DAYS);
+
+    if (nextUpdate.isAfter(referenceDate)) {
+      return;
+    }
+
+    if (nextUpdate.isAfter(tslValidityThreshold)) {
+      log.warn(ErrorCode.SW_1008_VALIDITY_WARNING_1.getErrorMessage(productType));
+      return;
+    }
+
+    throw new GemPkiException(productType, ErrorCode.SW_1009_VALIDITY_WARNING_2);
+  }
+
+  /**
    * Performs TUC_PKI_001 checks (TSL verification)
    *
    * @return {@link TrustAnchorUpdate} instance
@@ -91,7 +128,8 @@ public class TucPki001Verifier {
   public Optional<TrustAnchorUpdate> performTucPki001Checks() throws GemPkiException {
     log.debug("TUC_PKI_001 Checks...");
 
-    // check for well formed xml
+    // check for well-formed xml
+    validateWellFormedXml();
 
     // TUC_PKI_020 „XML-Dokument validieren“
     validateAgainstXsdSchemas();
@@ -115,10 +153,21 @@ public class TucPki001Verifier {
     checkTslSignature(tslSigner);
 
     // TUC_PKI_019 steps 5 and 6
-    checkTslIdAndSeqNr();
+    checkTslIdAndTslSeqNr();
 
     // Step 5 - TUC_PKI_013 Import TI-Vertrauensanker aus TSL
     return getVerifiedAnnouncedTrustAnchorUpdate();
+  }
+
+  protected void validateWellFormedXml() throws GemPkiException {
+    try {
+      TslConverter.bytesToDoc(tslToCheck);
+    } catch (final GemPkiRuntimeException e) {
+      if (e.getCause() instanceof SAXException) {
+        throw new GemPkiException(productType, ErrorCode.TE_1011_TSL_NOT_WELLFORMED);
+      }
+      throw e;
+    }
   }
 
   protected void validateAgainstXsdSchemas() throws GemPkiException {
@@ -128,8 +177,7 @@ public class TucPki001Verifier {
     log.info("Schema validation successful!");
   }
 
-  void validateAgainstXsd(final String scheme) throws GemPkiException {
-
+  Validator getValidator(final String scheme) {
     final SchemaFactory sf = SchemaFactory.newInstance(W3C_XML_SCHEMA_NS_URI); // NOSONAR
     final URL schemaUrl = getUrlFromResources(scheme, TucPki001Verifier.class);
     final Schema compiledSchema;
@@ -139,7 +187,12 @@ public class TucPki001Verifier {
       throw new GemPkiRuntimeException("Error during parsing of schema file.", e);
     }
 
-    final Validator validator = compiledSchema.newValidator();
+    return compiledSchema.newValidator();
+  }
+
+  void validateAgainstXsd(final String scheme) throws GemPkiException {
+
+    final Validator validator = getValidator(scheme);
     final Document tslToCheckDoc = TslConverter.bytesToDoc(tslToCheck);
     try {
       validator.validate(new DOMSource(tslToCheckDoc));
@@ -281,36 +334,36 @@ public class TucPki001Verifier {
   }
 
   // TUC_PKI_019 steps 5 and 6
-  private void checkTslIdAndSeqNr() throws GemPkiException {
+  private void checkTslIdAndTslSeqNr() throws GemPkiException {
     final TrustStatusListType tsl = TslConverter.bytesToTsl(tslToCheck);
     final String newTslId = tsl.getId();
-    final BigInteger newSeqNr = TslReader.getSequenceNumber(tsl);
+    final BigInteger newTslSeqNr = TslReader.getTslSeqNr(tsl);
 
-    if ((newSeqNr.compareTo(currentSeqNr) > 0) && !currentTslId.equals(newTslId)) {
+    if ((newTslSeqNr.compareTo(currentTslSeqNr) > 0) && !currentTslId.equals(newTslId)) {
       return;
     }
 
     String errorMessage = null;
 
-    if ((newSeqNr.compareTo(currentSeqNr) == 0) && currentTslId.equals(newTslId)) {
-      errorMessage = "check0: no changes in new seqNr and tslId";
+    if ((newTslSeqNr.compareTo(currentTslSeqNr) == 0) && currentTslId.equals(newTslId)) {
+      errorMessage = "check0: no changes in new tslSeqNr and tslId";
     }
 
-    if (newSeqNr.compareTo(currentSeqNr) < 0) {
-      errorMessage = "check1: new seqNr is smaller than current seqNr";
+    if (newTslSeqNr.compareTo(currentTslSeqNr) < 0) {
+      errorMessage = "check1: new tslSeqNr is smaller than current tslSeqNr";
     }
 
-    if ((newSeqNr.compareTo(currentSeqNr) > 0) && currentTslId.equals(newTslId)) {
-      errorMessage = "check3: new seqNr greater than current seqNr, but ids are equal";
+    if ((newTslSeqNr.compareTo(currentTslSeqNr) > 0) && currentTslId.equals(newTslId)) {
+      errorMessage = "check3: new tslSeqNr greater than current tslSeqNr, but ids are equal";
     }
 
-    if ((newSeqNr.compareTo(currentSeqNr) == 0) && !currentTslId.equals(newTslId)) {
-      errorMessage = "check2: new seqNr and current seqNr are equal, but ids differ";
+    if ((newTslSeqNr.compareTo(currentTslSeqNr) == 0) && !currentTslId.equals(newTslId)) {
+      errorMessage = "check2: new tslSeqNr and current tslSeqNr are equal, but ids differ";
     }
 
     log.debug("irregular differences between new and current TSLs were detected");
-    log.debug("  currentTsl: seqNr {}, id {}", currentSeqNr, currentTslId);
-    log.debug("  newTsl:     seqNr {}, id {}", newSeqNr, newTslId);
+    log.debug("  currentTsl: tslSeqNr {}, id {}", currentTslSeqNr, currentTslId);
+    log.debug("  newTsl:     tslSeqNr {}, id {}", newTslSeqNr, newTslId);
     log.debug("  --> {}", errorMessage);
 
     throw new GemPkiException(productType, ErrorCode.SE_1007_TSL_ID_INCORRECT);

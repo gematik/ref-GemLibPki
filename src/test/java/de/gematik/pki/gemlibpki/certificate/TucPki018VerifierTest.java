@@ -269,6 +269,10 @@ class TucPki018VerifierTest {
   void nonNullTests() throws GemPkiException {
 
     assertNonNullParameter(() -> tucPki018Verifier.performTucPki18Checks(null), "x509EeCert");
+    assertNonNullParameter(
+        () -> tucPki018Verifier.performTucPki18Checks(null, GemLibPkiUtils.now()), "x509EeCert");
+    assertNonNullParameter(
+        () -> tucPki018Verifier.performTucPki18Checks(VALID_X509_EE_CERT, null), "referenceDate");
 
     assertNonNullParameter(() -> buildTucPki18Verifier(null), "certificateProfiles");
 

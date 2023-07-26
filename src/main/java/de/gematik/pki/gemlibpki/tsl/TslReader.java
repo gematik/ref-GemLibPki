@@ -60,9 +60,9 @@ public final class TslReader {
    * Read sequence number from given TSL
    *
    * @param tsl A TSL
-   * @return sequence number
+   * @return TSL sequence number
    */
-  public static BigInteger getSequenceNumber(@NonNull final TrustStatusListType tsl) {
+  public static BigInteger getTslSeqNr(@NonNull final TrustStatusListType tsl) {
     return tsl.getSchemeInformation().getTSLSequenceNumber();
   }
 

@@ -395,13 +395,13 @@ public class TucPki006OcspVerifier {
    */
   protected void verifyOcspResponseCertId(@NonNull final OCSPReq ocspReq) throws GemPkiException {
 
-    final SingleResp singleResp = getFirstSingleResp(ocspResponse);
     final Req singleReq = getFirstSingleReq(ocspReq);
-
-    final CertificateID respCertID = singleResp.getCertID();
     final CertificateID reqCertId = singleReq.getCertID();
 
+    final SingleResp singleResp = getFirstSingleResp(ocspResponse);
+    final CertificateID respCertID = singleResp.getCertID();
     final String respCertIdAlgoId = respCertID.getHashAlgOID().getId();
+
     final String shaAlgoId = CertificateID.HASH_SHA1.getAlgorithm().getId();
 
     boolean b = respCertIdAlgoId.equals(shaAlgoId);

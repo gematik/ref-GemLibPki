@@ -17,11 +17,13 @@
 package de.gematik.pki.gemlibpki.tsl;
 
 import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
+import static de.gematik.pki.gemlibpki.tsl.TslWriter.STATUS_LIST_TO_FILE_FAILED;
 import static de.gematik.pki.gemlibpki.utils.ResourceReader.getFilePathFromResources;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
-import static de.gematik.pki.gemlibpki.utils.XmlCompare.documentsAreEqual;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertXmlEqual;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.nio.file.Path;
@@ -36,21 +38,35 @@ class TslWriterTest {
     final TrustStatusListType tsl = TestUtils.getDefaultTsl();
     final Path destFile = Path.of("target/newTslTssl.xml");
     TslWriter.write(tsl, destFile);
-    assertThat(
-            documentsAreEqual(
-                getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, getClass()), destFile))
-        .isTrue();
+    assertXmlEqual(getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, getClass()), destFile);
+  }
+
+  @Test
+  void verifyWriteFromTslException() {
+    final TrustStatusListType tsl = TestUtils.getDefaultTsl();
+    final Path destFile = Path.of("/root/../..");
+
+    assertThatThrownBy(() -> TslWriter.write(tsl, destFile))
+        .isInstanceOf(GemPkiRuntimeException.class)
+        .hasMessage(STATUS_LIST_TO_FILE_FAILED);
   }
 
   @Test
   void writeFromDocument() {
-    final Document tsl = TestUtils.getDefaultTslAsDoc();
+    final Document tslDoc = TestUtils.getDefaultTslAsDoc();
     final Path destFile = Path.of("target/newTslDoc.xml");
-    TslWriter.write(tsl, destFile);
-    assertThat(
-            documentsAreEqual(
-                getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, getClass()), destFile))
-        .isTrue();
+    TslWriter.write(tslDoc, destFile);
+    assertXmlEqual(getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, getClass()), destFile);
+  }
+
+  @Test
+  void verifyWriteFromDocumentException() {
+    final Document tslDoc = TestUtils.getDefaultTslAsDoc();
+    final Path destFile = Path.of("/root/../..");
+
+    assertThatThrownBy(() -> TslWriter.write(tslDoc, destFile))
+        .isInstanceOf(GemPkiRuntimeException.class)
+        .hasMessage(STATUS_LIST_TO_FILE_FAILED);
   }
 
   @Test
@@ -61,7 +77,7 @@ class TslWriterTest {
     final Path tssl = Path.of("target/tslAsTssl.xml");
     TslWriter.write(tslAsDoc, doc);
     TslWriter.write(tsl, tssl);
-    assertThat(documentsAreEqual(doc, tssl)).isTrue();
+    assertXmlEqual(doc, tssl);
   }
 
   @Test
@@ -69,9 +85,7 @@ class TslWriterTest {
     final TrustStatusListType tsl = TestUtils.getDefaultTsl();
     final Path doc = Path.of("target/tslConvertToDoc.xml");
     TslWriter.write(TslConverter.tslToDoc(tsl), doc);
-    assertThat(
-            documentsAreEqual(doc, getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, getClass())))
-        .isTrue();
+    assertXmlEqual(doc, getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, getClass()));
   }
 
   @Test

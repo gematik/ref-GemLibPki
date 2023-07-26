@@ -20,8 +20,11 @@ import static de.gematik.pki.gemlibpki.utils.GemLibPkiUtils.calculateSha1;
 import static de.gematik.pki.gemlibpki.utils.GemLibPkiUtils.calculateSha256;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
 import java.util.function.BiConsumer;
 import org.apache.commons.lang3.ArrayUtils;
 import org.bouncycastle.util.encoders.Hex;
@@ -66,6 +69,15 @@ class GemLibPkiUtilsTest {
                 Hex.encode(calculateSha1("test".getBytes(StandardCharsets.UTF_8))),
                 StandardCharsets.UTF_8))
         .isEqualTo("a94a8fe5ccb19ba61c4c0873d391e987982fbbd3");
+  }
+
+  @Test
+  void verifyCalculateShaException() {
+    assertThatThrownBy(() -> GemLibPkiUtils.calculateSha(new byte[] {1, 2, 3}, "SHA-XYZ"))
+        .isInstanceOf(GemPkiRuntimeException.class)
+        .hasMessage("SHA-XYZ - signaturalgorithmus nicht unterstützt.")
+        .cause()
+        .isInstanceOf(NoSuchAlgorithmException.class);
   }
 
   @Test

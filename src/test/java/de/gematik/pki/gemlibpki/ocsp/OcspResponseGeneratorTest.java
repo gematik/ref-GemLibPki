@@ -360,12 +360,12 @@ class OcspResponseGeneratorTest {
     final SingleResp singleResp = getFirstSingleResp(ocspResp);
     final CertID certId = singleResp.getCertID().toASN1Primitive();
 
-    final BigInteger actualSerialNumber = certId.getSerialNumber().getValue();
+    final BigInteger actualSerialNr = certId.getSerialNumber().getValue();
 
     GemLibPkiUtils.change4Bytes(expectedBytes, expectedBytes.length);
-    final BigInteger expectedSerialNumber = new BigInteger(1, expectedBytes);
+    final BigInteger expectedSerialNr = new BigInteger(1, expectedBytes);
 
-    assertThat(actualSerialNumber).isEqualTo(expectedSerialNumber);
+    assertThat(actualSerialNr).isEqualTo(expectedSerialNr);
   }
 
   @Test

@@ -302,18 +302,18 @@ public class OcspResponseGenerator {
     return new DEROctetString(issuerKeyHashBytes);
   }
 
-  private static ASN1Integer getSerialNumber(
+  private static ASN1Integer getCertSerialNr(
       final CertificateIdGeneration certificateIdGeneration, final Req singleRequest) {
-    final BigInteger serialNumberBigInt;
+    final BigInteger certSerialNr;
     if (certificateIdGeneration == CertificateIdGeneration.INVALID_CERTID_SERIAL_NUMBER) {
-      final byte[] serialNumberBytes =
+      final byte[] certSerialNrBytes =
           ArrayUtils.clone(singleRequest.getCertID().getSerialNumber().toByteArray());
-      changeLast4Bytes(serialNumberBytes);
-      serialNumberBigInt = new BigInteger(1, serialNumberBytes);
+      changeLast4Bytes(certSerialNrBytes);
+      certSerialNr = new BigInteger(1, certSerialNrBytes);
     } else {
-      serialNumberBigInt = singleRequest.getCertID().getSerialNumber();
+      certSerialNr = singleRequest.getCertID().getSerialNumber();
     }
-    return new ASN1Integer(serialNumberBigInt);
+    return new ASN1Integer(certSerialNr);
   }
 
   private AlgorithmIdentifier getAlgorithmIdentifier() {
@@ -354,12 +354,12 @@ public class OcspResponseGenerator {
 
     final ASN1OctetString issuerKeyHash = getIssuerKeyHash(certificateIdGeneration, singleRequest);
 
-    final ASN1Integer serialNumber = getSerialNumber(certificateIdGeneration, singleRequest);
+    final ASN1Integer certSerialNr = getCertSerialNr(certificateIdGeneration, singleRequest);
 
     final AlgorithmIdentifier algorithmIdentifier = getAlgorithmIdentifier();
 
     final CertID certId =
-        new CertID(algorithmIdentifier, issuerNameHash, issuerKeyHash, serialNumber);
+        new CertID(algorithmIdentifier, issuerNameHash, issuerKeyHash, certSerialNr);
 
     return new CertificateID(certId);
   }

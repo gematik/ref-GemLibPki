@@ -4,7 +4,7 @@
 
   <groupId>de.gematik.pki</groupId>
   <artifactId>gemLibPki</artifactId>
-  <version>0.12.0</version>
+  <version>1.0.0</version>
   <packaging>jar</packaging>
   <name>GemLibPki</name>
   <description>library for implementation and tests of the gematik pki specification</description>
@@ -44,7 +44,7 @@
   </issueManagement>
 
   <properties>
-    <project.build.outputTimestamp>1687182848</project.build.outputTimestamp>
+    <project.build.outputTimestamp>1690368600</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.encoding>${project.build.sourceEncoding}</maven.compiler.encoding>
     <version.java>17</version.java>
@@ -53,24 +53,24 @@
     <!-- dependencies -->
     <version.assertj>3.24.2</version.assertj>
     <version.awaitility>4.2.0</version.awaitility>
-    <version.bouncycastle>1.74</version.bouncycastle>
+    <version.bouncycastle>1.75</version.bouncycastle>
     <version.commons-lang3>3.12.0</version.commons-lang3>
     <version.dss-tsl-validation>5.11.1.d4j.1</version.dss-tsl-validation>
     <version.jakarta.xml.bind-api>4.0.0</version.jakarta.xml.bind-api>
     <version.jaxb-api>2.4.0-b180830.0359</version.jaxb-api>
-    <version.jaxb-impl>2.3.6</version.jaxb-impl>
-    <version.junit-jupiter>5.9.3</version.junit-jupiter>
+    <version.jaxb-impl>2.3.8</version.jaxb-impl>
+    <version.junit-jupiter>5.10.0</version.junit-jupiter>
     <version.log4j>2.20.0</version.log4j>
     <version.lombok>1.18.28</version.lombok>
     <version.mockito>5.4.0</version.mockito>
-    <version.unirest-java>3.14.4</version.unirest-java>
+    <version.unirest-java>3.14.5</version.unirest-java>
     <version.wiremock-jre8>2.35.0</version.wiremock-jre8>
-    <version.xades4j>2.2.0</version.xades4j>
+    <version.xades4j>2.2.1</version.xades4j>
     <version.xmlunit>2.9.1</version.xmlunit>
 
     <!--  plugins -->
     <version.jacoco-maven-plugin>0.8.10</version.jacoco-maven-plugin>
-    <version.maven-clean-plugin>3.2.0</version.maven-clean-plugin>
+    <version.maven-clean-plugin>3.3.1</version.maven-clean-plugin>
     <version.maven-compiler-plugin>3.11.0</version.maven-compiler-plugin>
     <maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
     <version.maven-enforcer-plugin>3.3.0</version.maven-enforcer-plugin>
@@ -82,7 +82,7 @@
     <version.nexus-staging-maven-plugin>1.6.13</version.nexus-staging-maven-plugin>
     <version.sonar-maven-plugin>3.9.1.2184</version.sonar-maven-plugin>
     <version.spotless.google-java-format>1.17.0</version.spotless.google-java-format>
-    <version.spotless-maven-plugin>2.37.0</version.spotless-maven-plugin>
+    <version.spotless-maven-plugin>2.38.0</version.spotless-maven-plugin>
 
     <!-- settings for upload to sonar server -->
     <sonar.coverage.jacoco.xmlReportPaths>${project.reporting.outputDirectory}/jacoco/index.xml</sonar.coverage.jacoco.xmlReportPaths>
@@ -92,6 +92,13 @@
   </properties>
 
   <dependencies>
+
+    <!-- NOTE check regularly : it is an upgraded version of dependency of xades4j->guice remove it when xades4j is upgraded -->
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>32.1.1-jre</version>
+    </dependency>
 
     <dependency>
       <groupId>com.googlecode.xades4j</groupId>
@@ -147,6 +154,25 @@
       <groupId>org.digidoc4j.dss</groupId>
       <artifactId>dss-tsl-validation</artifactId>
       <version>${version.dss-tsl-validation}</version>
+      <!-- NOTE excluded because of CVE -->
+      <exclusions>
+        <exclusion>
+          <groupId>org.bouncycastle</groupId>
+          <artifactId>bcpkix-jdk15on</artifactId>
+        </exclusion>
+
+        <exclusion>
+          <groupId>org.bouncycastle</groupId>
+          <artifactId>bcutil-jdk15on</artifactId>
+        </exclusion>
+
+        <exclusion>
+          <groupId>org.bouncycastle</groupId>
+          <artifactId>bcprov-jdk15on</artifactId>
+        </exclusion>
+
+      </exclusions>
+
     </dependency>
 
     <dependency>
@@ -187,11 +213,18 @@
       <artifactId>wiremock-jre8</artifactId>
       <version>${version.wiremock-jre8}</version>
       <scope>test</scope>
+      <!-- NOTE excluded because of CVE -->
+      <exclusions>
+        <exclusion>
+          <groupId>com.google.guava</groupId>
+          <artifactId>guava</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
       <groupId>org.xmlunit</groupId>
-      <artifactId>xmlunit-core</artifactId>
+      <artifactId>xmlunit-assertj3</artifactId>
       <version>${version.xmlunit}</version>
       <scope>test</scope>
     </dependency>
@@ -269,7 +302,7 @@
                     <exclude>com.sun.xml.bind:jaxb-impl</exclude>
                   </excludes>
                   <includes>
-                    <include>com.sun.xml.bind:jaxb-impl:[2.3.6]</include>
+                    <include>com.sun.xml.bind:jaxb-impl:[2.3.8]</include>
                   </includes>
                 </bannedDependencies>
               </rules>

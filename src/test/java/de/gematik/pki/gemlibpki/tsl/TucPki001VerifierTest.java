@@ -20,6 +20,7 @@ import static de.gematik.pki.gemlibpki.TestConstants.LOCAL_SSP_DIR;
 import static de.gematik.pki.gemlibpki.TestConstants.OCSP_HOST;
 import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_TSL_CA8;
+import static de.gematik.pki.gemlibpki.tsl.TslConverter.ERROR_READING_TSL;
 import static de.gematik.pki.gemlibpki.utils.ResourceReader.getFileFromResourceAsBytes;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.overwriteSspUrls;
@@ -43,6 +44,7 @@ import de.gematik.pki.gemlibpki.utils.TestUtils;
 import eu.europa.esig.trustedlist.jaxb.tsl.TSPServiceType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TSPType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
@@ -50,8 +52,11 @@ import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.List;
 import javax.xml.bind.JAXBElement;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.validation.Validator;
 import org.bouncycastle.cert.ocsp.CertificateStatus;
 import org.bouncycastle.cert.ocsp.OCSPReq;
 import org.bouncycastle.cert.ocsp.OCSPResp;
@@ -60,7 +65,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
 
 class TucPki001VerifierTest {
 
@@ -91,7 +99,7 @@ class TucPki001VerifierTest {
             .tslToCheck(tslToCheck)
             .currentTrustedServices(tspServicesInTruststore)
             .currentTslId("dummyTslId")
-            .currentSeqNr(BigInteger.ZERO)
+            .currentTslSeqNr(BigInteger.ZERO)
             .build();
     assertDoesNotThrow(tucPki001Verifier::performTucPki001Checks);
   }
@@ -105,7 +113,8 @@ class TucPki001VerifierTest {
     ocspResponderMock.configureForOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA8);
     overwriteSspUrls(tspServicesInTruststore, ocspResponderMock.getSspUrl());
 
-    final TrustStatusListType tslToCheck = TestUtils.getTsl("tsls/ecc/invalid/TSL_invalid_xmlSignature_altCA.xml");
+    final TrustStatusListType tslToCheck =
+        TestUtils.getTsl("tsls/ecc/invalid/TSL_invalid_xmlSignature_altCA.xml");
     final byte[] tslBytes = TslConverter.tslToBytes(tslToCheck);
 
     final TucPki001Verifier tucPki001Verifier =
@@ -114,7 +123,7 @@ class TucPki001VerifierTest {
             .tslToCheck(tslBytes)
             .currentTrustedServices(tspServicesInTruststore)
             .currentTslId("dummyTslId")
-            .currentSeqNr(BigInteger.ZERO)
+            .currentTslSeqNr(BigInteger.ZERO)
             .build();
 
     assertThatThrownBy(tucPki001Verifier::performTucPki001Checks)
@@ -135,7 +144,7 @@ class TucPki001VerifierTest {
             .tslToCheck(tslBytes)
             .currentTrustedServices(tspServicesInTruststore)
             .currentTslId("dummyTslId")
-            .currentSeqNr(BigInteger.ZERO)
+            .currentTslSeqNr(BigInteger.ZERO)
             .build();
 
     assertThatThrownBy(tucPki001Verifier::getTslSignerCertificate)
@@ -162,7 +171,7 @@ class TucPki001VerifierTest {
             .tslToCheck(tslBytes)
             .currentTrustedServices(tspServicesInTruststore)
             .currentTslId("dummyTslId")
-            .currentSeqNr(BigInteger.ZERO)
+            .currentTslSeqNr(BigInteger.ZERO)
             .build();
 
     assertThatThrownBy(tucPki001Verifier::getTslSignerCertificate)
@@ -189,7 +198,7 @@ class TucPki001VerifierTest {
             .tslToCheck(tslBytes)
             .currentTrustedServices(tspServicesInTruststore)
             .currentTslId("dummyTslId")
-            .currentSeqNr(BigInteger.ZERO)
+            .currentTslSeqNr(BigInteger.ZERO)
             .build();
 
     assertThatThrownBy(tucPki001Verifier::getTslSignerCertificate)
@@ -205,7 +214,7 @@ class TucPki001VerifierTest {
             .tslToCheck(tslToCheck)
             .currentTrustedServices(tspServicesInTruststore)
             .currentTslId("dummyTslId")
-            .currentSeqNr(BigInteger.ZERO)
+            .currentTslSeqNr(BigInteger.ZERO)
             .withOcspCheck(false)
             .build();
     assertDoesNotThrow(tucPki001Verifier::performTucPki001Checks);
@@ -220,12 +229,40 @@ class TucPki001VerifierTest {
             .tslToCheck(tslToCheck)
             .currentTrustedServices(tspServicesInTruststore)
             .currentTslId("dummyTslId")
-            .currentSeqNr(BigInteger.ZERO)
+            .currentTslSeqNr(BigInteger.ZERO)
             .build();
 
     assertThatThrownBy(tucPki001Verifier::performTucPki001Checks)
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
+  }
+
+  @Test
+  void verifyTslValidityValidNextUpdate() {
+    final ZonedDateTime issueDate = TslReader.getIssueDate(tslToCheckTsl);
+    assertDoesNotThrow(
+        () -> TucPki001Verifier.verifyTslValidity(issueDate, 0, tslToCheckTsl, PRODUCT_TYPE));
+  }
+
+  @Test
+  void verifyTslValidityValidNextUpdateInGracePeriod() {
+    final ZonedDateTime nextUpdate = TslReader.getNextUpdate(tslToCheckTsl);
+    assertDoesNotThrow(
+        () ->
+            TucPki001Verifier.verifyTslValidity(
+                nextUpdate.plus(2, ChronoUnit.DAYS), 5, tslToCheckTsl, PRODUCT_TYPE));
+  }
+
+  @Test
+  void verifyTslValidityWarn2() {
+    final ZonedDateTime nextUpdate = TslReader.getNextUpdate(tslToCheckTsl);
+
+    assertThatThrownBy(
+            () ->
+                TucPki001Verifier.verifyTslValidity(
+                    nextUpdate.plus(1, ChronoUnit.SECONDS), 0, tslToCheckTsl, PRODUCT_TYPE))
+        .isInstanceOf(GemPkiException.class)
+        .hasMessage(ErrorCode.SW_1009_VALIDITY_WARNING_2.getErrorMessage(PRODUCT_TYPE));
   }
 
   @Test
@@ -251,7 +288,7 @@ class TucPki001VerifierTest {
             .tslToCheck(tslToCheck)
             .currentTrustedServices(tspServicesInTruststore)
             .currentTslId("dummyTslId")
-            .currentSeqNr(BigInteger.ZERO)
+            .currentTslSeqNr(BigInteger.ZERO)
             .build();
 
     assertThatThrownBy(tucPki001Verifier::performTucPki001Checks)
@@ -270,7 +307,7 @@ class TucPki001VerifierTest {
     assertNonNullParameter(() -> builder.currentTrustedServices(null), "currentTrustedServices");
   }
 
-  private void verifyPerformTucPki001ChecksTslIdAndSeqNr_init() {
+  private void verifyPerformTucPki001ChecksTslIdAndTslSeqNr_init() {
     final OcspResponderMock ocspResponderMock = new OcspResponderMock(LOCAL_SSP_DIR, OCSP_HOST);
     final X509Certificate tslSigner =
         TestUtils.readP12(TslSignerTest.SIGNER_PATH_ECC).getCertificate();
@@ -279,8 +316,8 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyPerformTucPki001ChecksTslIdAndSeqNr_SameIdAndSameSeqNr_NotForUpdate() {
-    verifyPerformTucPki001ChecksTslIdAndSeqNr_init();
+  void verifyPerformTucPki001ChecksTslIdAndTslSeqNr_SameIdAndSameTslSeqNr_NotForUpdate() {
+    verifyPerformTucPki001ChecksTslIdAndTslSeqNr_init();
 
     final TucPki001Verifier tucPki001Verifier =
         TucPki001Verifier.builder()
@@ -288,7 +325,7 @@ class TucPki001VerifierTest {
             .tslToCheck(tslToCheck)
             .currentTrustedServices(tspServicesInTruststore)
             .currentTslId(tslToCheckTsl.getId())
-            .currentSeqNr(tslToCheckTsl.getSchemeInformation().getTSLSequenceNumber())
+            .currentTslSeqNr(tslToCheckTsl.getSchemeInformation().getTSLSequenceNumber())
             .build();
 
     assertThatThrownBy(tucPki001Verifier::performTucPki001Checks)
@@ -297,9 +334,9 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyPerformTucPki001ChecksTslIdAndSeqNr_DifferentIdsAndIncrementedSeqNr_ForUpdate() {
+  void verifyPerformTucPki001ChecksTslIdAndTslSeqNr_DifferentIdsAndIncrementedTslSeqNr_ForUpdate() {
 
-    verifyPerformTucPki001ChecksTslIdAndSeqNr_init();
+    verifyPerformTucPki001ChecksTslIdAndTslSeqNr_init();
 
     final TucPki001Verifier tucPki001Verifier =
         TucPki001Verifier.builder()
@@ -307,7 +344,7 @@ class TucPki001VerifierTest {
             .tslToCheck(tslToCheck)
             .currentTrustedServices(tspServicesInTruststore)
             .currentTslId("dummyTslId")
-            .currentSeqNr(
+            .currentTslSeqNr(
                 tslToCheckTsl
                     .getSchemeInformation()
                     .getTSLSequenceNumber()
@@ -318,9 +355,10 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyPerformTucPki001ChecksTslIdAndSeqNr_Check1NewSeqNrIsSmallerThanCurrentSeqNr() {
+  void
+      verifyPerformTucPki001ChecksTslIdAndTslSeqNr_Check1NewTslSeqNrIsSmallerThanCurrentTslSeqNr() {
 
-    verifyPerformTucPki001ChecksTslIdAndSeqNr_init();
+    verifyPerformTucPki001ChecksTslIdAndTslSeqNr_init();
 
     final TucPki001Verifier tucPki001Verifier =
         TucPki001Verifier.builder()
@@ -328,7 +366,7 @@ class TucPki001VerifierTest {
             .tslToCheck(tslToCheck)
             .currentTrustedServices(tspServicesInTruststore)
             .currentTslId("dummyTslId")
-            .currentSeqNr(
+            .currentTslSeqNr(
                 tslToCheckTsl.getSchemeInformation().getTSLSequenceNumber().add(BigInteger.ONE))
             .build();
 
@@ -338,9 +376,10 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyPerformTucPki001ChecksTslIdAndSeqNr_Check3NewSeqNrGreaterThanCurrentSeqNrButSameIds() {
+  void
+      verifyPerformTucPki001ChecksTslIdAndTslSeqNr_Check3NewTslSeqNrGreaterThanCurrentTslSeqNrButSameIds() {
 
-    verifyPerformTucPki001ChecksTslIdAndSeqNr_init();
+    verifyPerformTucPki001ChecksTslIdAndTslSeqNr_init();
 
     final TucPki001Verifier tucPki001Verifier =
         TucPki001Verifier.builder()
@@ -348,7 +387,7 @@ class TucPki001VerifierTest {
             .tslToCheck(tslToCheck)
             .currentTrustedServices(tspServicesInTruststore)
             .currentTslId(tslToCheckTsl.getId())
-            .currentSeqNr(
+            .currentTslSeqNr(
                 tslToCheckTsl
                     .getSchemeInformation()
                     .getTSLSequenceNumber()
@@ -361,9 +400,9 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyPerformTucPki001ChecksTslIdAndSeqNr_Check2SameSeqNrButIdsDiffer() {
+  void verifyPerformTucPki001ChecksTslIdAndTslSeqNr_Check2SameTslSeqNrButIdsDiffer() {
 
-    verifyPerformTucPki001ChecksTslIdAndSeqNr_init();
+    verifyPerformTucPki001ChecksTslIdAndTslSeqNr_init();
 
     final TucPki001Verifier tucPki001Verifier =
         TucPki001Verifier.builder()
@@ -371,7 +410,7 @@ class TucPki001VerifierTest {
             .tslToCheck(tslToCheck)
             .currentTrustedServices(tspServicesInTruststore)
             .currentTslId("dummy_" + tslToCheckTsl.getId())
-            .currentSeqNr(tslToCheckTsl.getSchemeInformation().getTSLSequenceNumber())
+            .currentTslSeqNr(tslToCheckTsl.getSchemeInformation().getTSLSequenceNumber())
             .build();
 
     assertThatThrownBy(tucPki001Verifier::performTucPki001Checks)
@@ -400,7 +439,7 @@ class TucPki001VerifierTest {
             .tslToCheck(tslToCheck)
             .currentTrustedServices(tspServicesInTruststore)
             .currentTslId("dummyId")
-            .currentSeqNr(BigInteger.ZERO)
+            .currentTslSeqNr(BigInteger.ZERO)
             .build();
     assertThat(tucPki001Verifier.getVerifiedAnnouncedTrustAnchorUpdate()).isEmpty();
   }
@@ -415,7 +454,7 @@ class TucPki001VerifierTest {
             .tslToCheck(tslBytes)
             .currentTrustedServices(tspServicesInTruststore)
             .currentTslId("dummyId")
-            .currentSeqNr(BigInteger.ZERO)
+            .currentTslSeqNr(BigInteger.ZERO)
             .build();
 
     final TrustAnchorUpdate trustAnchorUpdate =
@@ -442,7 +481,7 @@ class TucPki001VerifierTest {
             .tslToCheck(tslBytes)
             .currentTrustedServices(tspServicesInTruststore)
             .currentTslId("dummyId")
-            .currentSeqNr(BigInteger.ZERO)
+            .currentTslSeqNr(BigInteger.ZERO)
             .build();
 
     assertThat(tucPki001Verifier.getVerifiedAnnouncedTrustAnchorUpdate())
@@ -464,7 +503,7 @@ class TucPki001VerifierTest {
             .tslToCheck(TslConverter.tslToBytes(tsl))
             .currentTrustedServices(tspServicesInTruststore)
             .currentTslId("dummyId")
-            .currentSeqNr(BigInteger.ZERO)
+            .currentTslSeqNr(BigInteger.ZERO)
             .build();
 
     assertThat(tucPki001Verifier.getVerifiedAnnouncedTrustAnchorUpdate()).isEmpty();
@@ -479,7 +518,7 @@ class TucPki001VerifierTest {
             .tslToCheck(tslToCheck)
             .currentTrustedServices(tspServicesInTruststore)
             .currentTslId("dummyId")
-            .currentSeqNr(BigInteger.ZERO)
+            .currentTslSeqNr(BigInteger.ZERO)
             .build();
 
     assertDoesNotThrow(tucPki001Verifier::validateAgainstXsdSchemas);
@@ -500,7 +539,7 @@ class TucPki001VerifierTest {
             .tslToCheck(tslBytes)
             .currentTrustedServices(tspServicesInTruststore)
             .currentTslId("dummyId")
-            .currentSeqNr(BigInteger.ZERO)
+            .currentTslSeqNr(BigInteger.ZERO)
             .build();
 
     assertThatThrownBy(tucPki001Verifier::validateAgainstXsdSchemas)
@@ -517,12 +556,75 @@ class TucPki001VerifierTest {
             .tslToCheck(tslToCheck)
             .currentTrustedServices(tspServicesInTruststore)
             .currentTslId("dummyId")
-            .currentSeqNr(BigInteger.ZERO)
+            .currentTslSeqNr(BigInteger.ZERO)
             .build();
 
-    assertThatThrownBy(()->tucPki001Verifier.validateAgainstXsd("schemas/invalid.xsd"))
+    assertThatThrownBy(() -> tucPki001Verifier.validateAgainstXsd("schemas/invalid.xsd"))
         .isInstanceOf(GemPkiRuntimeException.class)
         .hasMessage("Error during parsing of schema file.");
   }
 
+  @Test
+  void verifyInvalidSchema_IOException() throws IOException, SAXException {
+
+    final TucPki001Verifier tucPki001Verifier =
+        TucPki001Verifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tslToCheck(tslToCheck)
+            .currentTrustedServices(tspServicesInTruststore)
+            .currentTslId("dummyId")
+            .currentTslSeqNr(BigInteger.ZERO)
+            .build();
+
+    final Validator validatorSpy = Mockito.spy(Validator.class);
+    Mockito.doThrow(IOException.class).when(validatorSpy).validate(Mockito.any());
+
+    final TucPki001Verifier tucPki001VerifierSpy = Mockito.spy(tucPki001Verifier);
+    Mockito.doReturn(validatorSpy).when(tucPki001VerifierSpy).getValidator(Mockito.any());
+
+    assertThatThrownBy(
+            () -> tucPki001VerifierSpy.validateAgainstXsd("schemas/ts_102231v030102_xsd.xsd"))
+        .isInstanceOf(GemPkiRuntimeException.class)
+        .hasMessage("Error reading schema file.")
+        .cause()
+        .isInstanceOf(IOException.class);
+  }
+
+  @Test
+  void verifyWellFormedXml() {
+
+    final byte[] tslToCheckBroken = Arrays.copyOfRange(tslToCheck, 0, tslToCheck.length - 1);
+
+    final TucPki001Verifier tucPki001Verifier =
+        TucPki001Verifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tslToCheck(tslToCheckBroken)
+            .currentTrustedServices(tspServicesInTruststore)
+            .currentTslId("dummyId")
+            .currentTslSeqNr(BigInteger.ZERO)
+            .build();
+
+    assertThatThrownBy(tucPki001Verifier::validateWellFormedXml)
+        .isInstanceOf(GemPkiException.class)
+        .hasMessage(ErrorCode.TE_1011_TSL_NOT_WELLFORMED.getErrorMessage(PRODUCT_TYPE));
+  }
+
+  @Test
+  void testValidateWellFormedXmlException() {
+    final TucPki001Verifier tucPki001Verifier =
+        TucPki001Verifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tslToCheck(tslToCheck)
+            .currentTrustedServices(tspServicesInTruststore)
+            .currentTslId("dummyId")
+            .currentTslSeqNr(BigInteger.ZERO)
+            .build();
+
+    try (final MockedStatic<TslUtils> tslUtils = Mockito.mockStatic(TslUtils.class)) {
+      tslUtils.when(TslUtils::createDocBuilder).thenThrow(new ParserConfigurationException());
+      assertThatThrownBy(tucPki001Verifier::validateWellFormedXml)
+          .isInstanceOf(GemPkiRuntimeException.class)
+          .hasMessage(ERROR_READING_TSL);
+    }
+  }
 }

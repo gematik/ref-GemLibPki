@@ -53,25 +53,23 @@ public class OcspRespCache {
   /**
    * Reading the response for a specific certificate
    *
-   * @param x509EeCertSerialNumber big integer of the certificate serial number to ask the response
-   *     for
+   * @param certSerialNr big integer of the certificate serial number to ask the response for
    * @return optional of ocsp response
    */
-  public synchronized Optional<OCSPResp> getResponse(
-      @NonNull final BigInteger x509EeCertSerialNumber) {
+  public synchronized Optional<OCSPResp> getResponse(@NonNull final BigInteger certSerialNr) {
     deleteExpiredResponses();
-    return Optional.ofNullable(cache.get(x509EeCertSerialNumber));
+    return Optional.ofNullable(cache.get(certSerialNr));
   }
 
   /**
    * Writing ocsp response to the cache
    *
-   * @param x509EeCertSerialNumber big integer of serial of the certificate
+   * @param certSerialNr big integer of serial of the certificate
    * @param ocspResp ocsp response
    */
   public void saveResponse(
-      @NonNull final BigInteger x509EeCertSerialNumber, @NonNull final OCSPResp ocspResp) {
-    cache.put(x509EeCertSerialNumber, ocspResp);
+      @NonNull final BigInteger certSerialNr, @NonNull final OCSPResp ocspResp) {
+    cache.put(certSerialNr, ocspResp);
   }
 
   /**

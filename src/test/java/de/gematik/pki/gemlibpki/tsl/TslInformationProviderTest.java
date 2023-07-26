@@ -36,7 +36,7 @@ class TslInformationProviderTest {
   }
 
   @Test
-  void readTspServices_PkcProviderSizeShouldBeCorrect() {
+  void readTspServices_PkcServicesSizeShouldBeCorrect() {
     assertThat(
             tslInformationProvider.getFilteredTspServices(
                 Collections.singletonList(TslConstants.STI_PKC)))
@@ -44,7 +44,23 @@ class TslInformationProviderTest {
   }
 
   @Test
-  void readAllTspServices_providerSizeShouldBeCorrect() {
+  void readTspServices_UnspecifiedServicesSizeShouldBeCorrect() {
+    assertThat(
+            tslInformationProvider.getFilteredTspServices(
+                Collections.singletonList(TslConstants.STI_UNSPECIFIED)))
+        .hasSize(27);
+  }
+
+  @Test
+  void readTspServices_QcServicesProviderSizeShouldBeCorrect() {
+    assertThat(
+            tslInformationProvider.getFilteredTspServices(
+                Collections.singletonList(TslConstants.STI_QC)))
+        .isEmpty();
+  }
+
+  @Test
+  void readAllTspServices_ServicesSizeShouldBeCorrect() {
     assertThat(tslInformationProvider.getTspServices()).hasSize(271);
   }
 

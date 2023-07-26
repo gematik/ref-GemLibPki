@@ -20,8 +20,8 @@ import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
 import static de.gematik.pki.gemlibpki.tsl.TslSignerTest.SIGNER_PATH_ECC;
 import static de.gematik.pki.gemlibpki.utils.ResourceReader.getFilePathFromResources;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
+import static de.gematik.pki.gemlibpki.utils.TestUtils.assertXmlEqual;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.readP12;
-import static de.gematik.pki.gemlibpki.utils.XmlCompare.documentsAreEqual;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import de.gematik.pki.gemlibpki.tsl.TslConverter.DocToBytesOption;
@@ -46,19 +46,19 @@ class TslConverterTest {
   @Test
   void tslToDoc() {
     final TrustStatusListType tsl = TslReader.getTsl(TSL_PATH);
-    assertThat(documentsAreEqual(TslConverter.tslToDoc(tsl), TSL_PATH)).isTrue();
+    assertXmlEqual(TslConverter.tslToDoc(tsl), TSL_PATH);
   }
 
   @Test
   void bytesToDoc() {
     final byte[] tslBytes = GemLibPkiUtils.readContent(TSL_PATH);
-    assertThat(documentsAreEqual(TslConverter.bytesToDoc(tslBytes), TSL_PATH)).isTrue();
+    assertXmlEqual(TslConverter.bytesToDoc(tslBytes), TSL_PATH);
   }
 
   @Test
   void docToBytes() {
     final Document tslDoc = TslReader.getTslAsDoc(TSL_PATH);
-    assertThat(documentsAreEqual(TslConverter.docToBytes(tslDoc), TSL_PATH)).isTrue();
+    assertXmlEqual(TslConverter.docToBytes(tslDoc), TSL_PATH);
   }
 
   @ParameterizedTest
@@ -66,7 +66,7 @@ class TslConverterTest {
   void docToBytesWithDocToBytesOption(final DocToBytesOption docToBytesOption) {
     final Document tslDoc = TslReader.getTslAsDoc(TSL_PATH);
     final byte[] tslBytes = TslConverter.docToBytes(tslDoc, docToBytesOption);
-    assertThat(documentsAreEqual(tslBytes, TSL_PATH)).isTrue();
+    assertXmlEqual(tslBytes, TSL_PATH);
   }
 
   @Test
@@ -148,13 +148,16 @@ class TslConverterTest {
   @Test
   void bytesToTsl() {
     final byte[] tslBytes = GemLibPkiUtils.readContent(TSL_PATH);
-    assertThat(documentsAreEqual(TslConverter.bytesToTsl(tslBytes), TslReader.getTsl(TSL_PATH)))
-        .isTrue();
+    assertXmlEqual(TslConverter.bytesToTsl(tslBytes), TslReader.getTsl(TSL_PATH));
   }
 
   @Test
   void nonNullTests() {
     assertNonNullParameter(() -> TslConverter.tslToDoc(null), "tsl");
+    assertNonNullParameter(() -> TslConverter.tslToBytes(null), "tsl");
     assertNonNullParameter(() -> TslConverter.docToBytes(null), "tslDoc");
+    assertNonNullParameter(() -> TslConverter.docToBytes(null, DocToBytesOption.RESET), "tslDoc");
+    assertNonNullParameter(() -> TslConverter.bytesToDoc(null), "tslBytes");
+    assertNonNullParameter(() -> TslConverter.bytesToTsl(null), "tslBytes");
   }
 }

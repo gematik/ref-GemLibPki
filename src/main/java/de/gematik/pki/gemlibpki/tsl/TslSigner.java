@@ -72,21 +72,25 @@ public final class TslSigner {
         new DirectKeyingDataProvider(tslSignerP12.getCertificate(), tslSignerP12.getPrivateKey());
 
     try {
+
+      final SignatureAlgorithms signatureAlgorithms =
+          new SignatureAlgorithms()
+              .withSignatureAlgorithm("RSA", ALGO_ID_SIGNATURE_RSA_SHA256_MGF1)
+              .withCanonicalizationAlgorithmForSignature(new ExclusiveCanonicalXMLWithoutComments())
+              .withCanonicalizationAlgorithmForTimeStampProperties(
+                  new ExclusiveCanonicalXMLWithoutComments());
+
+      final BasicSignatureOptions basicSignatureOptions =
+          new BasicSignatureOptions()
+              .includeIssuerSerial(false)
+              .includeSubjectName(false)
+              .checkKeyUsage(checkSignerKeyUsage)
+              .checkCertificateValidity(checkSignerValidity);
+
       final XadesSigner xSigner =
           new XadesBesSigningProfile(keyingDataProvider)
-              .withSignatureAlgorithms(
-                  new SignatureAlgorithms()
-                      .withSignatureAlgorithm("RSA", ALGO_ID_SIGNATURE_RSA_SHA256_MGF1)
-                      .withCanonicalizationAlgorithmForSignature(
-                          new ExclusiveCanonicalXMLWithoutComments())
-                      .withCanonicalizationAlgorithmForTimeStampProperties(
-                          new ExclusiveCanonicalXMLWithoutComments()))
-              .withBasicSignatureOptions(
-                  new BasicSignatureOptions()
-                      .includeIssuerSerial(false)
-                      .includeSubjectName(false)
-                      .checkKeyUsage(checkSignerKeyUsage)
-                      .checkCertificateValidity(checkSignerValidity))
+              .withSignatureAlgorithms(signatureAlgorithms)
+              .withBasicSignatureOptions(basicSignatureOptions)
               .newSigner();
 
       final DataObjectDesc dataObjectDesc =
