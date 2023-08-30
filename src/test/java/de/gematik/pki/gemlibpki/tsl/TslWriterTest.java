@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2023 gematik GmbH
- * 
- * Licensed under the Apache License, Version 2.0 (the License);
+ * Copyright 2023 gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -35,18 +35,18 @@ class TslWriterTest {
 
   @Test
   void writeFromTrustServiceStatusList() {
-    final TrustStatusListType tsl = TestUtils.getDefaultTsl();
+    final TrustStatusListType tslUnsigned = TestUtils.getDefaultTslUnsigned();
     final Path destFile = Path.of("target/newTslTssl.xml");
-    TslWriter.write(tsl, destFile);
+    TslWriter.writeUnsigned(tslUnsigned, destFile);
     assertXmlEqual(getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, getClass()), destFile);
   }
 
   @Test
   void verifyWriteFromTslException() {
-    final TrustStatusListType tsl = TestUtils.getDefaultTsl();
+    final TrustStatusListType tsl = TestUtils.getDefaultTslUnsigned();
     final Path destFile = Path.of("/root/../..");
 
-    assertThatThrownBy(() -> TslWriter.write(tsl, destFile))
+    assertThatThrownBy(() -> TslWriter.writeUnsigned(tsl, destFile))
         .isInstanceOf(GemPkiRuntimeException.class)
         .hasMessage(STATUS_LIST_TO_FILE_FAILED);
   }
@@ -71,20 +71,20 @@ class TslWriterTest {
 
   @Test
   void verifyWriteDocAndTsslAreEqual() {
-    final TrustStatusListType tsl = TestUtils.getDefaultTsl();
+    final TrustStatusListType tslUnsigned = TestUtils.getDefaultTslUnsigned();
     final Document tslAsDoc = TestUtils.getDefaultTslAsDoc();
     final Path doc = Path.of("target/tslAsDoc.xml");
     final Path tssl = Path.of("target/tslAsTssl.xml");
     TslWriter.write(tslAsDoc, doc);
-    TslWriter.write(tsl, tssl);
+    TslWriter.writeUnsigned(tslUnsigned, tssl);
     assertXmlEqual(doc, tssl);
   }
 
   @Test
   void verifyConvert() {
-    final TrustStatusListType tsl = TestUtils.getDefaultTsl();
+    final TrustStatusListType tslUnsigned = TestUtils.getDefaultTslUnsigned();
     final Path doc = Path.of("target/tslConvertToDoc.xml");
-    TslWriter.write(TslConverter.tslToDoc(tsl), doc);
+    TslWriter.write(TslConverter.tslToDocUnsigned(tslUnsigned), doc);
     assertXmlEqual(doc, getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, getClass()));
   }
 
@@ -94,11 +94,11 @@ class TslWriterTest {
     final Document document = TslUtils.createDocBuilder().newDocument();
     final TrustStatusListType tsl = new TrustStatusListType();
 
-    assertNonNullParameter(() -> TslWriter.write((TrustStatusListType) null, tslFilePath), "tsl");
+    assertNonNullParameter(() -> TslWriter.writeUnsigned(null, tslFilePath), "tslUnsigned");
 
-    assertNonNullParameter(() -> TslWriter.write(tsl, null), "tslFilePath");
+    assertNonNullParameter(() -> TslWriter.writeUnsigned(tsl, null), "tslFilePath");
 
-    assertNonNullParameter(() -> TslWriter.write((Document) null, tslFilePath), "tslDoc");
+    assertNonNullParameter(() -> TslWriter.write(null, tslFilePath), "tslDoc");
 
     assertNonNullParameter(() -> TslWriter.write(document, null), "tslFilePath");
   }

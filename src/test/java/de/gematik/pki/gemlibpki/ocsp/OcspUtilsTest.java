@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2023 gematik GmbH
- * 
- * Licensed under the Apache License, Version 2.0 (the License);
+ * Copyright 2023 gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -16,13 +16,13 @@
 
 package de.gematik.pki.gemlibpki.ocsp;
 
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.OCSP_RESPONSE_ERROR;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
-import de.gematik.pki.gemlibpki.utils.TestUtils;
-import java.security.cert.X509Certificate;
 import org.bouncycastle.cert.ocsp.BasicOCSPResp;
 import org.bouncycastle.cert.ocsp.OCSPException;
 import org.bouncycastle.cert.ocsp.OCSPReq;
@@ -33,11 +33,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 class OcspUtilsTest {
-
-  static final X509Certificate VALID_X509_EE_CERT =
-      TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
-  static final X509Certificate VALID_X509_ISSUER_CERT =
-      TestUtils.readCert("GEM.RCA1_TEST-ONLY.pem");
 
   @Test
   void nonNullTests() {
@@ -50,13 +45,13 @@ class OcspUtilsTest {
 
   OCSPResp getOcspResp() {
 
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
     return OcspResponseGenerator.builder()
-        .signer(OcspTestConstants.getOcspSignerRsa())
+        .signer(OcspTestConstants.getOcspSignerEcc())
         .build()
-        .generate(
-            OcspRequestGenerator.generateSingleOcspRequest(
-                VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT),
-            VALID_X509_EE_CERT);
+        .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
   }
 
   @Test
@@ -103,10 +98,11 @@ class OcspUtilsTest {
   }
 
   @Test
-  void testGetFirstSingleReq() throws OCSPException {
+  void testGetFirstSingleReq() {
 
     final OCSPReq ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
     final OCSPReq ocspReqMock = Mockito.spy(ocspReq);
 
     final Req req = ocspReq.getRequestList()[0];

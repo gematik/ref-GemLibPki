@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2023 gematik GmbH
- * 
- * Licensed under the Apache License, Version 2.0 (the License);
+ * Copyright 2023 gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -34,6 +34,9 @@ public class TestConstants {
   public static final String CERT_DIR = "src/test/resources/certificates/";
   public static final X509Certificate VALID_ISSUER_CERT_SMCB =
       readCert("GEM.SMCB-CA10/GEM.SMCB-CA10_TEST-ONLY.pem");
+
+  public static final X509Certificate VALID_X509_EE_CERT_SMCB =
+      readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
 
   public static final X509Certificate VALID_ISSUER_CERT_SMCB_RSA =
       readCert("GEM.SMCB-CA24-RSA/GEM.SMCB-CA24.pem");

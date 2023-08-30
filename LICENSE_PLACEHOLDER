@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 gematik GmbH
+ * Copyright $today.year gematik GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,3 @@
  * limitations under the License.
  */
 
-package de.gematik.pki.gemlibpki.tsl;
-
-import eu.europa.esig.trustedlist.jaxb.tsl.TSPServiceType;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-
-/** Class to encapsulate package eu.europa.esig */
-@SuppressWarnings("ClassCanBeRecord")
-@RequiredArgsConstructor
-@Getter
-public class TspService {
-
-  private final TSPServiceType tspServiceType;
-}

@@ -1,20 +1,22 @@
 /*
- * Copyright (c) 2023 gematik GmbH
- * 
- * Licensed under the Apache License, Version 2.0 (the License);
+ * Copyright 2023 gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
 
 package de.gematik.pki.gemlibpki.utils;
+
+import static de.gematik.pki.gemlibpki.utils.GemLibPkiUtils.setBouncyCastleProvider;
 
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import java.io.ByteArrayInputStream;
@@ -37,6 +39,10 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class P12Reader {
 
+  static {
+    setBouncyCastleProvider();
+  }
+
   /**
    * Read byte array, representing a p12 file, to pojo
    *
@@ -45,7 +51,7 @@ public final class P12Reader {
    * @return a {@link P12Container}
    */
   public static P12Container getContentFromP12(
-      final byte[] p12FileContent, final @NonNull String p12Password) {
+      final byte @NonNull [] p12FileContent, final @NonNull String p12Password) {
 
     final KeyStore p12;
     try {
@@ -56,7 +62,7 @@ public final class P12Reader {
         final String alias = e.nextElement();
         final X509Certificate certificate = (X509Certificate) p12.getCertificate(alias);
         final PrivateKey privateKey = (PrivateKey) p12.getKey(alias, p12Password.toCharArray());
-        return P12Container.builder().certificate(certificate).privateKey(privateKey).build();
+        return new P12Container(certificate, privateKey);
       }
     } catch (final KeyStoreException
         | NoSuchAlgorithmException

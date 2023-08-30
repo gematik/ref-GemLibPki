@@ -2,6 +2,25 @@
 
 # Release notes GemLibPki
 
+## Release 1.1.0
+
+- API change: rename some methods that provide a TSL and deliver unsigned content
+- API change: rename method `performTucPki18Checks` to `performTucPki18Checks` to match name from
+  specification
+- API change: rename method `performOcspChecks` to `performTucPki006Checks` to match name from
+  specification
+- API change: method `performTucPki006Checks()` does not need the OCSP requests anymore because of
+  change in certId checks
+- change behaviour of certId checks in OCSP responses: it is calculated from announced hash
+  algorithm and compared to the fields of the response
+- change default behaviour of certId OCSP response generation: the algorithm used is mirrored by the
+  algorithm used in the OCSP request, this can be overwritten with the `responseAlgoBehavior`
+  builder parameter via an enum
+- introduce handling of SHA256 hashes in OCSP context (certId)
+- add TLS-S and TLS-C certificate profiles to solve
+  issue https://github.com/gematik/ref-GemLibPki/issues/3
+- update dependencies
+
 ## Release 1.0.0
 
 - API change: harmonize variable names like tslSeqNr

@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2023 gematik GmbH
- * 
- * Licensed under the Apache License, Version 2.0 (the License);
+ * Copyright 2023 gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -31,11 +31,13 @@ import de.gematik.pki.gemlibpki.tsl.TslInformationProvider;
 import de.gematik.pki.gemlibpki.tsl.TspInformationProvider;
 import de.gematik.pki.gemlibpki.tsl.TspServiceSubset;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
+import java.io.IOException;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import lombok.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedConstruction;
 import org.mockito.Mockito;
 
 class CertificateProfileVerificationTest {
@@ -68,7 +70,7 @@ class CertificateProfileVerificationTest {
 
     final TspServiceSubset tspServiceSubset =
         new TspInformationProvider(
-                new TslInformationProvider(TestUtils.getTsl(tslFilename)).getTspServices(),
+                new TslInformationProvider(TestUtils.getTslUnsigned(tslFilename)).getTspServices(),
                 productType)
             .getIssuerTspServiceSubset(x509EeCert);
 
@@ -282,5 +284,21 @@ class CertificateProfileVerificationTest {
     assertThatThrownBy(verifier::verifyCriticalExtensions)
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.CUSTOM_CERTIFICATE_EXCEPTION.getErrorMessage(productType));
+  }
+
+  @Test
+  void testGetCertificatePolicyOidsException() {
+
+    try (final MockedConstruction<Policies> ignored =
+        Mockito.mockConstructionWithAnswer(
+            Policies.class,
+            invocation -> {
+              throw new IOException();
+            })) {
+
+      assertThatThrownBy(() -> certificateProfileVerification.verifyCertificateType())
+          .isInstanceOf(GemPkiException.class)
+          .hasMessage(ErrorCode.TE_1019_CERT_READ_ERROR.getErrorMessage(productType));
+    }
   }
 }

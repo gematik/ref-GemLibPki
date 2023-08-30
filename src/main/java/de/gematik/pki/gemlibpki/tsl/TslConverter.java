@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2023 gematik GmbH
- * 
- * Licensed under the Apache License, Version 2.0 (the License);
+ * Copyright 2023 gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -72,17 +72,17 @@ public final class TslConverter {
   public static final String ERROR_READING_TSL = "Error reading TSL.";
 
   /**
-   * Converts a tsl to a DOM document type
+   * Converts a tslUnsigned to a DOM document type
    *
-   * @param tsl The tsl to convert
-   * @return The tsl as a DOM Document
+   * @param tslUnsigned The tslUnsigned to convert
+   * @return The tslUnsigned as a DOM Document
    */
-  public static Document tslToDoc(@NonNull final TrustStatusListType tsl) {
+  public static Document tslToDocUnsigned(@NonNull final TrustStatusListType tslUnsigned) {
     try {
       final Document doc = TslUtils.createDocBuilder().newDocument();
       doc.setXmlStandalone(true);
 
-      final JAXBElement<TrustStatusListType> jaxbElement = TslUtils.createJaxbElement(tsl);
+      final JAXBElement<TrustStatusListType> jaxbElement = TslUtils.createJaxbElement(tslUnsigned);
       TslUtils.createMarshaller().marshal(jaxbElement, doc);
 
       return doc;
@@ -176,7 +176,7 @@ public final class TslConverter {
    * @param tslBytes A TSL as byte array
    * @return A TSL as TrustStatusListType
    */
-  public static TrustStatusListType bytesToTsl(final byte @NonNull [] tslBytes) {
+  public static TrustStatusListType bytesToTslUnsigned(final byte @NonNull [] tslBytes) {
     try {
       final Unmarshaller unmarshaller = TslUtils.createUnmarshaller();
       final Node node = bytesToDoc(tslBytes).getFirstChild();
@@ -196,7 +196,7 @@ public final class TslConverter {
    * @param tsl The tsl to convert
    * @return A TSL as byte array
    */
-  public static byte[] tslToBytes(@NonNull final TrustStatusListType tsl) {
-    return docToBytes(tslToDoc(tsl));
+  public static byte[] tslUnsignedToBytes(@NonNull final TrustStatusListType tsl) {
+    return docToBytes(tslToDocUnsigned(tsl));
   }
 }

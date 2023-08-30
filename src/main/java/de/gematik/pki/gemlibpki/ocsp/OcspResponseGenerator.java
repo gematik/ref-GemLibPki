@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2023 gematik GmbH
- * 
- * Licensed under the Apache License, Version 2.0 (the License);
+ * Copyright 2023 gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -28,6 +28,7 @@ import de.gematik.pki.gemlibpki.utils.P12Container;
 import eu.europa.esig.dss.spi.DSSRevocationUtils;
 import eu.europa.esig.dss.spi.x509.revocation.ocsp.OCSPRespStatus;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
@@ -71,6 +72,7 @@ import org.bouncycastle.cert.ocsp.Req;
 import org.bouncycastle.cert.ocsp.RespID;
 import org.bouncycastle.cert.ocsp.UnknownStatus;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.operator.DigestCalculator;
 import org.bouncycastle.operator.DigestCalculatorProvider;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.bc.BcDigestCalculatorProvider;
@@ -107,14 +109,48 @@ public class OcspResponseGenerator {
   private final ZonedDateTime nextUpdate;
   @Builder.Default private final boolean withNullParameterHashAlgoOfCertId = false;
 
+  @NonNull @Builder.Default
+  private final ResponseAlgoBehavior responseAlgoBehavior = ResponseAlgoBehavior.MIRRORING;
+
+  /** Defines options for hash algorithm to use by OCSP Responder. */
+  public enum ResponseAlgoBehavior {
+    /**
+     * SHA1 will be used to create hashes in the OCSP response irrespective of the algorithm in the
+     * OCSP request.
+     */
+    SHA1,
+
+    /**
+     * SHA2 (SHA256) will be used to create hashes in the OCSP response irrespective of the
+     * algorithm in the OCSP request.
+     */
+    SHA2,
+
+    /**
+     * The same algorithm as in the OCSP request will be used to create hashes in the OCSP response.
+     */
+    MIRRORING
+  }
+
+  /** Defines options for modifications when generating the certificate id of the OCSP Response. */
   public enum CertificateIdGeneration {
+    /** No changes to perform on elements of the certificate id when generating it. */
     VALID_CERTID,
+
+    /** Modify serial number when generating the certificate id of the OCSP Response. */
     INVALID_CERTID_SERIAL_NUMBER,
+
+    /** Take unsupported hash algorithm when generating the certificate id of the OCSP Response. */
     INVALID_CERTID_HASH_ALGO,
+
+    /** Modify issuer name hash when generating the certificate id of the OCSP Response. */
     INVALID_CERTID_ISSUER_NAME_HASH,
+
+    /** Modify issuer key hash when generating the certificate id of the OCSP Response. */
     INVALID_CERTID_ISSUER_KEY_HASH
   }
 
+  /** Defines options for Responder Id when generating the OCSP Response. */
   public enum ResponderIdType {
     BY_KEY,
     BY_NAME
@@ -128,8 +164,11 @@ public class OcspResponseGenerator {
    * @param eeCert end-entity certificate
    * @return OCSP response
    */
-  public OCSPResp generate(@NonNull final OCSPReq ocspReq, @NonNull final X509Certificate eeCert) {
-    return generate(ocspReq, eeCert, CertificateStatus.GOOD);
+  public OCSPResp generate(
+      @NonNull final OCSPReq ocspReq,
+      @NonNull final X509Certificate eeCert,
+      final X509Certificate issuerCert) {
+    return generate(ocspReq, eeCert, issuerCert, CertificateStatus.GOOD);
   }
 
   /**
@@ -143,13 +182,31 @@ public class OcspResponseGenerator {
   public OCSPResp generate(
       @NonNull final OCSPReq ocspReq,
       @NonNull final X509Certificate eeCert,
+      @NonNull final X509Certificate issuerCert,
       final CertificateStatus certificateStatus) {
 
     try {
-      return generate(ocspReq, eeCert, signer.getCertificate(), certificateStatus);
+      return generate(ocspReq, eeCert, issuerCert, signer.getCertificate(), certificateStatus);
     } catch (final OperatorCreationException | IOException | OCSPException e) {
       throw new GemPkiRuntimeException("Generieren der OCSP Response fehlgeschlagen.", e);
     }
+  }
+
+  /**
+   * NOTE: we copy the bouncy castle implementation, because BC does not allow other algorithms than
+   * SHA1. Remove this implementation after BC update, and use {@link
+   * RespID#RespID(SubjectPublicKeyInfo, DigestCalculator)}
+   */
+  static RespID createRespId(
+      final SubjectPublicKeyInfo subjectPublicKeyInfo, final DigestCalculator digCalc) {
+
+    try (final OutputStream digOut = digCalc.getOutputStream()) {
+      digOut.write(subjectPublicKeyInfo.getPublicKeyData().getBytes());
+    } catch (final IOException e) {
+      throw new GemPkiRuntimeException("Generieren der RespID fehlgeschlagen.", e);
+    }
+
+    return new RespID(new ResponderID(new DEROctetString(digCalc.getDigest())));
   }
 
   /**
@@ -162,27 +219,33 @@ public class OcspResponseGenerator {
   private OCSPResp generate(
       final OCSPReq ocspReq,
       final X509Certificate eeCert,
+      final X509Certificate issuerCert,
       final X509Certificate ocspResponseSignerCert,
       final CertificateStatus certificateStatus)
       throws OperatorCreationException, IOException, OCSPException {
 
     final BasicOCSPRespBuilder basicOcspRespBuilder;
-    switch (responderIdType) {
-      case BY_NAME -> {
-        final X500Principal subjectDn = ocspResponseSignerCert.getSubjectX500Principal();
-        final ResponderID responderIdObj = new ResponderID(new X500Name(subjectDn.getName()));
-        basicOcspRespBuilder = new BasicOCSPRespBuilder(new RespID(responderIdObj));
-      }
-      case BY_KEY -> {
-        final DigestCalculatorProvider digCalcProv = new BcDigestCalculatorProvider();
-        final byte[] publicKeyBytes = ocspResponseSignerCert.getPublicKey().getEncoded();
-        basicOcspRespBuilder =
-            new BasicOCSPRespBuilder(
-                SubjectPublicKeyInfo.getInstance(publicKeyBytes),
-                digCalcProv.get(CertificateID.HASH_SHA1));
-      }
-      default -> throw new GemPkiRuntimeException(
-          "Fehler beim Generieren der OCSP Response: responderIdType = " + responderIdType);
+
+    if (responderIdType == ResponderIdType.BY_NAME) {
+      final X500Principal subjectDn = ocspResponseSignerCert.getSubjectX500Principal();
+      final ResponderID responderIdObj = new ResponderID(new X500Name(subjectDn.getName()));
+      basicOcspRespBuilder = new BasicOCSPRespBuilder(new RespID(responderIdObj));
+    } else {
+      // ResponderIdType.BY_KEY
+      final DigestCalculatorProvider digCalcProv = new BcDigestCalculatorProvider();
+      final byte[] publicKeyBytes = ocspResponseSignerCert.getPublicKey().getEncoded();
+
+      final AlgorithmIdentifier algoId =
+          new AlgorithmIdentifier(
+              getAlgorithmForResponseAlgoBehavior(OcspUtils.getFirstSingleReq(ocspReq)));
+      final AlgorithmIdentifier algorithmIdentifier = AlgorithmIdentifier.getInstance(algoId);
+
+      final RespID respId =
+          createRespId(
+              SubjectPublicKeyInfo.getInstance(publicKeyBytes),
+              digCalcProv.get(algorithmIdentifier));
+
+      basicOcspRespBuilder = new BasicOCSPRespBuilder(respId);
     }
 
     final List<Extension> extensionList = new ArrayList<>();
@@ -192,7 +255,7 @@ public class OcspResponseGenerator {
     final Extensions extensions = new Extensions(extensionList.toArray(Extension[]::new));
     for (final Req singleRequest : ocspReq.getRequestList()) {
 
-      final CertificateID certificateId = generateCertificateId(singleRequest);
+      final CertificateID certificateId = generateCertificateId(singleRequest, issuerCert);
       basicOcspRespBuilder.addResponse(
           certificateId,
           certificateStatus,
@@ -277,53 +340,90 @@ public class OcspResponseGenerator {
   }
 
   private static ASN1OctetString getIssuerNameHash(
-      final CertificateIdGeneration certificateIdGeneration, final Req singleRequest) {
+      final CertificateIdGeneration certificateIdGeneration, final CertificateID certificateId) {
+
     final byte[] issuerNameHashBytes;
     if (certificateIdGeneration == CertificateIdGeneration.INVALID_CERTID_ISSUER_NAME_HASH) {
-      issuerNameHashBytes = ArrayUtils.clone(singleRequest.getCertID().getIssuerNameHash());
+      issuerNameHashBytes = ArrayUtils.clone(certificateId.getIssuerNameHash());
       changeLast4Bytes(issuerNameHashBytes);
     } else {
-      issuerNameHashBytes = singleRequest.getCertID().getIssuerNameHash();
+      issuerNameHashBytes = certificateId.getIssuerNameHash();
     }
     return new DEROctetString(issuerNameHashBytes);
   }
 
   private static ASN1OctetString getIssuerKeyHash(
-      final CertificateIdGeneration certificateIdGeneration, final Req singleRequest) {
+      final CertificateIdGeneration certificateIdGeneration, final CertificateID certificateId) {
 
     final byte[] issuerKeyHashBytes;
 
     if (certificateIdGeneration == CertificateIdGeneration.INVALID_CERTID_ISSUER_KEY_HASH) {
-      issuerKeyHashBytes = ArrayUtils.clone(singleRequest.getCertID().getIssuerKeyHash());
+      issuerKeyHashBytes = ArrayUtils.clone(certificateId.getIssuerKeyHash());
       changeLast4Bytes(issuerKeyHashBytes);
     } else {
-      issuerKeyHashBytes = singleRequest.getCertID().getIssuerKeyHash();
+      issuerKeyHashBytes = certificateId.getIssuerKeyHash();
     }
     return new DEROctetString(issuerKeyHashBytes);
   }
 
   private static ASN1Integer getCertSerialNr(
-      final CertificateIdGeneration certificateIdGeneration, final Req singleRequest) {
+      final CertificateIdGeneration certificateIdGeneration, final CertificateID certificateId) {
     final BigInteger certSerialNr;
     if (certificateIdGeneration == CertificateIdGeneration.INVALID_CERTID_SERIAL_NUMBER) {
       final byte[] certSerialNrBytes =
-          ArrayUtils.clone(singleRequest.getCertID().getSerialNumber().toByteArray());
+          ArrayUtils.clone(certificateId.getSerialNumber().toByteArray());
       changeLast4Bytes(certSerialNrBytes);
       certSerialNr = new BigInteger(1, certSerialNrBytes);
     } else {
-      certSerialNr = singleRequest.getCertID().getSerialNumber();
+      certSerialNr = certificateId.getSerialNumber();
     }
     return new ASN1Integer(certSerialNr);
   }
 
-  private AlgorithmIdentifier getAlgorithmIdentifier() {
+  /**
+   * Checks if the provided algorithm is one SHA1 or SHA2 (SHA 256). If not then
+   * GemPkiRuntimeException is thrown.
+   *
+   * @param algo the algorithm to verify
+   */
+  public static void verifyHashAlgoSupported(final ASN1ObjectIdentifier algo) {
+
+    final boolean isSupported =
+        algo.equals(OIWObjectIdentifiers.idSHA1) || algo.equals(NISTObjectIdentifiers.id_sha256);
+
+    if (!isSupported) {
+      throw new GemPkiRuntimeException(
+          "Unknown algorithm %s. Only %s and %s are supported."
+              .formatted(
+                  algo.getId(),
+                  OIWObjectIdentifiers.idSHA1.getId(),
+                  NISTObjectIdentifiers.id_sha256.getId()));
+    }
+  }
+
+  private ASN1ObjectIdentifier getAlgorithmForResponseAlgoBehavior(final Req singleRequest) {
+    return switch (responseAlgoBehavior) {
+      case SHA1 -> OIWObjectIdentifiers.idSHA1;
+      case SHA2 -> NISTObjectIdentifiers.id_sha256;
+      default -> {
+        // case ResponseAlgoBehavior.MIRRORING
+        final ASN1ObjectIdentifier algo = singleRequest.getCertID().getHashAlgOID();
+
+        verifyHashAlgoSupported(algo);
+
+        yield algo;
+      }
+    };
+  }
+
+  private AlgorithmIdentifier getAlgorithmIdentifier(final Req singleRequest) {
 
     final ASN1ObjectIdentifier asn1ObjectIdentifier;
 
     if (certificateIdGeneration == CertificateIdGeneration.INVALID_CERTID_HASH_ALGO) {
-      asn1ObjectIdentifier = NISTObjectIdentifiers.id_sha256;
+      asn1ObjectIdentifier = NISTObjectIdentifiers.id_sha3_512;
     } else {
-      asn1ObjectIdentifier = OIWObjectIdentifiers.idSHA1;
+      asn1ObjectIdentifier = getAlgorithmForResponseAlgoBehavior(singleRequest);
     }
 
     if (withNullParameterHashAlgoOfCertId) {
@@ -347,16 +447,23 @@ public class OcspResponseGenerator {
     }
   }
 
-  private CertificateID generateCertificateId(final Req singleRequest) {
+  private CertificateID generateCertificateId(
+      final Req singleRequest, @NonNull final X509Certificate issuerCert) {
+
+    final AlgorithmIdentifier algorithmIdentifier = getAlgorithmIdentifier(singleRequest);
+
+    final CertificateID computedCertificateId =
+        OcspRequestGenerator.createCertificateId(
+            singleRequest.getCertID().getSerialNumber(), issuerCert, algorithmIdentifier);
 
     final ASN1OctetString issuerNameHash =
-        getIssuerNameHash(certificateIdGeneration, singleRequest);
+        getIssuerNameHash(certificateIdGeneration, computedCertificateId);
 
-    final ASN1OctetString issuerKeyHash = getIssuerKeyHash(certificateIdGeneration, singleRequest);
+    final ASN1OctetString issuerKeyHash =
+        getIssuerKeyHash(certificateIdGeneration, computedCertificateId);
 
-    final ASN1Integer certSerialNr = getCertSerialNr(certificateIdGeneration, singleRequest);
-
-    final AlgorithmIdentifier algorithmIdentifier = getAlgorithmIdentifier();
+    final ASN1Integer certSerialNr =
+        getCertSerialNr(certificateIdGeneration, computedCertificateId);
 
     final CertID certId =
         new CertID(algorithmIdentifier, issuerNameHash, issuerKeyHash, certSerialNr);

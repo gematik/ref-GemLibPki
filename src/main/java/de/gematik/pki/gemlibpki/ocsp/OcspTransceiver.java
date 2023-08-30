@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2023 gematik GmbH
- * 
- * Licensed under the Apache License, Version 2.0 (the License);
+ * Copyright 2023 gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -65,19 +65,14 @@ public final class OcspTransceiver {
 
   @Builder.Default private final boolean tolerateOcspFailure = false;
 
-  private void performOcspChecks(
-      final OCSPReq ocspReq, final ZonedDateTime referenceDate, final OCSPResp ocspResp)
-      throws GemPkiException {
+  private TucPki006OcspVerifier getTucPki006Verifier(final OCSPResp ocspResp) {
 
-    final TucPki006OcspVerifier verifier =
-        TucPki006OcspVerifier.builder()
-            .productType(productType)
-            .tspServiceList(tspServiceList)
-            .eeCert(x509EeCert)
-            .ocspResponse(ocspResp)
-            .build();
-
-    verifier.performOcspChecks(ocspReq, referenceDate);
+    return TucPki006OcspVerifier.builder()
+        .productType(productType)
+        .tspServiceList(tspServiceList)
+        .eeCert(x509EeCert)
+        .ocspResponse(ocspResp)
+        .build();
   }
 
   /**
@@ -101,7 +96,7 @@ public final class OcspTransceiver {
         return;
       }
       log.debug("Ocsp resp from server, because no cache.");
-      performOcspChecks(ocspReq, referenceDate, ocspRespOpt.get());
+      getTucPki006Verifier(ocspRespOpt.get()).performTucPki006Checks(referenceDate);
       return;
     }
 
@@ -121,7 +116,7 @@ public final class OcspTransceiver {
       return;
     }
 
-    performOcspChecks(ocspReq, referenceDate, ocspRespOpt.get());
+    getTucPki006Verifier(ocspRespOpt.get()).performTucPki006Checks(referenceDate);
 
     ocspRespCache.saveResponse(x509EeCert.getSerialNumber(), ocspRespOpt.get());
     log.debug("Ocsp resp from server saved to cache.");

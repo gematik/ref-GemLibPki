@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2023 gematik GmbH
- * 
- * Licensed under the Apache License, Version 2.0 (the License);
+ * Copyright 2023 gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -16,7 +16,9 @@
 
 package de.gematik.pki.gemlibpki.ocsp;
 
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB_RSA;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -27,7 +29,6 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.Optional;
-import org.apache.commons.lang3.function.TriFunction;
 import org.bouncycastle.asn1.x509.CRLReason;
 import org.bouncycastle.cert.ocsp.CertificateStatus;
 import org.bouncycastle.cert.ocsp.OCSPReq;
@@ -39,18 +40,24 @@ import org.junit.jupiter.api.Test;
 
 class OcspRespCacheTest {
 
-  static X509Certificate VALID_X509_EE_CERT;
-  static X509Certificate VALID_X509_ISSUER_CERT;
   static OCSPReq ocspReq;
 
   @BeforeAll
   static void setup() {
-    VALID_X509_EE_CERT = TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
-    // certificate is not issued by VALID_X509_ISSUER_CERT - this will fail when certHash check is
-    // implemented
-    VALID_X509_ISSUER_CERT = TestUtils.readCert("GEM.RCA1_TEST-ONLY.pem");
     ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+  }
+
+  private static OCSPResp generateOcspResp(
+      final OCSPReq _ocspReq,
+      final X509Certificate _eeCert,
+      final X509Certificate _issuerCert,
+      final CertificateStatus _certStatus) {
+    return OcspResponseGenerator.builder()
+        .signer(OcspTestConstants.getOcspSignerEcc())
+        .build()
+        .generate(_ocspReq, _eeCert, _issuerCert, _certStatus);
   }
 
   @Test
@@ -73,7 +80,7 @@ class OcspRespCacheTest {
     final OcspRespCache ocspRespCache = new OcspRespCache(30);
     assertThat(ocspRespCache.getSize()).isZero();
     final OCSPResp ocspResp = getOcspResp();
-    ocspRespCache.saveResponse(VALID_X509_EE_CERT.getSerialNumber(), ocspResp);
+    ocspRespCache.saveResponse(VALID_X509_EE_CERT_SMCB.getSerialNumber(), ocspResp);
     assertThat(ocspRespCache.getSize()).isEqualTo(1);
   }
 
@@ -81,42 +88,37 @@ class OcspRespCacheTest {
   void saveAndGetResponse() {
     final OcspRespCache ocspRespCache = new OcspRespCache(30);
 
-    assertThat(ocspRespCache.getResponse(VALID_X509_EE_CERT.getSerialNumber())).isEmpty();
+    assertThat(ocspRespCache.getResponse(VALID_X509_EE_CERT_SMCB.getSerialNumber())).isEmpty();
     final OCSPResp ocspResp = getOcspResp();
-    ocspRespCache.saveResponse(VALID_X509_EE_CERT.getSerialNumber(), ocspResp);
-    assertThat(ocspRespCache.getResponse(VALID_X509_EE_CERT.getSerialNumber())).isPresent();
+    ocspRespCache.saveResponse(VALID_X509_EE_CERT_SMCB.getSerialNumber(), ocspResp);
+    assertThat(ocspRespCache.getResponse(VALID_X509_EE_CERT_SMCB.getSerialNumber())).isPresent();
   }
 
   private static OCSPResp getOcspResp() {
     return OcspResponseGenerator.builder()
-        .signer(OcspTestConstants.getOcspSignerRsa())
+        .signer(OcspTestConstants.getOcspSignerEcc())
         .build()
-        .generate(ocspReq, VALID_X509_EE_CERT);
+        .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
   }
 
   private void saveAndGetResponseWithGracePeriod(final CertificateStatus certificateStatus) {
 
-    final TriFunction<OCSPReq, X509Certificate, CertificateStatus, OCSPResp> ocspRespGen =
-        (_ocspReq, _eeCert, _certStatus) ->
-            OcspResponseGenerator.builder()
-                .signer(OcspTestConstants.getOcspSignerRsa())
-                .build()
-                .generate(_ocspReq, _eeCert, _certStatus);
-
     final int gracePeriodSeconds = 2;
     final OcspRespCache ocspRespCache = new OcspRespCache(gracePeriodSeconds);
 
-    assertThat(ocspRespCache.getResponse(VALID_X509_EE_CERT.getSerialNumber())).isEmpty();
+    assertThat(ocspRespCache.getResponse(VALID_X509_EE_CERT_SMCB.getSerialNumber())).isEmpty();
 
-    final X509Certificate eeCert1 = VALID_X509_EE_CERT;
+    final X509Certificate eeCert1 = VALID_X509_EE_CERT_SMCB;
     final OCSPReq ocspReq1 = ocspReq;
 
     final X509Certificate eeCert2 = TestUtils.readCert("GEM.SMCB-CA24-RSA/AschoffscheApotheke.pem");
     final OCSPReq ocspReq2 =
         OcspRequestGenerator.generateSingleOcspRequest(eeCert2, VALID_ISSUER_CERT_SMCB_RSA);
 
-    final OCSPResp ocspResp1 = ocspRespGen.apply(ocspReq1, eeCert1, certificateStatus);
-    final OCSPResp ocspResp2 = ocspRespGen.apply(ocspReq2, eeCert2, certificateStatus);
+    final OCSPResp ocspResp1 =
+        generateOcspResp(ocspReq1, eeCert1, VALID_ISSUER_CERT_SMCB, certificateStatus);
+    final OCSPResp ocspResp2 =
+        generateOcspResp(ocspReq2, eeCert2, VALID_ISSUER_CERT_SMCB_RSA, certificateStatus);
 
     ocspRespCache.saveResponse(eeCert1.getSerialNumber(), ocspResp1);
     ocspRespCache.saveResponse(eeCert2.getSerialNumber(), ocspResp2);

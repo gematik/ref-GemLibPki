@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2023 gematik GmbH
- * 
- * Licensed under the Apache License, Version 2.0 (the License);
+ * Copyright 2023 gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -20,6 +20,7 @@ import static de.gematik.pki.gemlibpki.TestConstants.LOCAL_SSP_DIR;
 import static de.gematik.pki.gemlibpki.TestConstants.OCSP_HOST;
 import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.ocsp.OcspTransceiver.OCSP_SEND_RECEIVE_FAILED;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -35,7 +36,6 @@ import de.gematik.pki.gemlibpki.utils.TestUtils;
 import eu.europa.esig.dss.spi.x509.revocation.ocsp.OCSPRespStatus;
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -56,8 +56,6 @@ class OcspTransceiverTest {
 
   private static List<TspService> tspServiceList;
 
-  private static X509Certificate VALID_X509_EE_CERT;
-  private static X509Certificate VALID_X509_ISSUER_CERT;
   private static OcspResponderMock ocspResponderMock;
 
   private static final int ocspTimeoutSeconds = OcspConstants.DEFAULT_OCSP_TIMEOUT_SECONDS;
@@ -65,8 +63,6 @@ class OcspTransceiverTest {
   @BeforeAll
   public static void start() {
     ocspResponderMock = new OcspResponderMock(LOCAL_SSP_DIR, OCSP_HOST);
-    VALID_X509_EE_CERT = TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
-    VALID_X509_ISSUER_CERT = TestUtils.readCert("GEM.RCA1_TEST-ONLY.pem");
 
     tspServiceList = TestUtils.getDefaultTspServiceList();
   }
@@ -87,8 +83,8 @@ class OcspTransceiverTest {
     return OcspTransceiver.builder()
         .productType(PRODUCT_TYPE)
         .tspServiceList(tspServiceList)
-        .x509EeCert(VALID_X509_EE_CERT)
-        .x509IssuerCert(VALID_X509_ISSUER_CERT)
+        .x509EeCert(VALID_X509_EE_CERT_SMCB)
+        .x509IssuerCert(VALID_ISSUER_CERT_SMCB)
         .ssp(ssp)
         .ocspTimeoutSeconds(ocspTimeoutSeconds)
         .tolerateOcspFailure(tolerateOcspFailure)
@@ -100,24 +96,24 @@ class OcspTransceiverTest {
 
     configureOcspResponderMockForOcspRequest();
 
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
     final OCSPResp ocspResp =
         OcspResponseGenerator.builder()
-            .signer(OcspTestConstants.getOcspSignerRsa())
+            .signer(OcspTestConstants.getOcspSignerEcc())
             .build()
-            .generate(
-                OcspRequestGenerator.generateSingleOcspRequest(
-                    VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT),
-                VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
     final OcspRespCache cache = new OcspRespCache(10);
-    cache.saveResponse(VALID_X509_EE_CERT.getSerialNumber(), ocspResp);
+    cache.saveResponse(VALID_X509_EE_CERT_SMCB.getSerialNumber(), ocspResp);
 
     assertDoesNotThrow(
         () ->
             OcspTransceiver.builder()
                 .productType(PRODUCT_TYPE)
                 .tspServiceList(tspServiceList)
-                .x509EeCert(VALID_X509_EE_CERT)
-                .x509IssuerCert(VALID_X509_ISSUER_CERT)
+                .x509EeCert(VALID_X509_EE_CERT_SMCB)
+                .x509IssuerCert(VALID_ISSUER_CERT_SMCB)
                 .ssp("http://invalid.url") // to see, if cached response is used
                 .build()
                 .verifyOcspResponse(cache));
@@ -137,8 +133,8 @@ class OcspTransceiverTest {
             OcspTransceiver.builder()
                 .productType(PRODUCT_TYPE)
                 .tspServiceList(tspServiceList)
-                .x509EeCert(VALID_X509_EE_CERT)
-                .x509IssuerCert(VALID_X509_ISSUER_CERT)
+                .x509EeCert(VALID_X509_EE_CERT_SMCB)
+                .x509IssuerCert(VALID_ISSUER_CERT_SMCB)
                 .ssp("http://invalid.url") // to see, if cached response is used
                 .build()
                 .verifyOcspResponse(cache));
@@ -156,8 +152,8 @@ class OcspTransceiverTest {
                 OcspTransceiver.builder()
                     .productType(PRODUCT_TYPE)
                     .tspServiceList(tspServiceList)
-                    .x509EeCert(VALID_X509_EE_CERT)
-                    .x509IssuerCert(VALID_X509_ISSUER_CERT)
+                    .x509EeCert(VALID_X509_EE_CERT_SMCB)
+                    .x509IssuerCert(VALID_ISSUER_CERT_SMCB)
                     .ssp("http://invalid.url") // to see, if cached response is used
                     .build()
                     .verifyOcspResponse(cache))
@@ -168,14 +164,16 @@ class OcspTransceiverTest {
   @Test
   void verifyCachingForOcspRespStatusSuccessful() throws GemPkiException {
     final OCSPReq ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final OCSPResp ocspResp =
         OcspResponseGenerator.builder()
-            .signer(OcspTestConstants.getOcspSignerRsa())
+            .signer(OcspTestConstants.getOcspSignerEcc())
             .respStatus(OCSPRespStatus.SUCCESSFUL)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT, CertificateStatus.GOOD);
+            .generate(
+                ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB, CertificateStatus.GOOD);
 
     ocspResponderMock.configureWireMockReceiveHttpPost(ocspResp, HttpURLConnection.HTTP_OK);
 
@@ -185,7 +183,8 @@ class OcspTransceiverTest {
 
     assertThat(cache.getSize()).isEqualTo(1);
     TestUtils.waitSeconds(cache.getOcspGracePeriodSeconds() + 1);
-    final Optional<OCSPResp> ocspRespOpt = cache.getResponse(VALID_X509_EE_CERT.getSerialNumber());
+    final Optional<OCSPResp> ocspRespOpt =
+        cache.getResponse(VALID_X509_EE_CERT_SMCB.getSerialNumber());
     assertThat(ocspRespOpt).isEmpty();
     assertThat(cache.getSize()).isZero();
   }
@@ -193,14 +192,16 @@ class OcspTransceiverTest {
   @Test
   void verifyCachingForOcspRespStatusBad() {
     final OCSPReq ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final OCSPResp ocspResp =
         OcspResponseGenerator.builder()
-            .signer(OcspTestConstants.getOcspSignerRsa())
+            .signer(OcspTestConstants.getOcspSignerEcc())
             .respStatus(OCSPRespStatus.UNKNOWN_STATUS)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT, CertificateStatus.GOOD);
+            .generate(
+                ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB, CertificateStatus.GOOD);
 
     ocspResponderMock.configureWireMockReceiveHttpPost(ocspResp, HttpURLConnection.HTTP_OK);
 
@@ -215,14 +216,16 @@ class OcspTransceiverTest {
   @Test
   void verifyOcspRespStatusBadNoCache() {
     final OCSPReq ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final OCSPResp ocspResp =
         OcspResponseGenerator.builder()
-            .signer(OcspTestConstants.getOcspSignerRsa())
+            .signer(OcspTestConstants.getOcspSignerEcc())
             .respStatus(OCSPRespStatus.UNKNOWN_STATUS)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT, CertificateStatus.GOOD);
+            .generate(
+                ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB, CertificateStatus.GOOD);
 
     ocspResponderMock.configureWireMockReceiveHttpPost(ocspResp, HttpURLConnection.HTTP_OK);
 
@@ -237,8 +240,8 @@ class OcspTransceiverTest {
         OcspTransceiver.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
-            .x509EeCert(VALID_X509_EE_CERT)
-            .x509IssuerCert(VALID_X509_ISSUER_CERT)
+            .x509EeCert(VALID_X509_EE_CERT_SMCB)
+            .x509IssuerCert(VALID_ISSUER_CERT_SMCB)
             .ssp("https://no/wiremock/started")
             .build();
     assertThatThrownBy(() -> builder.verifyOcspResponse(null))
@@ -258,7 +261,7 @@ class OcspTransceiverTest {
             TucPki006OcspVerifier.builder()
                 .productType(PRODUCT_TYPE)
                 .tspServiceList(tspServiceList)
-                .eeCert(VALID_X509_EE_CERT)
+                .eeCert(VALID_X509_EE_CERT_SMCB)
                 .ocspResponse(ocspRespRx)
                 .build()
                 .verifyStatus());
@@ -276,7 +279,7 @@ class OcspTransceiverTest {
             TucPki006OcspVerifier.builder()
                 .productType(PRODUCT_TYPE)
                 .tspServiceList(tspServiceList)
-                .eeCert(VALID_X509_EE_CERT)
+                .eeCert(VALID_X509_EE_CERT_SMCB)
                 .ocspResponse(ocspRespRx)
                 .build()
                 .verifyStatus());
@@ -291,8 +294,8 @@ class OcspTransceiverTest {
         OcspTransceiver.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
-            .x509EeCert(VALID_X509_EE_CERT)
-            .x509IssuerCert(VALID_X509_ISSUER_CERT)
+            .x509EeCert(VALID_X509_EE_CERT_SMCB)
+            .x509IssuerCert(VALID_ISSUER_CERT_SMCB)
             .ssp("dummyUrl")
             .tolerateOcspFailure(true)
             .ocspTimeoutSeconds(10000)
@@ -309,8 +312,8 @@ class OcspTransceiverTest {
         OcspTransceiver.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
-            .x509EeCert(VALID_X509_EE_CERT)
-            .x509IssuerCert(VALID_X509_ISSUER_CERT)
+            .x509EeCert(VALID_X509_EE_CERT_SMCB)
+            .x509IssuerCert(VALID_ISSUER_CERT_SMCB)
             .ssp("http://127.0.0.1:4545/unreachable")
             .ocspTimeoutSeconds(ocspTimeoutSeconds)
             .build();
@@ -328,8 +331,8 @@ class OcspTransceiverTest {
         OcspTransceiver.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
-            .x509EeCert(VALID_X509_EE_CERT)
-            .x509IssuerCert(VALID_X509_ISSUER_CERT)
+            .x509EeCert(VALID_X509_EE_CERT_SMCB)
+            .x509IssuerCert(VALID_ISSUER_CERT_SMCB)
             .ssp("http://127.0.0.1:4545/unreachable")
             .ocspTimeoutSeconds(ocspTimeoutSeconds)
             .tolerateOcspFailure(true)
@@ -346,8 +349,8 @@ class OcspTransceiverTest {
         OcspTransceiver.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
-            .x509EeCert(VALID_X509_EE_CERT)
-            .x509IssuerCert(VALID_X509_ISSUER_CERT)
+            .x509EeCert(VALID_X509_EE_CERT_SMCB)
+            .x509IssuerCert(VALID_ISSUER_CERT_SMCB)
             .ssp("http://127.0.0.1:4545/unreachable")
             .ocspTimeoutSeconds(ocspTimeoutSeconds)
             .tolerateOcspFailure(true)
@@ -367,8 +370,8 @@ class OcspTransceiverTest {
         OcspTransceiver.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
-            .x509EeCert(VALID_X509_EE_CERT)
-            .x509IssuerCert(VALID_X509_ISSUER_CERT)
+            .x509EeCert(VALID_X509_EE_CERT_SMCB)
+            .x509IssuerCert(VALID_ISSUER_CERT_SMCB)
             .ssp(ssp)
             .ocspTimeoutSeconds(ocspTimeoutSeconds)
             .build();
@@ -388,8 +391,8 @@ class OcspTransceiverTest {
         OcspTransceiver.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
-            .x509EeCert(VALID_X509_EE_CERT)
-            .x509IssuerCert(VALID_X509_ISSUER_CERT)
+            .x509EeCert(VALID_X509_EE_CERT_SMCB)
+            .x509IssuerCert(VALID_ISSUER_CERT_SMCB)
             .ssp(ssp)
             .ocspTimeoutSeconds(ocspTimeoutSeconds)
             .tolerateOcspFailure(true)
@@ -406,15 +409,18 @@ class OcspTransceiverTest {
 
   private OCSPReq configureOcspResponderMockForOcspRequest() {
     final OCSPReq ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
-    ocspResponderMock.configureForOcspRequest(ocspReq, VALID_X509_EE_CERT);
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+    ocspResponderMock.configureForOcspRequest(
+        ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
     return ocspReq;
   }
 
   @Test
   void sendOcspRespGetEncoded_IOException() throws IOException {
     final OCSPReq ocspReqReal =
-        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_ISSUER_CERT_SMCB);
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final OCSPReq ocspReq = Mockito.spy(ocspReqReal);
     Mockito.when(ocspReq.getEncoded()).thenThrow(new IOException());
@@ -432,7 +438,8 @@ class OcspTransceiverTest {
   void sendOcspRespFutureGetBad_InterruptedException()
       throws ExecutionException, InterruptedException, TimeoutException {
     final OCSPReq ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_ISSUER_CERT_SMCB);
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final Future<?> future = Mockito.spy(Future.class);
     Mockito.doThrow(InterruptedException.class)
@@ -455,7 +462,8 @@ class OcspTransceiverTest {
   void sendOcspRespFutureGetBad_InterruptedException_tolerate()
       throws ExecutionException, InterruptedException, TimeoutException {
     final OCSPReq ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_ISSUER_CERT_SMCB);
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final Future<?> future = Mockito.spy(Future.class);
     Mockito.doThrow(InterruptedException.class)
@@ -474,7 +482,8 @@ class OcspTransceiverTest {
   void sendOcspRespFutureGetBad_ExecutionException()
       throws ExecutionException, InterruptedException, TimeoutException {
     final OCSPReq ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_ISSUER_CERT_SMCB);
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final Future<?> future = Mockito.spy(Future.class);
     Mockito.doThrow(ExecutionException.class)
@@ -497,7 +506,8 @@ class OcspTransceiverTest {
   void sendOcspRespFutureGetBad_ExecutionException_tolerate()
       throws ExecutionException, InterruptedException, TimeoutException {
     final OCSPReq ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_ISSUER_CERT_SMCB);
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final Future<?> future = Mockito.spy(Future.class);
     Mockito.doThrow(ExecutionException.class)
@@ -516,7 +526,8 @@ class OcspTransceiverTest {
   void sendOcspRespFutureGetBad_TimeoutException()
       throws ExecutionException, InterruptedException, TimeoutException {
     final OCSPReq ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_ISSUER_CERT_SMCB);
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final Future<?> future = Mockito.spy(Future.class);
     Mockito.doThrow(TimeoutException.class)

@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2023 gematik GmbH
- * 
- * Licensed under the Apache License, Version 2.0 (the License);
+ * Copyright 2023 gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -88,10 +88,10 @@ public final class TslModifier {
       @NonNull final String productType)
       throws GemPkiException {
 
-    final TrustStatusListType tsl = TslConverter.bytesToTsl(tslBytes);
+    final TrustStatusListType tsl = TslConverter.bytesToTslUnsigned(tslBytes);
     deleteSspsForCAsOfEndEntity(tsl, x509EeCert, productType);
 
-    return TslConverter.tslToBytes(tsl);
+    return TslConverter.tslUnsignedToBytes(tsl);
   }
 
   /**
@@ -261,6 +261,12 @@ public final class TslModifier {
     tsl.getSchemeInformation().setPointersToOtherTSL(otherTSLPointersType);
   }
 
+  /**
+   * Converts an instance of ZonedDateTime to a new instance of XMLGregorianCalendar.
+   *
+   * @param zdt the ZonedDateTime object to convert
+   * @return the new XMLGregorianCalendar object
+   */
   public static XMLGregorianCalendar getXmlGregorianCalendar(@NonNull final ZonedDateTime zdt) {
 
     final DatatypeFactory datatypeFactory;
@@ -278,21 +284,41 @@ public final class TslModifier {
     return xmlCal;
   }
 
+  /**
+   * Creates new TSL with the signer certificate set to the new provided value.
+   *
+   * @param tslBytes the TSL
+   * @param x509Certificate the new signed certificate
+   * @return the new TSL
+   */
   public static byte[] modifiedSignerCert(
       final byte[] tslBytes, final X509Certificate x509Certificate) {
     return modifiedSignerCert(tslBytes, GemLibPkiUtils.certToBytes(x509Certificate));
   }
 
+  /**
+   * Creates new TSL with the signer certificate set to the new provided value.
+   *
+   * @param tslBytes the TSL
+   * @param x509CertificateEncoded the new signed certificate
+   * @return the new TSL
+   */
   public static byte[] modifiedSignerCert(
       final byte[] tslBytes, final byte[] x509CertificateEncoded) {
 
-    final TrustStatusListType tsl = TslConverter.bytesToTsl(tslBytes);
+    final TrustStatusListType tsl = TslConverter.bytesToTslUnsigned(tslBytes);
 
     modifySignerCert(tsl, x509CertificateEncoded);
 
-    return TslConverter.tslToBytes(tsl);
+    return TslConverter.tslUnsignedToBytes(tsl);
   }
 
+  /**
+   * Modifies the instance of TSL - sets the signer certificate to the new provided value.
+   *
+   * @param tsl the TSL
+   * @param x509CertificateEncoded the new signed certificate.
+   */
   public static void modifySignerCert(
       final TrustStatusListType tsl, final byte @NonNull [] x509CertificateEncoded) {
 
@@ -303,17 +329,19 @@ public final class TslModifier {
   }
 
   /**
+   * Creates new TSL with the ID set to the new provided value.
+   *
    * @param tslBytes tsl as a byte[]
    * @param tslId id of the tsl to modify
    * @return a new tsl with id modified
    */
   public static byte[] modifiedTslId(final byte[] tslBytes, final String tslId) {
 
-    final TrustStatusListType tsl = TslConverter.bytesToTsl(tslBytes);
+    final TrustStatusListType tsl = TslConverter.bytesToTslUnsigned(tslBytes);
 
     tsl.setId(tslId);
 
-    return TslConverter.tslToBytes(tsl);
+    return TslConverter.tslUnsignedToBytes(tsl);
   }
 
   /**
@@ -345,17 +373,36 @@ public final class TslModifier {
     return selected;
   }
 
+  /**
+   * Creates new TSL with modified TSP(s) selected by the provided name - in the TSP(s) the specific
+   * old TSP trade name is replaced by the new one.
+   *
+   * @param tslBytes the TSL
+   * @param tspName the name of TSP(s) to select
+   * @param oldTspTradeName the old TSP trade name to replace
+   * @param newTspTradeName the new value of TSP trade name
+   * @return the new TSL
+   */
   public static byte[] modifiedTspTradeName(
       final byte[] tslBytes,
       final String tspName,
       final String oldTspTradeName,
       final String newTspTradeName) {
 
-    final TrustStatusListType tsl = TslConverter.bytesToTsl(tslBytes);
+    final TrustStatusListType tsl = TslConverter.bytesToTslUnsigned(tslBytes);
     modifyTspTradeName(tsl, tspName, oldTspTradeName, newTspTradeName);
-    return TslConverter.tslToBytes(tsl);
+    return TslConverter.tslUnsignedToBytes(tsl);
   }
 
+  /**
+   * Modifies TSP(s) selected by the provided name in the TSL - in the TSP(s) the specific old TSP
+   * trade name is replaced by the new one.
+   *
+   * @param tsl the TSL
+   * @param tspName the name of TSP(s) to select
+   * @param oldTspTradeName the old TSP trade name to replace
+   * @param newTspTradeName the new value of TSP trade name
+   */
   public static void modifyTspTradeName(
       final TrustStatusListType tsl,
       final String tspName,
@@ -387,12 +434,12 @@ public final class TslModifier {
       final String serviceStatusToSelect,
       @NonNull final ZonedDateTime newStatusStartingTime) {
 
-    final TrustStatusListType tsl = TslConverter.bytesToTsl(tslBytes);
+    final TrustStatusListType tsl = TslConverter.bytesToTslUnsigned(tslBytes);
 
     modifyStatusStartingTime(
         tsl, tspName, serviceIdentifierToSelect, serviceStatusToSelect, newStatusStartingTime);
 
-    return TslConverter.tslToBytes(tsl);
+    return TslConverter.tslUnsignedToBytes(tsl);
   }
 
   /**
@@ -446,6 +493,11 @@ public final class TslModifier {
             tspService.getServiceInformation().setStatusStartingTime(newStatusStartingTimeGreg));
   }
 
+  /**
+   * Removes the signature element in the provided TSL.
+   *
+   * @param tsl the TSL
+   */
   public static void deleteSignature(final TrustStatusListType tsl) {
     tsl.setSignature(null);
   }

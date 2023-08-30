@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2023 gematik GmbH
- * 
- * Licensed under the Apache License, Version 2.0 (the License);
+ * Copyright 2023 gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -37,7 +37,6 @@ import java.net.URL;
 import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import javax.xml.datatype.XMLGregorianCalendar;
@@ -105,7 +104,7 @@ public class TucPki001Verifier {
     final ZonedDateTime nextUpdate =
         ZonedDateTime.ofInstant(xmlNextUpdate.toGregorianCalendar().toInstant(), ZoneOffset.UTC);
 
-    final ZonedDateTime tslValidityThreshold = referenceDate.minus(tslGracePeriod, ChronoUnit.DAYS);
+    final ZonedDateTime tslValidityThreshold = referenceDate.minusDays(tslGracePeriod);
 
     if (nextUpdate.isAfter(referenceDate)) {
       return;
@@ -147,7 +146,7 @@ public class TucPki001Verifier {
             .ocspTimeoutSeconds(ocspTimeoutSeconds)
             .tolerateOcspFailure(tolerateOcspFailure)
             .build();
-    certVerifier.performTucPki18Checks(tslSigner);
+    certVerifier.performTucPki018Checks(tslSigner);
 
     // TUC_PKI_012 XML-Signatur-Prüfung
     checkTslSignature(tslSigner);
@@ -215,6 +214,7 @@ public class TucPki001Verifier {
     validateAgainstXsd("schemas/ts_102231v030102_sie_xsd.xsd");
   }
 
+  /** Class to keep information about announced trust anchor. */
   @Getter
   @AllArgsConstructor
   public static class TrustAnchorUpdate {
@@ -222,17 +222,29 @@ public class TucPki001Verifier {
     private X509Certificate futureTrustAnchor;
     private ZonedDateTime statusStartingTime;
 
+    /**
+     * Returns true is the announced trust anchor is to activate comparing to the current timestamp.
+     *
+     * @return boolean if the new trust anchor is active (status starting time is reached)
+     */
     public boolean isToActivateNow() {
       return isToActivate(GemLibPkiUtils.now());
     }
 
+    /**
+     * Returns true is the announced trust anchor is to activate comparing to the reference date.
+     *
+     * @param referenceDate date to check against time from
+     * @return boolean if the new trust anchor is active (status starting time is reached according
+     *     to reference date)
+     */
     public boolean isToActivate(final ZonedDateTime referenceDate) {
       return statusStartingTime.isBefore(referenceDate);
     }
   }
 
   private static List<TSPServiceType> getTrustAnchorTspServices(final byte[] tsl) {
-    return new TslInformationProvider(TslConverter.bytesToTsl(tsl))
+    return new TslInformationProvider(TslConverter.bytesToTslUnsigned(tsl))
         .getFilteredTspServices(List.of(TslConstants.STI_SRV_CERT_CHANGE)).stream()
             .map(TspService::getTspServiceType)
             .toList();
@@ -312,7 +324,7 @@ public class TucPki001Verifier {
 
   protected X509Certificate getTslSignerCertificate() throws GemPkiException {
     try {
-      return TslUtils.getFirstTslSignerCertificate(TslConverter.bytesToTsl(tslToCheck));
+      return TslUtils.getFirstTslSignerCertificate(TslConverter.bytesToTslUnsigned(tslToCheck));
     } catch (final RuntimeException e) {
       throw new GemPkiException(productType, ErrorCode.TE_1002_TSL_CERT_EXTRACTION_ERROR);
     }
@@ -335,31 +347,15 @@ public class TucPki001Verifier {
 
   // TUC_PKI_019 steps 5 and 6
   private void checkTslIdAndTslSeqNr() throws GemPkiException {
-    final TrustStatusListType tsl = TslConverter.bytesToTsl(tslToCheck);
-    final String newTslId = tsl.getId();
-    final BigInteger newTslSeqNr = TslReader.getTslSeqNr(tsl);
+    final TrustStatusListType tslUnsigned = TslConverter.bytesToTslUnsigned(tslToCheck);
+    final String newTslId = tslUnsigned.getId();
+    final BigInteger newTslSeqNr = TslReader.getTslSeqNr(tslUnsigned);
 
     if ((newTslSeqNr.compareTo(currentTslSeqNr) > 0) && !currentTslId.equals(newTslId)) {
       return;
     }
 
-    String errorMessage = null;
-
-    if ((newTslSeqNr.compareTo(currentTslSeqNr) == 0) && currentTslId.equals(newTslId)) {
-      errorMessage = "check0: no changes in new tslSeqNr and tslId";
-    }
-
-    if (newTslSeqNr.compareTo(currentTslSeqNr) < 0) {
-      errorMessage = "check1: new tslSeqNr is smaller than current tslSeqNr";
-    }
-
-    if ((newTslSeqNr.compareTo(currentTslSeqNr) > 0) && currentTslId.equals(newTslId)) {
-      errorMessage = "check3: new tslSeqNr greater than current tslSeqNr, but ids are equal";
-    }
-
-    if ((newTslSeqNr.compareTo(currentTslSeqNr) == 0) && !currentTslId.equals(newTslId)) {
-      errorMessage = "check2: new tslSeqNr and current tslSeqNr are equal, but ids differ";
-    }
+    final String errorMessage = getErrorMessage(newTslSeqNr, newTslId);
 
     log.debug("irregular differences between new and current TSLs were detected");
     log.debug("  currentTsl: tslSeqNr {}, id {}", currentTslSeqNr, currentTslId);
@@ -367,5 +363,23 @@ public class TucPki001Verifier {
     log.debug("  --> {}", errorMessage);
 
     throw new GemPkiException(productType, ErrorCode.SE_1007_TSL_ID_INCORRECT);
+  }
+
+  private String getErrorMessage(final BigInteger newTslSeqNr, final String newTslId) {
+
+    if ((newTslSeqNr.compareTo(currentTslSeqNr) == 0) && currentTslId.equals(newTslId)) {
+      return "check0: no changes in new tslSeqNr and tslId";
+    }
+
+    if ((newTslSeqNr.compareTo(currentTslSeqNr) == 0) && !currentTslId.equals(newTslId)) {
+      return "check2: new tslSeqNr and current tslSeqNr are equal, but ids differ";
+    }
+
+    if ((newTslSeqNr.compareTo(currentTslSeqNr) > 0) && currentTslId.equals(newTslId)) {
+      return "check3: new tslSeqNr greater than current tslSeqNr, but ids are equal";
+    }
+
+    // case  if newTslSeqNr.compareTo(currentTslSeqNr) < 0
+    return "check1: new tslSeqNr is smaller than current tslSeqNr";
   }
 }

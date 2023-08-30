@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2023 gematik GmbH
- * 
- * Licensed under the Apache License, Version 2.0 (the License);
+ * Copyright 2023 gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -16,9 +16,11 @@
 
 package de.gematik.pki.gemlibpki.ocsp;
 
+import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
 import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_RSA_DEFAULT;
 import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_MILLISECONDS;
 import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.TIMEOUT_DELTA_MILLISECONDS;
 import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getBasicOcspResp;
@@ -32,6 +34,7 @@ import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.ocsp.OcspResponseGenerator.CertificateIdGeneration;
 import de.gematik.pki.gemlibpki.ocsp.OcspResponseGenerator.ResponderIdType;
+import de.gematik.pki.gemlibpki.ocsp.OcspResponseGenerator.ResponseAlgoBehavior;
 import de.gematik.pki.gemlibpki.tsl.TslInformationProvider;
 import de.gematik.pki.gemlibpki.tsl.TspService;
 import de.gematik.pki.gemlibpki.utils.GemLibPkiUtils;
@@ -41,14 +44,20 @@ import eu.europa.esig.dss.spi.x509.revocation.ocsp.OCSPRespStatus;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
+import org.bouncycastle.asn1.DERNull;
+import org.bouncycastle.asn1.nist.NISTObjectIdentifiers;
 import org.bouncycastle.asn1.ocsp.ResponderID;
+import org.bouncycastle.asn1.oiw.OIWObjectIdentifiers;
 import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.CRLReason;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
@@ -63,25 +72,24 @@ import org.bouncycastle.cert.ocsp.UnknownStatus;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
+@Slf4j
 class TucPki006OcspVerifierTest {
 
   private static List<TspService> tspServiceList;
-  private static X509Certificate VALID_X509_EE_CERT;
-  private static X509Certificate VALID_X509_ISSUER_CERT;
   private static OCSPReq ocspReq;
 
   @BeforeAll
   public static void start() {
-    VALID_X509_EE_CERT = TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
-    VALID_X509_ISSUER_CERT = TestUtils.readCert("GEM.RCA1_TEST-ONLY.pem");
     ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
-
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
     tspServiceList = TestUtils.getDefaultTspServiceList();
   }
 
@@ -97,13 +105,13 @@ class TucPki006OcspVerifierTest {
             .signer(OcspTestConstants.getOcspSignerEcc())
             .respStatus(OCSPRespStatus.MALFORMED_REQUEST)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final TucPki006OcspVerifier verifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
-            .eeCert(VALID_X509_EE_CERT)
+            .eeCert(VALID_X509_EE_CERT_SMCB)
             .ocspResponse(ocspResp)
             .build();
     assertThatThrownBy(verifier::verifyStatus)
@@ -124,7 +132,7 @@ class TucPki006OcspVerifierTest {
                 TucPki006OcspVerifier.builder()
                     .productType(PRODUCT_TYPE)
                     .tspServiceList(tspServiceList)
-                    .eeCert(VALID_X509_ISSUER_CERT)
+                    .eeCert(VALID_ISSUER_CERT_SMCB)
                     .ocspResponse(genDefaultOcspResp())
                     .build()
                     .verifyCertHash())
@@ -136,16 +144,16 @@ class TucPki006OcspVerifierTest {
   void verifyCertHashMissing() {
     final OCSPResp ocspRespLocal =
         OcspResponseGenerator.builder()
-            .signer(OcspTestConstants.getOcspSignerRsa())
+            .signer(OcspTestConstants.getOcspSignerEcc())
             .withCertHash(false)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
     assertThatThrownBy(
             () ->
                 TucPki006OcspVerifier.builder()
                     .productType(PRODUCT_TYPE)
                     .tspServiceList(tspServiceList)
-                    .eeCert(VALID_X509_EE_CERT)
+                    .eeCert(VALID_X509_EE_CERT_SMCB)
                     .ocspResponse(ocspRespLocal)
                     .build()
                     .verifyCertHash())
@@ -157,17 +165,17 @@ class TucPki006OcspVerifierTest {
   void verifyCertHashMissingNotEnforceCertHashCheck() {
     final OCSPResp ocspRespLocal =
         OcspResponseGenerator.builder()
-            .signer(OcspTestConstants.getOcspSignerRsa())
+            .signer(OcspTestConstants.getOcspSignerEcc())
             .withCertHash(false)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     assertDoesNotThrow(
         () ->
             TucPki006OcspVerifier.builder()
                 .productType(PRODUCT_TYPE)
                 .tspServiceList(tspServiceList)
-                .eeCert(VALID_X509_EE_CERT)
+                .eeCert(VALID_X509_EE_CERT_SMCB)
                 .ocspResponse(ocspRespLocal)
                 .enforceCertHashCheck(false)
                 .build()
@@ -188,18 +196,10 @@ class TucPki006OcspVerifierTest {
     assertNonNullParameter(() -> builder.tspServiceList(null), "tspServiceList");
 
     final TucPki006OcspVerifier verifier = genDefaultOcspVerifier();
-    final ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
-    assertNonNullParameter(() -> verifier.performOcspChecks(null, now), "ocspReq");
 
-    final OCSPReq req =
-        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
-    assertNonNullParameter(() -> verifier.performOcspChecks(req, null), "referenceDate");
-
-    assertNonNullParameter(() -> verifier.performOcspChecks(null), "ocspReq");
+    assertNonNullParameter(() -> verifier.performTucPki006Checks(null), "referenceDate");
 
     assertNonNullParameter(() -> verifier.verifyStatus(null), "referenceDate");
-
-    assertNonNullParameter(() -> verifier.verifyOcspResponseCertId(null), "ocspReq");
 
     assertNonNullParameter(() -> verifier.verifyThisUpdate(null), "referenceDate");
 
@@ -210,16 +210,16 @@ class TucPki006OcspVerifierTest {
 
   private static OCSPResp genDefaultOcspResp() {
     return OcspResponseGenerator.builder()
-        .signer(OcspTestConstants.getOcspSignerRsa())
+        .signer(OcspTestConstants.getOcspSignerEcc())
         .build()
-        .generate(ocspReq, VALID_X509_EE_CERT);
+        .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
   }
 
   private TucPki006OcspVerifier genDefaultOcspVerifier() {
     return TucPki006OcspVerifier.builder()
         .productType(PRODUCT_TYPE)
         .tspServiceList(tspServiceList)
-        .eeCert(VALID_X509_EE_CERT)
+        .eeCert(VALID_X509_EE_CERT_SMCB)
         .ocspResponse(genDefaultOcspResp())
         .build();
   }
@@ -230,14 +230,14 @@ class TucPki006OcspVerifierTest {
         OcspResponseGenerator.builder()
             .signer(OcspTestConstants.getOcspSignerEcc())
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final TucPki006OcspVerifier tucPki006OcspVerifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .ocspResponse(ocspRespLocal)
-            .eeCert(VALID_X509_EE_CERT)
+            .eeCert(VALID_X509_EE_CERT_SMCB)
             .build();
 
     assertDoesNotThrow(tucPki006OcspVerifier::verifyOcspResponseSignature);
@@ -250,14 +250,14 @@ class TucPki006OcspVerifierTest {
             .signer(OcspTestConstants.getOcspSignerEcc())
             .validSignature(false)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final TucPki006OcspVerifier tucPki006OcspVerifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .ocspResponse(ocspRespLocal)
-            .eeCert(VALID_X509_EE_CERT)
+            .eeCert(VALID_X509_EE_CERT_SMCB)
             .build();
 
     assertThatThrownBy(tucPki006OcspVerifier::verifyOcspResponseSignature)
@@ -266,49 +266,24 @@ class TucPki006OcspVerifierTest {
   }
 
   @Test
-  void verifyOcspSspMissing() {
-
-    final String tslMissingSspFilename = "tsls/ecc/defect/TSL_defect_altCA_missingSsp.xml";
-    final List<TspService> badTspServiceList =
-        new TslInformationProvider(TestUtils.getTsl(tslMissingSspFilename)).getTspServices();
-
-    final OCSPResp ocspRespLocal =
-        OcspResponseGenerator.builder()
-            .signer(OcspTestConstants.getOcspSignerRsa())
-            .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
-
-    final TucPki006OcspVerifier tucPki006OcspVerifier =
-        TucPki006OcspVerifier.builder()
-            .productType(PRODUCT_TYPE)
-            .tspServiceList(badTspServiceList)
-            .ocspResponse(ocspRespLocal)
-            .eeCert(VALID_X509_EE_CERT)
-            .build();
-
-    assertThatThrownBy(tucPki006OcspVerifier::verifyOcspResponseSignature)
-        .isInstanceOf(GemPkiException.class)
-        .hasMessage(ErrorCode.SE_1030_OCSP_CERT_MISSING.getErrorMessage(PRODUCT_TYPE));
-  }
-
-  @Test
   void verifyOcspSignerMissing() {
 
     final List<TspService> tspServiceList =
-        new TslInformationProvider(TestUtils.getTsl(FILE_NAME_TSL_RSA_DEFAULT)).getTspServices();
+        new TslInformationProvider(TestUtils.getTslUnsigned(FILE_NAME_TSL_RSA_DEFAULT))
+            .getTspServices();
 
     final OCSPResp ocspRespLocal =
         OcspResponseGenerator.builder()
             .signer(OcspTestConstants.getOcspSignerEcc())
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final TucPki006OcspVerifier tucPki006OcspVerifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .ocspResponse(ocspRespLocal)
-            .eeCert(VALID_X509_EE_CERT)
+            .eeCert(VALID_X509_EE_CERT_SMCB)
             .build();
 
     assertThatThrownBy(tucPki006OcspVerifier::verifyOcspResponseSignature)
@@ -318,9 +293,9 @@ class TucPki006OcspVerifierTest {
 
   @Test
   void verifyOcspSignerMissingDifferentKey() {
-
     final List<TspService> tspServiceList =
-        new TslInformationProvider(TestUtils.getTsl(FILE_NAME_TSL_RSA_DEFAULT)).getTspServices();
+        new TslInformationProvider(TestUtils.getTslUnsigned(FILE_NAME_TSL_ECC_DEFAULT))
+            .getTspServices();
 
     final P12Container signer = TestUtils.readP12("ocsp/eccDifferent-key.p12");
 
@@ -328,14 +303,14 @@ class TucPki006OcspVerifierTest {
         OcspResponseGenerator.builder()
             .signer(signer)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final TucPki006OcspVerifier tucPki006OcspVerifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .ocspResponse(ocspRespLocal)
-            .eeCert(VALID_X509_EE_CERT)
+            .eeCert(VALID_X509_EE_CERT_SMCB)
             .build();
 
     assertThatThrownBy(tucPki006OcspVerifier::verifyOcspResponseSignature)
@@ -348,26 +323,90 @@ class TucPki006OcspVerifierTest {
       value = CertificateIdGeneration.class,
       names = {"VALID_CERTID"},
       mode = EnumSource.Mode.EXCLUDE)
-  void verifyOcspResponseInvalidCertId(final CertificateIdGeneration certificateIdGeneration) {
+  void verifyOcspResponseCertIdInvalid(final CertificateIdGeneration certificateIdGeneration) {
 
     final OCSPResp ocspRespLocal =
         OcspResponseGenerator.builder()
             .signer(OcspTestConstants.getOcspSignerEcc())
             .certificateIdGeneration(certificateIdGeneration)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final TucPki006OcspVerifier tucPki006OcspVerifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .ocspResponse(ocspRespLocal)
-            .eeCert(VALID_X509_EE_CERT)
+            .eeCert(VALID_X509_EE_CERT_SMCB)
             .build();
 
-    assertThatThrownBy(() -> tucPki006OcspVerifier.verifyOcspResponseCertId(ocspReq))
+    assertThatThrownBy(tucPki006OcspVerifier::verifyOcspResponseCertId)
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
+  }
+
+  private static Stream<Arguments> provideArgumentsForVerifyOcspResponseCertIdValid() {
+    final List<AlgorithmIdentifier> algorithmIdentifiers =
+        List.of(
+            new AlgorithmIdentifier(OIWObjectIdentifiers.idSHA1),
+            new AlgorithmIdentifier(OIWObjectIdentifiers.idSHA1, DERNull.INSTANCE),
+            new AlgorithmIdentifier(NISTObjectIdentifiers.id_sha256),
+            new AlgorithmIdentifier(NISTObjectIdentifiers.id_sha256, DERNull.INSTANCE));
+
+    final List<Arguments> arguments = new ArrayList<>();
+
+    for (final AlgorithmIdentifier algorithmIdentifier : algorithmIdentifiers) {
+      for (final ResponseAlgoBehavior responseAlgoBehavior : ResponseAlgoBehavior.values()) {
+        for (final boolean responseWithNullParameterHashAlgoOfCertId : List.of(false, true)) {
+          arguments.add(
+              Arguments.of(
+                  algorithmIdentifier,
+                  responseAlgoBehavior,
+                  responseWithNullParameterHashAlgoOfCertId));
+        }
+      }
+    }
+    return arguments.stream();
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideArgumentsForVerifyOcspResponseCertIdValid")
+  void verifyOcspResponseCertIdValid(
+      final AlgorithmIdentifier requestAlgorithmIdentifier,
+      final ResponseAlgoBehavior responseAlgoBehavior,
+      final boolean responseWithNullParameterHashAlgoOfCertId) {
+
+    log.info(
+        "\n"
+            + "requestAlgorithmIdentifier: {} {}\n"
+            + "responseAlgoBehavior: {}\n"
+            + "responseWithNullParameterHashAlgoOfCertId: {}\n",
+        requestAlgorithmIdentifier.getAlgorithm().getId(),
+        requestAlgorithmIdentifier.getParameters(),
+        responseAlgoBehavior,
+        responseWithNullParameterHashAlgoOfCertId);
+
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB, requestAlgorithmIdentifier);
+
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .responseAlgoBehavior(responseAlgoBehavior)
+            .withNullParameterHashAlgoOfCertId(responseWithNullParameterHashAlgoOfCertId)
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    final TucPki006OcspVerifier tucPki006OcspVerifier =
+        TucPki006OcspVerifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tspServiceList(tspServiceList)
+            .ocspResponse(ocspResp)
+            .eeCert(VALID_X509_EE_CERT_SMCB)
+            .build();
+
+    assertDoesNotThrow(tucPki006OcspVerifier::verifyOcspResponseCertId);
   }
 
   @Test
@@ -384,14 +423,14 @@ class TucPki006OcspVerifierTest {
         OcspResponseGenerator.builder()
             .signer(OcspTestConstants.getOcspSignerEcc())
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT, revokedStatus);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB, revokedStatus);
 
     final TucPki006OcspVerifier tucPki006OcspVerifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .ocspResponse(ocspRespLocal)
-            .eeCert(VALID_X509_EE_CERT)
+            .eeCert(VALID_X509_EE_CERT_SMCB)
             .build();
 
     assertThatThrownBy(tucPki006OcspVerifier::verifyStatus)
@@ -410,14 +449,14 @@ class TucPki006OcspVerifierTest {
         OcspResponseGenerator.builder()
             .signer(OcspTestConstants.getOcspSignerEcc())
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT, unknownStatus);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB, unknownStatus);
 
     final TucPki006OcspVerifier tucPki006OcspVerifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .ocspResponse(ocspRespLocal)
-            .eeCert(VALID_X509_EE_CERT)
+            .eeCert(VALID_X509_EE_CERT_SMCB)
             .build();
 
     assertThatThrownBy(tucPki006OcspVerifier::verifyStatus)
@@ -433,7 +472,7 @@ class TucPki006OcspVerifierTest {
             .signer(OcspTestConstants.getOcspSignerEcc())
             .responderIdType(ResponderIdType.BY_NAME)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final BasicOCSPResp basicOcspResp = getBasicOcspResp(ocspResp);
     final RespID respId = basicOcspResp.getResponderId();
@@ -461,13 +500,13 @@ class TucPki006OcspVerifierTest {
             .signer(OcspTestConstants.getOcspSignerEcc())
             .thisUpdate(thisUpdate)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final TucPki006OcspVerifier verifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
-            .eeCert(VALID_X509_ISSUER_CERT)
+            .eeCert(VALID_ISSUER_CERT_SMCB)
             .ocspResponse(ocspResp)
             .build();
 
@@ -484,13 +523,13 @@ class TucPki006OcspVerifierTest {
             .signer(OcspTestConstants.getOcspSignerEcc())
             .thisUpdate(thisUpdate)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final TucPki006OcspVerifier verifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
-            .eeCert(VALID_X509_ISSUER_CERT)
+            .eeCert(VALID_ISSUER_CERT_SMCB)
             .ocspResponse(ocspResp)
             .build();
 
@@ -509,13 +548,13 @@ class TucPki006OcspVerifierTest {
             .signer(OcspTestConstants.getOcspSignerEcc())
             .thisUpdate(thisUpdate)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final TucPki006OcspVerifier verifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
-            .eeCert(VALID_X509_ISSUER_CERT)
+            .eeCert(VALID_ISSUER_CERT_SMCB)
             .ocspResponse(ocspResp)
             .build();
 
@@ -536,13 +575,13 @@ class TucPki006OcspVerifierTest {
             .signer(OcspTestConstants.getOcspSignerEcc())
             .producedAt(producedAt)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final TucPki006OcspVerifier verifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
-            .eeCert(VALID_X509_ISSUER_CERT)
+            .eeCert(VALID_ISSUER_CERT_SMCB)
             .ocspResponse(ocspResp)
             .build();
 
@@ -562,13 +601,13 @@ class TucPki006OcspVerifierTest {
             .signer(OcspTestConstants.getOcspSignerEcc())
             .producedAt(producedAt)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final TucPki006OcspVerifier verifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
-            .eeCert(VALID_X509_ISSUER_CERT)
+            .eeCert(VALID_ISSUER_CERT_SMCB)
             .ocspResponse(ocspResp)
             .build();
 
@@ -591,13 +630,13 @@ class TucPki006OcspVerifierTest {
             .signer(OcspTestConstants.getOcspSignerEcc())
             .producedAt(producedAt)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final TucPki006OcspVerifier verifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
-            .eeCert(VALID_X509_ISSUER_CERT)
+            .eeCert(VALID_ISSUER_CERT_SMCB)
             .ocspResponse(ocspResp)
             .build();
 
@@ -616,13 +655,13 @@ class TucPki006OcspVerifierTest {
             .signer(OcspTestConstants.getOcspSignerEcc())
             .producedAt(producedAt)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final TucPki006OcspVerifier verifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
-            .eeCert(VALID_X509_ISSUER_CERT)
+            .eeCert(VALID_ISSUER_CERT_SMCB)
             .ocspResponse(ocspResp)
             .build();
 
@@ -645,13 +684,13 @@ class TucPki006OcspVerifierTest {
             .signer(OcspTestConstants.getOcspSignerEcc())
             .nextUpdate(nextUpdate)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final TucPki006OcspVerifier verifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
-            .eeCert(VALID_X509_ISSUER_CERT)
+            .eeCert(VALID_ISSUER_CERT_SMCB)
             .ocspResponse(ocspResp)
             .build();
 
@@ -674,13 +713,13 @@ class TucPki006OcspVerifierTest {
             .signer(OcspTestConstants.getOcspSignerEcc())
             .nextUpdate(nextUpdate)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final TucPki006OcspVerifier verifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
-            .eeCert(VALID_X509_ISSUER_CERT)
+            .eeCert(VALID_ISSUER_CERT_SMCB)
             .ocspResponse(ocspResp)
             .build();
 
@@ -697,13 +736,13 @@ class TucPki006OcspVerifierTest {
             .signer(OcspTestConstants.getOcspSignerEcc())
             .nextUpdate(nextUpdate)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final TucPki006OcspVerifier verifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
-            .eeCert(VALID_X509_ISSUER_CERT)
+            .eeCert(VALID_ISSUER_CERT_SMCB)
             .ocspResponse(ocspResp)
             .build();
 
@@ -718,13 +757,13 @@ class TucPki006OcspVerifierTest {
             .signer(OcspTestConstants.getOcspSignerEcc())
             .nextUpdate(null)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final TucPki006OcspVerifier verifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
-            .eeCert(VALID_X509_ISSUER_CERT)
+            .eeCert(VALID_ISSUER_CERT_SMCB)
             .ocspResponse(ocspResp)
             .build();
 
@@ -737,7 +776,8 @@ class TucPki006OcspVerifierTest {
     final ZonedDateTime referenceDate = GemLibPkiUtils.now();
 
     final OCSPReq ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_ISSUER_CERT_SMCB);
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final OCSPResp ocspResp =
         OcspResponseGenerator.builder()
@@ -746,17 +786,17 @@ class TucPki006OcspVerifierTest {
             .nextUpdate(referenceDate)
             .thisUpdate(referenceDate)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final TucPki006OcspVerifier verifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(TestUtils.getDefaultTspServiceList())
-            .eeCert(VALID_X509_EE_CERT)
+            .eeCert(VALID_X509_EE_CERT_SMCB)
             .ocspResponse(ocspResp)
             .build();
 
-    assertDoesNotThrow(() -> verifier.performOcspChecks(ocspReq));
+    assertDoesNotThrow(() -> verifier.performTucPki006Checks());
   }
 
   @Test
@@ -765,7 +805,8 @@ class TucPki006OcspVerifierTest {
     final ZonedDateTime referenceDate = GemLibPkiUtils.now().minusYears(10);
 
     final OCSPReq ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_ISSUER_CERT_SMCB);
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final OCSPResp ocspResp =
         OcspResponseGenerator.builder()
@@ -774,17 +815,17 @@ class TucPki006OcspVerifierTest {
             .nextUpdate(referenceDate)
             .thisUpdate(referenceDate)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final TucPki006OcspVerifier verifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(TestUtils.getDefaultTspServiceList())
-            .eeCert(VALID_X509_EE_CERT)
+            .eeCert(VALID_X509_EE_CERT_SMCB)
             .ocspResponse(ocspResp)
             .build();
 
-    assertDoesNotThrow(() -> verifier.performOcspChecks(ocspReq, referenceDate));
+    assertDoesNotThrow(() -> verifier.performTucPki006Checks(referenceDate));
   }
 
   @Test
@@ -793,7 +834,8 @@ class TucPki006OcspVerifierTest {
     final ZonedDateTime referenceDate = GemLibPkiUtils.now().minusYears(10);
 
     final OCSPReq ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_ISSUER_CERT_SMCB);
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final OCSPResp ocspResp =
         OcspResponseGenerator.builder()
@@ -802,27 +844,27 @@ class TucPki006OcspVerifierTest {
             .nextUpdate(referenceDate)
             .thisUpdate(referenceDate)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final TucPki006OcspVerifier verifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(TestUtils.getDefaultTspServiceList())
-            .eeCert(VALID_X509_EE_CERT)
+            .eeCert(VALID_X509_EE_CERT_SMCB)
             .ocspResponse(ocspResp)
             .build();
 
-    assertThatThrownBy(() -> verifier.performOcspChecks(ocspReq))
+    assertThatThrownBy(verifier::performTucPki006Checks)
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
   }
 
   private Pair<OCSPResp, TucPki006OcspVerifier> getPairForMocks() {
-    return getPairForMocks(VALID_X509_EE_CERT);
+    return getPairForMocks(VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
   }
 
   private Pair<OCSPResp, TucPki006OcspVerifier> getPairForMocks(
-      @NonNull final X509Certificate eeCert) {
+      @NonNull final X509Certificate eeCert, @NonNull final X509Certificate issuerCert) {
     final ZonedDateTime referenceDate = GemLibPkiUtils.now();
 
     final OCSPResp ocspResp =
@@ -832,7 +874,7 @@ class TucPki006OcspVerifierTest {
             .nextUpdate(referenceDate)
             .thisUpdate(referenceDate)
             .build()
-            .generate(ocspReq, eeCert);
+            .generate(ocspReq, eeCert, issuerCert);
 
     final TucPki006OcspVerifier verifier =
         TucPki006OcspVerifier.builder()
@@ -911,7 +953,7 @@ class TucPki006OcspVerifierTest {
 
     final TucPki006OcspVerifier verifier = pair.getRight();
 
-    final X509Certificate x509Cert = VALID_X509_EE_CERT;
+    final X509Certificate x509Cert = VALID_X509_EE_CERT_SMCB;
     final X509Certificate x509CertSpy = Mockito.spy(x509Cert);
     Mockito.doThrow(CertificateEncodingException.class).when(x509CertSpy).getEncoded();
 
@@ -929,10 +971,11 @@ class TucPki006OcspVerifierTest {
   @Test
   void verifyCertHash_MockCertificateEncodingException() throws CertificateEncodingException {
 
-    final X509Certificate x509Cert = VALID_X509_EE_CERT;
+    final X509Certificate x509Cert = VALID_X509_EE_CERT_SMCB;
     final X509Certificate x509CertSpy = Mockito.spy(x509Cert);
 
-    final Pair<OCSPResp, TucPki006OcspVerifier> pair = getPairForMocks(x509CertSpy);
+    final Pair<OCSPResp, TucPki006OcspVerifier> pair =
+        getPairForMocks(x509CertSpy, VALID_ISSUER_CERT_SMCB);
     final TucPki006OcspVerifier verifier = pair.getRight();
 
     Mockito.doThrow(CertificateEncodingException.class).when(x509CertSpy).getEncoded();
