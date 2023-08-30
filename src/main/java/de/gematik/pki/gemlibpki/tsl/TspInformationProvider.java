@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2023 gematik GmbH
- * 
- * Licensed under the Apache License, Version 2.0 (the License);
+ * Copyright 2023 gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -19,6 +19,7 @@ package de.gematik.pki.gemlibpki.tsl;
 import de.gematik.pki.gemlibpki.error.ErrorCode;
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.utils.CertReader;
+import eu.europa.esig.trustedlist.jaxb.tsl.AttributedNonEmptyURIType;
 import eu.europa.esig.trustedlist.jaxb.tsl.DigitalIdentityType;
 import eu.europa.esig.trustedlist.jaxb.tsl.ServiceSupplyPointsType;
 import java.io.IOException;
@@ -27,10 +28,12 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.x509.AuthorityKeyIdentifier;
@@ -57,24 +60,29 @@ public class TspInformationProvider {
    */
   private static boolean verifyAkiMatchesSki(
       final X509Certificate x509EeCert, final X509Certificate x509IssuerCert) {
-    final byte[] subjectKeyIdentifier =
-        x509IssuerCert.getExtensionValue(Extension.subjectKeyIdentifier.getId());
+
+    final BiFunction<X509Certificate, ASN1ObjectIdentifier, Optional<ASN1OctetString>> getAsOctet =
+        (cert, identifier) -> {
+          final byte[] keyIdentifier = cert.getExtensionValue(identifier.getId());
+          return Optional.ofNullable(ASN1OctetString.getInstance(keyIdentifier));
+        };
+
     final Optional<ASN1OctetString> skiAsOctet =
-        Optional.ofNullable(ASN1OctetString.getInstance(subjectKeyIdentifier));
+        getAsOctet.apply(x509IssuerCert, Extension.subjectKeyIdentifier);
+
     if (skiAsOctet.isEmpty()) {
       log.debug(
           "Extension SUBJECT_KEY_IDENTIFIER_OID: {} konnte in {} nicht gefunden werden.",
           Extension.subjectKeyIdentifier.getId(),
-          x509EeCert.getSubjectX500Principal());
+          x509IssuerCert.getSubjectX500Principal());
       return false;
     }
     final SubjectKeyIdentifier subKeyIdentifier =
         SubjectKeyIdentifier.getInstance(skiAsOctet.get().getOctets());
 
-    final byte[] authorityKeyIdentifier =
-        x509EeCert.getExtensionValue(Extension.authorityKeyIdentifier.getId());
     final Optional<ASN1OctetString> akiAsOctet =
-        Optional.ofNullable(ASN1OctetString.getInstance(authorityKeyIdentifier));
+        getAsOctet.apply(x509EeCert, Extension.authorityKeyIdentifier);
+
     if (akiAsOctet.isEmpty()) {
       log.debug(
           "Extension AUTHORITY_KEY_IDENTIFIER_OID: {} konnte in {} nicht gefunden werden.",
@@ -82,6 +90,7 @@ public class TspInformationProvider {
           x509EeCert.getSubjectX500Principal());
       return false;
     }
+
     final ASN1Primitive akiSequenceAsOctet;
     try {
       akiSequenceAsOctet = ASN1Primitive.fromByteArray(akiAsOctet.get().getOctets());
@@ -217,8 +226,15 @@ public class TspInformationProvider {
     if (serviceSupplyPointsType.isEmpty()) {
       throw new GemPkiException(productType, ErrorCode.TE_1026_SERVICESUPPLYPOINT_MISSING);
     }
-    final String firstServiceSupplyPoint =
-        serviceSupplyPointsType.get().getServiceSupplyPoint().get(0).getValue();
+
+    final List<AttributedNonEmptyURIType> sspList =
+        serviceSupplyPointsType.get().getServiceSupplyPoint();
+
+    if (sspList.isEmpty()) {
+      throw new GemPkiException(productType, ErrorCode.TE_1026_SERVICESUPPLYPOINT_MISSING);
+    }
+
+    final String firstServiceSupplyPoint = sspList.get(0).getValue();
 
     if (firstServiceSupplyPoint.isBlank()) {
       throw new GemPkiException(productType, ErrorCode.TE_1026_SERVICESUPPLYPOINT_MISSING);

@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2023 gematik GmbH
- * 
- * Licensed under the Apache License, Version 2.0 (the License);
+ * Copyright 2023 gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -45,6 +45,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.w3c.dom.Document;
@@ -53,6 +54,8 @@ import org.w3c.dom.NodeList;
 import xades4j.XAdES4jXMLSigException;
 import xades4j.production.SigningCertKeyUsageException;
 import xades4j.production.SigningCertValidityException;
+import xades4j.production.XadesBesSigningProfile;
+import xades4j.utils.XadesProfileResolutionException;
 
 class TslSignerTest {
 
@@ -250,5 +253,29 @@ class TslSignerTest {
     assertNonNullParameter(() -> tslSignerBuilder.tslToSign(null), "tslToSign");
 
     assertNonNullParameter(() -> tslSignerBuilder.tslSignerP12(null), "tslSignerP12");
+  }
+
+  @Test
+  void testSign_XadesProfileResolutionException() {
+    final P12Container signerEcc = readP12(SIGNER_PATH_ECC);
+    final TslSigner tslSigner = tslSignerBuilder.tslToSign(tslEcc).tslSignerP12(signerEcc).build();
+
+    try (final MockedConstruction<XadesBesSigningProfile> ignored =
+        Mockito.mockConstruction(
+            XadesBesSigningProfile.class,
+            (mock, context) -> {
+              Mockito.when(mock.withSignatureAlgorithms(any())).thenReturn(mock);
+              Mockito.when(mock.withBasicSignatureOptions(any())).thenReturn(mock);
+              Mockito.when(mock.newSigner())
+                  .thenThrow(
+                      new XadesProfileResolutionException("message", new RuntimeException()));
+            })) {
+
+      assertThatThrownBy(tslSigner::sign)
+          .isInstanceOf(GemPkiRuntimeException.class)
+          .hasMessage("Fehler beim erstellen des XAdES Profil Objektes.")
+          .cause()
+          .isInstanceOf(XadesProfileResolutionException.class);
+    }
   }
 }

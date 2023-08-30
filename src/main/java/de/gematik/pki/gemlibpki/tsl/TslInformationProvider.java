@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2023 gematik GmbH
- * 
- * Licensed under the Apache License, Version 2.0 (the License);
+ * Copyright 2023 gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -26,7 +26,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TslInformationProvider {
 
-  private final TrustStatusListType trustServiceStatusList;
+  private final TrustStatusListType tslUnsigned;
 
   /**
    * Get list of {@link TspService} to given service type identifiers.
@@ -36,7 +36,7 @@ public class TslInformationProvider {
    */
   public List<TspService> getFilteredTspServices(@NonNull final List<String> stiFilterList) {
 
-    return trustServiceStatusList.getTrustServiceProviderList().getTrustServiceProvider().stream()
+    return tslUnsigned.getTrustServiceProviderList().getTrustServiceProvider().stream()
         .flatMap(tspType -> tspType.getTSPServices().getTSPService().stream())
         .filter(
             tspServiceType ->
@@ -52,7 +52,7 @@ public class TslInformationProvider {
    * @return list with {@link TspService}
    */
   public List<TspService> getTspServices() {
-    return trustServiceStatusList.getTrustServiceProviderList().getTrustServiceProvider().stream()
+    return tslUnsigned.getTrustServiceProviderList().getTrustServiceProvider().stream()
         .flatMap(f -> f.getTSPServices().getTSPService().stream())
         .map(TspService::new)
         .toList();
@@ -66,7 +66,7 @@ public class TslInformationProvider {
   public List<TspService> getTspServicesForTsp(
       @NonNull final String tsp, @NonNull final List<String> stiFilterList) {
     final List<TSPType> tspTypes =
-        trustServiceStatusList.getTrustServiceProviderList().getTrustServiceProvider().stream()
+        tslUnsigned.getTrustServiceProviderList().getTrustServiceProvider().stream()
             .filter(
                 tspType -> {
                   final String tspName =

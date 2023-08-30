@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2023 gematik GmbH
- * 
- * Licensed under the Apache License, Version 2.0 (the License);
+ * Copyright 2023 gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -21,7 +21,6 @@ import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.exception.GemPkiParsingException;
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.ocsp.OcspConstants;
-import de.gematik.pki.gemlibpki.ocsp.OcspRequestGenerator;
 import de.gematik.pki.gemlibpki.ocsp.OcspRespCache;
 import de.gematik.pki.gemlibpki.ocsp.OcspTransceiver;
 import de.gematik.pki.gemlibpki.ocsp.TucPki006OcspVerifier;
@@ -39,7 +38,6 @@ import lombok.Builder;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.bouncycastle.cert.ocsp.OCSPReq;
 import org.bouncycastle.cert.ocsp.OCSPResp;
 
 /**
@@ -73,10 +71,10 @@ public class TucPki018Verifier {
    * @return the determined {@link Admission}
    * @throws GemPkiException if the certificate is invalid
    */
-  public Admission performTucPki18Checks(@NonNull final X509Certificate x509EeCert)
+  public Admission performTucPki018Checks(@NonNull final X509Certificate x509EeCert)
       throws GemPkiException {
     final ZonedDateTime referenceDate = ZonedDateTime.now(ZoneOffset.UTC);
-    return performTucPki18Checks(x509EeCert, referenceDate);
+    return performTucPki018Checks(x509EeCert, referenceDate);
   }
 
   /**
@@ -89,7 +87,7 @@ public class TucPki018Verifier {
    * @return the determined {@link Admission}
    * @throws GemPkiException if the certificate is invalid
    */
-  public Admission performTucPki18Checks(
+  public Admission performTucPki018Checks(
       @NonNull final X509Certificate x509EeCert, @NonNull final ZonedDateTime referenceDate)
       throws GemPkiException {
     log.debug("TUC_PKI_018 Checks...");
@@ -130,8 +128,6 @@ public class TucPki018Verifier {
       if (ocspResponse == null) {
         transceiver.verifyOcspResponse(ocspRespCache, referenceDate);
       } else {
-        final OCSPReq ocspReq =
-            OcspRequestGenerator.generateSingleOcspRequest(x509EeCert, x509IssuerCert);
         try {
           final TucPki006OcspVerifier verifier =
               TucPki006OcspVerifier.builder()
@@ -141,7 +137,7 @@ public class TucPki018Verifier {
                   .ocspResponse(ocspResponse)
                   .build();
 
-          verifier.performOcspChecks(ocspReq, referenceDate);
+          verifier.performTucPki006Checks(referenceDate);
 
         } catch (final GemPkiException e) {
           log.warn(ErrorCode.TW_1050_PROVIDED_OCSP_RESPONSE_NOT_VALID.getErrorMessage(productType));

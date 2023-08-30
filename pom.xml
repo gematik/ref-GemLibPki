@@ -4,7 +4,7 @@
 
   <groupId>de.gematik.pki</groupId>
   <artifactId>gemLibPki</artifactId>
-  <version>1.0.0</version>
+  <version>1.1.0</version>
   <packaging>jar</packaging>
   <name>GemLibPki</name>
   <description>library for implementation and tests of the gematik pki specification</description>
@@ -44,7 +44,7 @@
   </issueManagement>
 
   <properties>
-    <project.build.outputTimestamp>1690368600</project.build.outputTimestamp>
+    <project.build.outputTimestamp>1693398022</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.encoding>${project.build.sourceEncoding}</maven.compiler.encoding>
     <version.java>17</version.java>
@@ -53,8 +53,8 @@
     <!-- dependencies -->
     <version.assertj>3.24.2</version.assertj>
     <version.awaitility>4.2.0</version.awaitility>
-    <version.bouncycastle>1.75</version.bouncycastle>
-    <version.commons-lang3>3.12.0</version.commons-lang3>
+    <version.bouncycastle>1.76</version.bouncycastle>
+    <version.commons-lang3>3.13.0</version.commons-lang3>
     <version.dss-tsl-validation>5.11.1.d4j.1</version.dss-tsl-validation>
     <version.jakarta.xml.bind-api>4.0.0</version.jakarta.xml.bind-api>
     <version.jaxb-api>2.4.0-b180830.0359</version.jaxb-api>
@@ -97,7 +97,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>32.1.1-jre</version>
+      <version>32.1.2-jre</version>
     </dependency>
 
     <dependency>
@@ -141,6 +141,11 @@
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcpkix-jdk18on</artifactId>
+      <version>${version.bouncycastle}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk18on</artifactId>
       <version>${version.bouncycastle}</version>
     </dependency>
 
@@ -417,6 +422,7 @@
           </markdown>
         </configuration>
       </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-deploy-plugin</artifactId>

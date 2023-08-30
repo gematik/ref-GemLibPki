@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2023 gematik GmbH
- * 
- * Licensed under the Apache License, Version 2.0 (the License);
+ * Copyright 2023 gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -27,7 +27,9 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.cert.ocsp.OCSPResp;
 
@@ -35,10 +37,11 @@ import org.bouncycastle.cert.ocsp.OCSPResp;
  * Class to support ocsp a responder cache (to implement ocsp grace periods) old entries of the
  * cache are deleted when a cached entry is requested
  */
+@Getter
 @Slf4j
 public class OcspRespCache {
 
-  private int ocspGracePeriodSeconds;
+  @Setter private int ocspGracePeriodSeconds;
   private final ConcurrentHashMap<BigInteger, OCSPResp> cache = new ConcurrentHashMap<>();
 
   /**
@@ -70,24 +73,6 @@ public class OcspRespCache {
   public void saveResponse(
       @NonNull final BigInteger certSerialNr, @NonNull final OCSPResp ocspResp) {
     cache.put(certSerialNr, ocspResp);
-  }
-
-  /**
-   * Setter for a new ocsp grace period
-   *
-   * @param ocspGracePeriodSeconds the new grace period in seconds
-   */
-  public void setOcspGracePeriodSeconds(final int ocspGracePeriodSeconds) {
-    this.ocspGracePeriodSeconds = ocspGracePeriodSeconds;
-  }
-
-  /**
-   * Getter for the actual ocsp grace period
-   *
-   * @return actual grace period in seconds
-   */
-  public int getOcspGracePeriodSeconds() {
-    return ocspGracePeriodSeconds;
   }
 
   /**

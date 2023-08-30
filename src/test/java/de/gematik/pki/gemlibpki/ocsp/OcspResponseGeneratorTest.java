@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2023 gematik GmbH
- * 
- * Licensed under the Apache License, Version 2.0 (the License);
+ * Copyright 2023 gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -16,6 +16,8 @@
 
 package de.gematik.pki.gemlibpki.ocsp;
 
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getFirstSingleResp;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,16 +27,18 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.ocsp.OcspResponseGenerator.CertificateIdGeneration;
+import de.gematik.pki.gemlibpki.ocsp.OcspResponseGenerator.ResponseAlgoBehavior;
 import de.gematik.pki.gemlibpki.utils.GemLibPkiUtils;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
+import eu.europa.esig.dss.spi.DSSRevocationUtils;
 import eu.europa.esig.dss.spi.x509.revocation.ocsp.OCSPRespStatus;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.NoSuchProviderException;
 import java.security.Security;
-import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Date;
@@ -44,9 +48,12 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.DERNull;
 import org.bouncycastle.asn1.isismtt.ocsp.CertHash;
+import org.bouncycastle.asn1.nist.NISTObjectIdentifiers;
 import org.bouncycastle.asn1.ocsp.CertID;
+import org.bouncycastle.asn1.oiw.OIWObjectIdentifiers;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.CRLReason;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.ocsp.BasicOCSPResp;
 import org.bouncycastle.cert.ocsp.CertificateID;
 import org.bouncycastle.cert.ocsp.CertificateStatus;
@@ -58,20 +65,23 @@ import org.bouncycastle.cert.ocsp.RevokedStatus;
 import org.bouncycastle.cert.ocsp.SingleResp;
 import org.bouncycastle.cert.ocsp.UnknownStatus;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.operator.DigestCalculator;
+import org.bouncycastle.operator.DigestCalculatorProvider;
 import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.operator.bc.BcDigestCalculatorProvider;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 class OcspResponseGeneratorTest {
 
-  final X509Certificate VALID_X509_EE_CERT =
-      TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
-  final X509Certificate VALID_X509_ISSUER_CERT = TestUtils.readCert("GEM.RCA1_TEST-ONLY.pem");
   final OCSPReq ocspReq =
-      OcspRequestGenerator.generateSingleOcspRequest(VALID_X509_EE_CERT, VALID_X509_ISSUER_CERT);
+      OcspRequestGenerator.generateSingleOcspRequest(
+          VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
   OcspResponseGeneratorTest() {}
 
@@ -88,6 +98,96 @@ class OcspResponseGeneratorTest {
   }
 
   @Test
+  void useOcspRespNoBouncyCastle() {
+
+    final OcspResponseGenerator ocspResponseGenerator =
+        OcspResponseGenerator.builder().signer(OcspTestConstants.getOcspSignerEcc()).build();
+
+    Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+
+    assertThatThrownBy(
+            () ->
+                ocspResponseGenerator.generate(
+                    ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB))
+        .isInstanceOf(GemPkiRuntimeException.class)
+        .hasMessage("Generieren der OCSP Response fehlgeschlagen.")
+        .cause()
+        .isInstanceOf(OperatorCreationException.class)
+        .hasMessage("cannot create signer: no such provider: BC");
+
+    GemLibPkiUtils.setBouncyCastleProvider();
+  }
+
+  private void assertGeneratedOcspRespForResponseAlgoBehavior(
+      final ResponseAlgoBehavior responseAlgoBehavior, final String expectedAlgId) {
+
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .responseAlgoBehavior(responseAlgoBehavior)
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    final SingleResp singleResp = getFirstSingleResp(ocspResp);
+
+    assertThat(singleResp.getCertID().getHashAlgOID().getId()).isEqualTo(expectedAlgId);
+  }
+
+  @Test
+  void testVerifyHashAlgoSupported() {
+    assertDoesNotThrow(
+        () -> OcspResponseGenerator.verifyHashAlgoSupported(OIWObjectIdentifiers.idSHA1));
+    assertDoesNotThrow(
+        () -> OcspResponseGenerator.verifyHashAlgoSupported(NISTObjectIdentifiers.id_sha256));
+  }
+
+  @Test
+  void testVerifyHashAlgoSupportedException() {
+    assertThatThrownBy(
+            () -> OcspResponseGenerator.verifyHashAlgoSupported(OIWObjectIdentifiers.sha1WithRSA))
+        .isInstanceOf(GemPkiRuntimeException.class)
+        .hasMessage(
+            "Unknown algorithm 1.3.14.3.2.29. Only 1.3.14.3.2.26 and 2.16.840.1.101.3.4.2.1 are"
+                + " supported.");
+  }
+
+  @Test
+  void testResponseAlgoBehaviorSha1() {
+    assertGeneratedOcspRespForResponseAlgoBehavior(
+        ResponseAlgoBehavior.SHA1, OIWObjectIdentifiers.idSHA1.getId());
+  }
+
+  @Test
+  void testResponseAlgoBehaviorSha2() {
+    assertGeneratedOcspRespForResponseAlgoBehavior(
+        ResponseAlgoBehavior.SHA2, NISTObjectIdentifiers.id_sha256.getId());
+  }
+
+  @Test
+  void testCreateRespIdException() throws OperatorCreationException, IOException {
+
+    final DigestCalculatorProvider digCalcProv = new BcDigestCalculatorProvider();
+    final AlgorithmIdentifier algorithmIdentifier = CertificateID.HASH_SHA1;
+    final byte[] publicKeyBytes = VALID_X509_EE_CERT_SMCB.getPublicKey().getEncoded();
+
+    final DigestCalculator digestCalculator = digCalcProv.get(algorithmIdentifier);
+
+    final OutputStream outputStreamMock = Mockito.mock(OutputStream.class);
+    Mockito.doThrow(new IOException()).when(outputStreamMock).write(Mockito.any());
+
+    final DigestCalculator digestCalculatorMock = Mockito.spy(digestCalculator);
+    Mockito.when(digestCalculatorMock.getOutputStream()).thenReturn(outputStreamMock);
+
+    final SubjectPublicKeyInfo subjectPublicKeyInfo =
+        SubjectPublicKeyInfo.getInstance(publicKeyBytes);
+
+    assertThatThrownBy(
+            () -> OcspResponseGenerator.createRespId(subjectPublicKeyInfo, digestCalculatorMock))
+        .isInstanceOf(GemPkiRuntimeException.class)
+        .hasMessage("Generieren der RespID fehlgeschlagen.");
+  }
+
+  @Test
   void useOcspResp() {
     assertDoesNotThrow(
         () ->
@@ -95,7 +195,7 @@ class OcspResponseGeneratorTest {
                 OcspResponseGenerator.builder()
                     .signer(OcspTestConstants.getOcspSignerEcc())
                     .build()
-                    .generate(ocspReq, VALID_X509_EE_CERT)));
+                    .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB)));
   }
 
   @Test
@@ -103,12 +203,14 @@ class OcspResponseGeneratorTest {
     final OcspResponseGenerator generator =
         OcspResponseGenerator.builder().signer(OcspTestConstants.getOcspSignerEcc()).build();
 
-    assertDoesNotThrow(() -> generator.generate(ocspReq, VALID_X509_EE_CERT));
+    assertDoesNotThrow(
+        () -> generator.generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB));
 
     // now remove the BouncyCastleProvider
     Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
 
-    assertThatThrownBy(() -> generator.generate(ocspReq, VALID_X509_EE_CERT))
+    assertThatThrownBy(
+            () -> generator.generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB))
         .isInstanceOf(GemPkiRuntimeException.class)
         .cause()
         .isInstanceOf(OperatorCreationException.class)
@@ -126,7 +228,8 @@ class OcspResponseGeneratorTest {
         OcspResponseGenerator.builder()
             .signer(Objects.requireNonNull(TestUtils.readP12("ocsp/dsaCert.p12")))
             .build();
-    assertThatThrownBy(() -> ocspResp.generate(ocspReq, VALID_X509_EE_CERT))
+    assertThatThrownBy(
+            () -> ocspResp.generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB))
         .isInstanceOf(GemPkiRuntimeException.class)
         .hasMessage("Signaturalgorithmus nicht unterstützt: DSA");
   }
@@ -140,7 +243,7 @@ class OcspResponseGeneratorTest {
             .signer(OcspTestConstants.getOcspSignerEcc())
             .validCertHash(true)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final CertHash asn1CertHash =
         CertHash.getInstance(
@@ -161,7 +264,7 @@ class OcspResponseGeneratorTest {
             .signer(OcspTestConstants.getOcspSignerEcc())
             .validCertHash(false)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final CertHash asn1CertHash =
         CertHash.getInstance(
@@ -182,7 +285,7 @@ class OcspResponseGeneratorTest {
                 .signer(OcspTestConstants.getOcspSignerEcc())
                 .withCertHash(false)
                 .build()
-                .generate(ocspReq, VALID_X509_EE_CERT)
+                .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB)
                 .getResponseObject();
     assertThat(ocspResp.getExtension(id_isismtt_at_certHash)).isNull();
   }
@@ -194,14 +297,28 @@ class OcspResponseGeneratorTest {
         OcspResponseGenerator.builder().signer(OcspTestConstants.getOcspSignerEcc()).build();
 
     assertNonNullParameter(
-        () -> ocspResponseGenerator.generate(null, VALID_X509_EE_CERT), "ocspReq");
-    assertNonNullParameter(() -> ocspResponseGenerator.generate(ocspReq, null), "eeCert");
-
-    assertNonNullParameter(
-        () -> ocspResponseGenerator.generate(null, VALID_X509_EE_CERT, CertificateStatus.GOOD),
+        () -> ocspResponseGenerator.generate(null, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB),
         "ocspReq");
     assertNonNullParameter(
-        () -> ocspResponseGenerator.generate(ocspReq, null, CertificateStatus.GOOD), "eeCert");
+        () -> ocspResponseGenerator.generate(ocspReq, null, VALID_ISSUER_CERT_SMCB), "eeCert");
+    assertNonNullParameter(
+        () -> ocspResponseGenerator.generate(ocspReq, VALID_X509_EE_CERT_SMCB, null), "issuerCert");
+
+    assertNonNullParameter(
+        () ->
+            ocspResponseGenerator.generate(
+                null, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB, CertificateStatus.GOOD),
+        "ocspReq");
+    assertNonNullParameter(
+        () ->
+            ocspResponseGenerator.generate(
+                ocspReq, null, VALID_ISSUER_CERT_SMCB, CertificateStatus.GOOD),
+        "eeCert");
+    assertNonNullParameter(
+        () ->
+            ocspResponseGenerator.generate(
+                ocspReq, VALID_X509_EE_CERT_SMCB, null, CertificateStatus.GOOD),
+        "issuerCert");
   }
 
   @Test
@@ -211,7 +328,8 @@ class OcspResponseGeneratorTest {
         OcspResponseGenerator.builder()
             .signer(OcspTestConstants.getOcspSignerEcc())
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT, new UnknownStatus());
+            .generate(
+                ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB, new UnknownStatus());
 
     assertThat(getFirstSingleResp(ocspResp).getCertStatus()).isInstanceOf(UnknownStatus.class);
   }
@@ -229,7 +347,7 @@ class OcspResponseGeneratorTest {
         OcspResponseGenerator.builder()
             .signer(OcspTestConstants.getOcspSignerEcc())
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT, revokedStatus);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB, revokedStatus);
 
     final CertificateStatus respStatus = getFirstSingleResp(ocspResp).getCertStatus();
     assertThat(respStatus).isInstanceOf(RevokedStatus.class);
@@ -254,7 +372,7 @@ class OcspResponseGeneratorTest {
               .respStatus(respStatus)
               .withResponseBytes(withResponseBytes)
               .build()
-              .generate(ocspReq, VALID_X509_EE_CERT);
+              .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
       assertThat(ocspResp.getStatus()).isEqualTo(respStatus.getStatusCode());
 
@@ -272,7 +390,7 @@ class OcspResponseGeneratorTest {
             .signer(OcspTestConstants.getOcspSignerEcc())
             .withNullParameterHashAlgoOfCertId(false)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final SingleResp singleResp = getFirstSingleResp(ocspResp);
     final CertID certId = singleResp.getCertID().toASN1Primitive();
@@ -288,7 +406,7 @@ class OcspResponseGeneratorTest {
             .signer(OcspTestConstants.getOcspSignerEcc())
             .withNullParameterHashAlgoOfCertId(true)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final SingleResp singleResp = getFirstSingleResp(ocspResp);
     final CertID certId = singleResp.getCertID().toASN1Primitive();
@@ -299,7 +417,7 @@ class OcspResponseGeneratorTest {
   }
 
   @Test
-  void withCertIdInvalidCertIdIssuerNameHash() {
+  void testCertificateIdGeneration_InvalidCertIdIssuerNameHash() {
 
     final Req singleRequest = ocspReq.getRequestList()[0];
     final byte[] expectedBytes = ArrayUtils.clone(singleRequest.getCertID().getIssuerNameHash());
@@ -309,7 +427,7 @@ class OcspResponseGeneratorTest {
             .signer(OcspTestConstants.getOcspSignerEcc())
             .certificateIdGeneration(CertificateIdGeneration.INVALID_CERTID_ISSUER_NAME_HASH)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final SingleResp singleResp = getFirstSingleResp(ocspResp);
     final CertificateID certificateId = singleResp.getCertID();
@@ -322,7 +440,7 @@ class OcspResponseGeneratorTest {
   }
 
   @Test
-  void withCertIdInvalidCertIdIssuerKeyHash() {
+  void testCertificateIdGeneration_InvalidCertIdIssuerKeyHash() {
 
     final Req singleRequest = ocspReq.getRequestList()[0];
     final byte[] expectedBytes = ArrayUtils.clone(singleRequest.getCertID().getIssuerKeyHash());
@@ -332,7 +450,7 @@ class OcspResponseGeneratorTest {
             .signer(OcspTestConstants.getOcspSignerEcc())
             .certificateIdGeneration(CertificateIdGeneration.INVALID_CERTID_ISSUER_KEY_HASH)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final SingleResp singleResp = getFirstSingleResp(ocspResp);
     final CertificateID certificateId = singleResp.getCertID();
@@ -345,7 +463,7 @@ class OcspResponseGeneratorTest {
   }
 
   @Test
-  void withCertIdInvalidCertIdSerialNumber() {
+  void testCertificateIdGeneration_InvalidCertIdSerialNumber() {
 
     final Req singleRequest = ocspReq.getRequestList()[0];
     final byte[] expectedBytes = singleRequest.getCertID().getSerialNumber().toByteArray();
@@ -355,7 +473,7 @@ class OcspResponseGeneratorTest {
             .signer(OcspTestConstants.getOcspSignerEcc())
             .certificateIdGeneration(CertificateIdGeneration.INVALID_CERTID_SERIAL_NUMBER)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final SingleResp singleResp = getFirstSingleResp(ocspResp);
     final CertID certId = singleResp.getCertID().toASN1Primitive();
@@ -369,23 +487,46 @@ class OcspResponseGeneratorTest {
   }
 
   @Test
-  void withCertIdInvalidCertIdAlgorithmIdentifier() {
+  void testCertificateIdGeneration_InvalidCertIdHashAlgo() {
 
     final OCSPResp ocspResp =
         OcspResponseGenerator.builder()
             .signer(OcspTestConstants.getOcspSignerEcc())
             .certificateIdGeneration(CertificateIdGeneration.INVALID_CERTID_HASH_ALGO)
             .build()
-            .generate(ocspReq, VALID_X509_EE_CERT);
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
     final SingleResp singleResp = getFirstSingleResp(ocspResp);
     final CertID certId = singleResp.getCertID().toASN1Primitive();
     final AlgorithmIdentifier actualAlgorithmIdentifier = certId.getHashAlgorithm();
 
     final String actualAlgorithmId = actualAlgorithmIdentifier.getAlgorithm().getId();
-    final String expectedAlgorithmId = "2.16.840.1.101.3.4.2.1"; // SHA-256
+    final String expectedAlgorithmId = "2.16.840.1.101.3.4.2.10"; // id_sha3_512
 
     assertThat(actualAlgorithmId).isEqualTo(expectedAlgorithmId);
+  }
+
+  @Test
+  void testInvalidateOcspResponseSignatureException() {
+    final OcspResponseGenerator ocspResponseGenerator =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .validSignature(false)
+            .build();
+
+    try (final MockedStatic<DSSRevocationUtils> dssRevocationUtilsMockedStatic =
+        Mockito.mockStatic(DSSRevocationUtils.class, Mockito.CALLS_REAL_METHODS)) {
+      dssRevocationUtilsMockedStatic
+          .when(() -> DSSRevocationUtils.loadOCSPFromBinaries(Mockito.any()))
+          .thenThrow(new IOException());
+
+      assertThatThrownBy(
+              () ->
+                  ocspResponseGenerator.generate(
+                      ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB))
+          .isInstanceOf(GemPkiRuntimeException.class)
+          .hasMessage("Fehler beim invalidieren der OCSP Response Signatur.");
+    }
   }
 
   private static void writeOcspRespToFile(final OCSPResp ocspResp) throws IOException {

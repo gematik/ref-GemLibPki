@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2023 gematik GmbH
- * 
- * Licensed under the Apache License, Version 2.0 (the License);
+ * Copyright 2023 gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -17,8 +17,8 @@
 package de.gematik.pki.gemlibpki.ocsp;
 
 import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_MILLISECONDS;
+import static de.gematik.pki.gemlibpki.ocsp.OcspResponseGenerator.verifyHashAlgoSupported;
 import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getBasicOcspResp;
-import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getFirstSingleReq;
 import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getFirstSingleResp;
 import static de.gematik.pki.gemlibpki.utils.CertReader.readX509;
 import static de.gematik.pki.gemlibpki.utils.GemLibPkiUtils.calculateSha256;
@@ -28,7 +28,9 @@ import de.gematik.pki.gemlibpki.error.ErrorCode;
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.tsl.TslConstants;
+import de.gematik.pki.gemlibpki.tsl.TspInformationProvider;
 import de.gematik.pki.gemlibpki.tsl.TspService;
+import de.gematik.pki.gemlibpki.tsl.TspServiceSubset;
 import de.gematik.pki.gemlibpki.utils.GemLibPkiUtils;
 import eu.europa.esig.trustedlist.jaxb.tsl.DigitalIdentityType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TSPServiceType;
@@ -51,15 +53,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.isismtt.ocsp.CertHash;
 import org.bouncycastle.asn1.ocsp.OCSPResponseStatus;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.ocsp.BasicOCSPResp;
 import org.bouncycastle.cert.ocsp.CertificateID;
 import org.bouncycastle.cert.ocsp.CertificateStatus;
 import org.bouncycastle.cert.ocsp.OCSPException;
-import org.bouncycastle.cert.ocsp.OCSPReq;
 import org.bouncycastle.cert.ocsp.OCSPResp;
-import org.bouncycastle.cert.ocsp.Req;
 import org.bouncycastle.cert.ocsp.RevokedStatus;
 import org.bouncycastle.cert.ocsp.SingleResp;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -86,23 +87,20 @@ public class TucPki006OcspVerifier {
   /**
    * Performs TUC_PKI_006 checks (OCSP verification) against current date time.
    *
-   * @param ocspReq OCSP Request used to verify the response
    * @throws GemPkiException thrown in case of failed verification against gemSpec_PKI TUC_PKI_006
    */
-  public void performOcspChecks(@NonNull final OCSPReq ocspReq) throws GemPkiException {
-    performOcspChecks(ocspReq, GemLibPkiUtils.now());
+  public void performTucPki006Checks() throws GemPkiException {
+    performTucPki006Checks(GemLibPkiUtils.now());
   }
 
   /**
    * Performs TUC_PKI_006 checks (OCSP verification) against given date time as reference date
    *
-   * @param ocspReq OCSP Request used to verify the response
    * @param referenceDate reference date to check against if the certificate is revoked, as well
    *     thisUpdate, producedAt, nextUpdate
    * @throws GemPkiException thrown in case of failed verification against gemSpec_PKI TUC_PKI_006
    */
-  public void performOcspChecks(
-      @NonNull final OCSPReq ocspReq, @NonNull final ZonedDateTime referenceDate)
+  public void performTucPki006Checks(@NonNull final ZonedDateTime referenceDate)
       throws GemPkiException {
     log.info("Performing OCSP checks...");
 
@@ -114,7 +112,8 @@ public class TucPki006OcspVerifier {
     verifyProducedAt(referenceDate);
     verifyNextUpdate(referenceDate);
 
-    verifyOcspResponseCertId(ocspReq);
+    verifyOcspResponseCertId();
+
     log.info("OCSP validation successfully finished.");
   }
 
@@ -390,26 +389,29 @@ public class TucPki006OcspVerifier {
    * Verifies the OCSP cert id of the parameterized OCSP response against the cert id of the
    * corresponding parameterized OCSP request.
    *
-   * @param ocspReq OCSP request to validate the cert id against.
    * @throws GemPkiException thrown if the cert ids does not match.
    */
-  protected void verifyOcspResponseCertId(@NonNull final OCSPReq ocspReq) throws GemPkiException {
-
-    final Req singleReq = getFirstSingleReq(ocspReq);
-    final CertificateID reqCertId = singleReq.getCertID();
+  protected void verifyOcspResponseCertId() throws GemPkiException {
 
     final SingleResp singleResp = getFirstSingleResp(ocspResponse);
-    final CertificateID respCertID = singleResp.getCertID();
-    final String respCertIdAlgoId = respCertID.getHashAlgOID().getId();
+    final CertificateID respCertId = singleResp.getCertID();
 
-    final String shaAlgoId = CertificateID.HASH_SHA1.getAlgorithm().getId();
+    final AlgorithmIdentifier algorithmIdentifier = respCertId.toASN1Primitive().getHashAlgorithm();
 
-    boolean b = respCertIdAlgoId.equals(shaAlgoId);
-    b = b && Arrays.equals(respCertID.getIssuerNameHash(), reqCertId.getIssuerNameHash());
-    b = b && Arrays.equals(respCertID.getIssuerKeyHash(), reqCertId.getIssuerKeyHash());
-    b = b && respCertID.getSerialNumber().equals(reqCertId.getSerialNumber());
+    final TspServiceSubset tspServiceSubset =
+        new TspInformationProvider(tspServiceList, productType).getIssuerTspServiceSubset(eeCert);
 
-    if (!b) {
+    final CertificateID computedCertId =
+        OcspRequestGenerator.createCertificateId(
+            eeCert.getSerialNumber(), tspServiceSubset.getX509IssuerCert(), algorithmIdentifier);
+
+    try {
+      verifyHashAlgoSupported(algorithmIdentifier.getAlgorithm());
+    } catch (final GemPkiRuntimeException e) {
+      throw new GemPkiException(productType, ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR);
+    }
+
+    if (!respCertId.equals(computedCertId)) {
       throw new GemPkiException(productType, ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR);
     }
   }

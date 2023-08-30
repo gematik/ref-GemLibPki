@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2023 gematik GmbH
- * 
- * Licensed under the Apache License, Version 2.0 (the License);
+ * Copyright 2023 gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -40,7 +40,7 @@ class TspInformationProviderTest {
   void setUp() {
     productType = "IDP";
     final TslInformationProvider tslInformationProvider =
-        new TslInformationProvider(TestUtils.getDefaultTsl());
+        new TslInformationProvider(TestUtils.getDefaultTslUnsigned());
     tspInformationProvider =
         new TspInformationProvider(tslInformationProvider.getTspServices(), productType);
     VALID_X509_EE_CERT = TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
@@ -56,12 +56,13 @@ class TspInformationProviderTest {
   void getIssuerTspServiceSubsetNonNull() {
     assertNonNullParameter(
         () -> tspInformationProvider.getIssuerTspServiceSubset(null), "x509EeCert");
+    assertNonNullParameter(() -> tspInformationProvider.getIssuerTspService(null), "x509EeCert");
   }
 
   @Test
   void generateTspServiceSubsetIssuerCertificateExtractionError() {
     final TrustStatusListType tslAltCaBroken =
-        TestUtils.getTsl("tsls/ecc/defect/TSL_defect_altCA_broken.xml");
+        TestUtils.getTslUnsigned("tsls/ecc/defect/TSL_defect_altCA_broken.xml");
     assertThatThrownBy(
             () ->
                 new TspInformationProvider(
@@ -101,7 +102,7 @@ class TspInformationProviderTest {
   @Test
   void generateTspServiceSubsetServiceSupplyPointMissing() {
     final TrustStatusListType tslAltCaMissingSsp =
-        TestUtils.getTsl("tsls/ecc/defect/TSL_defect_altCA_missingSsp.xml");
+        TestUtils.getTslUnsigned("tsls/ecc/defect/TSL_defect_altCA_missingSsp.xml");
 
     assertThatThrownBy(
             () ->

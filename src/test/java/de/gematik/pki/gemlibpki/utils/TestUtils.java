@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2023 gematik GmbH
- * 
- * Licensed under the Apache License, Version 2.0 (the License);
+ * Copyright 2023 gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -78,12 +78,13 @@ public class TestUtils {
                 .setServiceSupplyPoints(serviceSupplyPointsType));
   }
 
-  public static TrustStatusListType getTsl(final String tslFilename) {
-    return TslReader.getTsl(ResourceReader.getFilePathFromResources(tslFilename, TestUtils.class));
+  public static TrustStatusListType getTslUnsigned(final String tslFilename) {
+    return TslReader.getTslUnsigned(
+        ResourceReader.getFilePathFromResources(tslFilename, TestUtils.class));
   }
 
-  public static TrustStatusListType getDefaultTsl() {
-    return TslReader.getTsl(
+  public static TrustStatusListType getDefaultTslUnsigned() {
+    return TslReader.getTslUnsigned(
         ResourceReader.getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, TestUtils.class));
   }
 
@@ -98,7 +99,7 @@ public class TestUtils {
 
   public static List<TspService> getDefaultTspServiceList() {
 
-    return new TslInformationProvider(getDefaultTsl()).getTspServices();
+    return new TslInformationProvider(getDefaultTslUnsigned()).getTspServices();
   }
 
   public static void waitSeconds(final long seconds) {

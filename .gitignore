@@ -3,7 +3,6 @@
 **/target
 
 doc/dev/
-LICENSE_PLACEHOLDER
 Pipeline.CI.Jenkinsfile
 Pipeline.DeployGitHub.Jenkinsfile
 Pipeline.InternalRelease.Jenkinsfile

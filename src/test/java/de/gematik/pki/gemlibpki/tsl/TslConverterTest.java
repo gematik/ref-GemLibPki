@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2023 gematik GmbH
- * 
- * Licensed under the Apache License, Version 2.0 (the License);
+ * Copyright 2023 gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an 'AS IS' BASIS,
+ * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -23,7 +23,9 @@ import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertXmlEqual;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.readP12;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.tsl.TslConverter.DocToBytesOption;
 import de.gematik.pki.gemlibpki.tsl.TslSigner.TslSignerBuilder;
 import de.gematik.pki.gemlibpki.utils.GemLibPkiUtils;
@@ -32,10 +34,16 @@ import de.gematik.pki.gemlibpki.utils.TestUtils;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import javax.xml.bind.JAXBException;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.w3c.dom.Document;
 
 class TslConverterTest {
@@ -45,8 +53,26 @@ class TslConverterTest {
 
   @Test
   void tslToDoc() {
-    final TrustStatusListType tsl = TslReader.getTsl(TSL_PATH);
-    assertXmlEqual(TslConverter.tslToDoc(tsl), TSL_PATH);
+    final TrustStatusListType tsl = TslReader.getTslUnsigned(TSL_PATH);
+    assertXmlEqual(TslConverter.tslToDocUnsigned(tsl), TSL_PATH);
+  }
+
+  @Test
+  void testTslToDocException() {
+
+    final TrustStatusListType tsl = TslReader.getTslUnsigned(TSL_PATH);
+
+    try (final MockedStatic<TslUtils> tslUtilsMockedStatic =
+        Mockito.mockStatic(TslUtils.class, Mockito.CALLS_REAL_METHODS)) {
+
+      tslUtilsMockedStatic.when(TslUtils::createMarshaller).thenThrow(new JAXBException("message"));
+
+      assertThatThrownBy(() -> TslConverter.tslToDocUnsigned(tsl))
+          .isInstanceOf(GemPkiRuntimeException.class)
+          .hasMessage("Error converting TrustServiceStatusList to Document type.")
+          .cause()
+          .isInstanceOf(JAXBException.class);
+    }
   }
 
   @Test
@@ -59,6 +85,28 @@ class TslConverterTest {
   void docToBytes() {
     final Document tslDoc = TslReader.getTslAsDoc(TSL_PATH);
     assertXmlEqual(TslConverter.docToBytes(tslDoc), TSL_PATH);
+  }
+
+  @Test
+  void docToBytesException() throws TransformerConfigurationException {
+
+    final Document tslDoc = TslReader.getTslAsDoc(TSL_PATH);
+
+    final TransformerFactory transformerFactoryMock = Mockito.mock(TransformerFactory.class);
+    Mockito.when(transformerFactoryMock.newTransformer())
+        .thenThrow(new TransformerConfigurationException());
+
+    try (final MockedStatic<TslUtils> tslUtilsMockedStatic =
+        Mockito.mockStatic(TslUtils.class, Mockito.CALLS_REAL_METHODS)) {
+
+      tslUtilsMockedStatic.when(TslUtils::getTransformerFactory).thenReturn(transformerFactoryMock);
+
+      assertThatThrownBy(() -> TslConverter.docToBytes(tslDoc))
+          .isInstanceOf(GemPkiRuntimeException.class)
+          .hasMessage(TslConverter.ERROR_READING_TSL)
+          .cause()
+          .isInstanceOf(TransformerException.class);
+    }
   }
 
   @ParameterizedTest
@@ -100,20 +148,20 @@ class TslConverterTest {
     final TslSignerBuilder tslSignerBuilder = TslSigner.builder();
     final P12Container signerEcc = readP12(SIGNER_PATH_ECC);
 
-    final TrustStatusListType tsl = TestUtils.getTsl(FILE_NAME_TSL_ECC_DEFAULT);
+    final TrustStatusListType tslUnsigned = TestUtils.getTslUnsigned(FILE_NAME_TSL_ECC_DEFAULT);
 
-    final Document tslDoc = TslConverter.tslToDoc(tsl);
-    final byte[] tslBytes = TslConverter.docToBytes(tslDoc);
+    final Document tslDocUnsigned = TslConverter.tslToDocUnsigned(tslUnsigned);
+    final byte[] tslBytesUnsigned = TslConverter.docToBytes(tslDocUnsigned);
 
     final String indentationIndicator = "\n ";
     assertThat(
             StringUtils.countMatches(
-                new String(tslBytes, StandardCharsets.UTF_8), indentationIndicator))
+                new String(tslBytesUnsigned, StandardCharsets.UTF_8), indentationIndicator))
         .isZero();
 
-    tslSignerBuilder.tslToSign(tslDoc).tslSignerP12(signerEcc).build().sign();
+    tslSignerBuilder.tslToSign(tslDocUnsigned).tslSignerP12(signerEcc).build().sign();
 
-    final byte[] signedTslBytes = TslConverter.docToBytes(tslDoc);
+    final byte[] signedTslBytes = TslConverter.docToBytes(tslDocUnsigned);
 
     // NOTE: sing() adds the signature element with few line breaks  (that are not pretty printed),
     // the original xml remains as is, in this case - a single line
@@ -122,11 +170,11 @@ class TslConverterTest {
                 new String(signedTslBytes, StandardCharsets.UTF_8), indentationIndicator))
         .isLessThan(100);
 
-    final Document tslDoc2 = TslConverter.bytesToDoc(tslBytes);
+    final Document tslDoc2 = TslConverter.bytesToDoc(tslBytesUnsigned);
 
-    final byte[] tslBytesPrettyPrinted =
+    final byte[] tslBytesPrettyPrintedUnsigned =
         TslConverter.docToBytes(tslDoc2, DocToBytesOption.PRETTY_PRINT);
-    final Document tslDocPrettyPrinted = TslConverter.bytesToDoc(tslBytesPrettyPrinted);
+    final Document tslDocPrettyPrinted = TslConverter.bytesToDoc(tslBytesPrettyPrintedUnsigned);
     tslSignerBuilder.tslToSign(tslDocPrettyPrinted).tslSignerP12(signerEcc).build().sign();
 
     final byte[] signedAndPrettyPrintedTslBytes = TslConverter.docToBytes(tslDocPrettyPrinted);
@@ -135,7 +183,8 @@ class TslConverterTest {
 
     int countIndentationIndicator =
         StringUtils.countMatches(
-            new String(tslBytesPrettyPrinted, StandardCharsets.UTF_8), indentationIndicator);
+            new String(tslBytesPrettyPrintedUnsigned, StandardCharsets.UTF_8),
+            indentationIndicator);
     assertThat(countIndentationIndicator).isGreaterThan(nrOfMinIdents);
 
     countIndentationIndicator =
@@ -148,16 +197,35 @@ class TslConverterTest {
   @Test
   void bytesToTsl() {
     final byte[] tslBytes = GemLibPkiUtils.readContent(TSL_PATH);
-    assertXmlEqual(TslConverter.bytesToTsl(tslBytes), TslReader.getTsl(TSL_PATH));
+    assertXmlEqual(TslConverter.bytesToTslUnsigned(tslBytes), TslReader.getTslUnsigned(TSL_PATH));
+  }
+
+  @Test
+  void bytesToTslException() {
+    final byte[] tslBytes = GemLibPkiUtils.readContent(TSL_PATH);
+
+    try (final MockedStatic<TslUtils> tslUtilsMockedStatic =
+        Mockito.mockStatic(TslUtils.class, Mockito.CALLS_REAL_METHODS)) {
+
+      tslUtilsMockedStatic
+          .when(TslUtils::createUnmarshaller)
+          .thenThrow(new JAXBException("message"));
+
+      assertThatThrownBy(() -> TslConverter.bytesToTslUnsigned(tslBytes))
+          .isInstanceOf(GemPkiRuntimeException.class)
+          .hasMessage(TslConverter.ERROR_READING_TSL)
+          .cause()
+          .isInstanceOf(JAXBException.class);
+    }
   }
 
   @Test
   void nonNullTests() {
-    assertNonNullParameter(() -> TslConverter.tslToDoc(null), "tsl");
-    assertNonNullParameter(() -> TslConverter.tslToBytes(null), "tsl");
+    assertNonNullParameter(() -> TslConverter.tslToDocUnsigned(null), "tslUnsigned");
+    assertNonNullParameter(() -> TslConverter.tslUnsignedToBytes(null), "tsl");
     assertNonNullParameter(() -> TslConverter.docToBytes(null), "tslDoc");
     assertNonNullParameter(() -> TslConverter.docToBytes(null, DocToBytesOption.RESET), "tslDoc");
     assertNonNullParameter(() -> TslConverter.bytesToDoc(null), "tslBytes");
-    assertNonNullParameter(() -> TslConverter.bytesToTsl(null), "tslBytes");
+    assertNonNullParameter(() -> TslConverter.bytesToTslUnsigned(null), "tslBytes");
   }
 }
