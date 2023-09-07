@@ -17,7 +17,9 @@
 package de.gematik.pki.gemlibpki.ocsp;
 
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB_RSA;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB_RSA;
 import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getFirstSingleResp;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -185,6 +187,23 @@ class OcspResponseGeneratorTest {
             () -> OcspResponseGenerator.createRespId(subjectPublicKeyInfo, digestCalculatorMock))
         .isInstanceOf(GemPkiRuntimeException.class)
         .hasMessage("Generieren der RespID fehlgeschlagen.");
+  }
+
+  @Test
+  void useOcspRespRsa() {
+
+    final OCSPReq ocspReqRsa =
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB_RSA, VALID_ISSUER_CERT_SMCB_RSA);
+
+    assertDoesNotThrow(
+        () ->
+            writeOcspRespToFile(
+                OcspResponseGenerator.builder()
+                    .signer(OcspTestConstants.getOcspSignerRsa())
+                    .build()
+                    .generate(
+                        ocspReqRsa, VALID_X509_EE_CERT_SMCB_RSA, VALID_ISSUER_CERT_SMCB_RSA)));
   }
 
   @Test

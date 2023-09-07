@@ -27,6 +27,8 @@ import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA54
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB_RSA;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB_RSA;
+import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_ANY;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_AK_AUT_ECC;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_CH_AUT_ECC;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_FD_OSIG;
@@ -78,8 +80,8 @@ import org.mockito.MockedConstruction;
 import org.mockito.Mockito;
 
 class TucPki018VerifierTest {
-  private static final CertificateProfile certificateProfile = CERT_PROFILE_C_HCI_AUT_ECC;
-  private static final List<CertificateProfile> certificateProfiles = List.of(certificateProfile);
+  private static final List<CertificateProfile> certificateProfiles =
+      List.of(CERT_PROFILE_C_HCI_AUT_ECC);
   private static final OcspResponderMock ocspResponderMock =
       new OcspResponderMock(LOCAL_SSP_DIR, OCSP_HOST);
   private static final int ocspTimeoutSeconds = OcspConstants.DEFAULT_OCSP_TIMEOUT_SECONDS;
@@ -165,6 +167,15 @@ class TucPki018VerifierTest {
   }
 
   @Test
+  void verifyAnyCertProfileValid() {
+    ocspResponderMock.configureForOcspRequest(VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+    assertDoesNotThrow(
+        () ->
+            buildTucPki18Verifier(List.of(CERT_PROFILE_ANY))
+                .performTucPki018Checks(VALID_X509_EE_CERT_SMCB));
+  }
+
+  @Test
   void verifyAkAutEccCertValid() {
     final X509Certificate eeCert = readCert("GEM.KOMP-CA10/80276883110000000001-20221012_ecc.crt");
     ocspResponderMock.configureForOcspRequest(eeCert, VALID_ISSUER_CERT_KOMP_CA10);
@@ -196,12 +207,13 @@ class TucPki018VerifierTest {
 
   @Test
   void verifySmcbAutRsaCertValid() {
-    final X509Certificate eeCert = readCert("GEM.SMCB-CA24-RSA/AschoffscheApotheke.pem");
-    ocspResponderMock.configureForOcspRequest(eeCert, VALID_ISSUER_CERT_SMCB_RSA);
+
+    ocspResponderMock.configureForOcspRequest(
+        VALID_X509_EE_CERT_SMCB_RSA, VALID_ISSUER_CERT_SMCB_RSA);
     assertDoesNotThrow(
         () ->
             buildTucPki18Verifier(List.of(CERT_PROFILE_C_HCI_AUT_RSA))
-                .performTucPki018Checks(eeCert));
+                .performTucPki018Checks(VALID_X509_EE_CERT_SMCB_RSA));
   }
 
   @Test
@@ -276,10 +288,9 @@ class TucPki018VerifierTest {
 
   @Test
   void verifyNotEveryKeyUsagePresent() {
-    final X509Certificate ASCHOFFSCHE_APOTHEKE_PEM =
-        readCert("GEM.SMCB-CA24-RSA/AschoffscheApotheke.pem");
-    ocspResponderMock.configureForOcspRequest(ASCHOFFSCHE_APOTHEKE_PEM, VALID_ISSUER_CERT_SMCB_RSA);
-    assertThatThrownBy(() -> tucPki018Verifier.performTucPki018Checks(ASCHOFFSCHE_APOTHEKE_PEM))
+    ocspResponderMock.configureForOcspRequest(
+        VALID_X509_EE_CERT_SMCB_RSA, VALID_ISSUER_CERT_SMCB_RSA);
+    assertThatThrownBy(() -> tucPki018Verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB_RSA))
         .isInstanceOf(GemPkiParsingException.class)
         .hasMessageContaining(ErrorCode.SE_1016_WRONG_KEYUSAGE.name());
   }
@@ -349,7 +360,8 @@ class TucPki018VerifierTest {
 
     assertNonNullParameter(
         () ->
-            tucPki018Verifier.tucPki018ChecksForProfile(null, certificateProfile, tspServiceSubset),
+            tucPki018Verifier.tucPki018ChecksForProfile(
+                null, CERT_PROFILE_C_HCI_AUT_ECC, tspServiceSubset),
         "x509EeCert");
     assertNonNullParameter(
         () ->
@@ -360,7 +372,7 @@ class TucPki018VerifierTest {
     assertNonNullParameter(
         () ->
             tucPki018Verifier.tucPki018ChecksForProfile(
-                VALID_X509_EE_CERT_SMCB, certificateProfile, null),
+                VALID_X509_EE_CERT_SMCB, CERT_PROFILE_C_HCI_AUT_ECC, null),
         "tspServiceSubset");
 
     assertNonNullParameter(
@@ -515,11 +527,7 @@ class TucPki018VerifierTest {
 
       assertThatThrownBy(() -> tucPki018Verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB))
           .isInstanceOf(GemPkiRuntimeException.class)
-          .hasMessage(
-              "Fehler bei der Verarbeitung der Admission des Zertifikats: CN=Zahnarztpraxis Dr."
-                  + " med.Gunther KZV"
-                  + " TEST-ONLY,2.5.4.5=#131731372e3830323736383833313139313130303033333237,O=2-2.30.1.16.TestOnly"
-                  + " NOT-VALID,C=DE");
+          .hasMessage("Error in processing the admission of the end entity certificate.");
     }
   }
 }

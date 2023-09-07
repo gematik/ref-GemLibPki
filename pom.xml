@@ -4,7 +4,7 @@
 
   <groupId>de.gematik.pki</groupId>
   <artifactId>gemLibPki</artifactId>
-  <version>1.1.0</version>
+  <version>1.2.0</version>
   <packaging>jar</packaging>
   <name>GemLibPki</name>
   <description>library for implementation and tests of the gematik pki specification</description>
@@ -44,7 +44,7 @@
   </issueManagement>
 
   <properties>
-    <project.build.outputTimestamp>1693398022</project.build.outputTimestamp>
+    <project.build.outputTimestamp>1694093539</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.encoding>${project.build.sourceEncoding}</maven.compiler.encoding>
     <version.java>17</version.java>
@@ -62,9 +62,9 @@
     <version.junit-jupiter>5.10.0</version.junit-jupiter>
     <version.log4j>2.20.0</version.log4j>
     <version.lombok>1.18.28</version.lombok>
-    <version.mockito>5.4.0</version.mockito>
+    <version.mockito>5.5.0</version.mockito>
     <version.unirest-java>3.14.5</version.unirest-java>
-    <version.wiremock-jre8>2.35.0</version.wiremock-jre8>
+    <version.wiremock-jre8>2.35.1</version.wiremock-jre8>
     <version.xades4j>2.2.1</version.xades4j>
     <version.xmlunit>2.9.1</version.xmlunit>
 
@@ -73,7 +73,7 @@
     <version.maven-clean-plugin>3.3.1</version.maven-clean-plugin>
     <version.maven-compiler-plugin>3.11.0</version.maven-compiler-plugin>
     <maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
-    <version.maven-enforcer-plugin>3.3.0</version.maven-enforcer-plugin>
+    <version.maven-enforcer-plugin>3.4.0</version.maven-enforcer-plugin>
     <version.maven-gpg-plugin>3.1.0</version.maven-gpg-plugin>
     <version.maven-jar-plugin>3.3.0</version.maven-jar-plugin>
     <version.maven-javadoc-plugin>3.5.0</version.maven-javadoc-plugin>
@@ -82,7 +82,7 @@
     <version.nexus-staging-maven-plugin>1.6.13</version.nexus-staging-maven-plugin>
     <version.sonar-maven-plugin>3.9.1.2184</version.sonar-maven-plugin>
     <version.spotless.google-java-format>1.17.0</version.spotless.google-java-format>
-    <version.spotless-maven-plugin>2.38.0</version.spotless-maven-plugin>
+    <version.spotless-maven-plugin>2.39.0</version.spotless-maven-plugin>
 
     <!-- settings for upload to sonar server -->
     <sonar.coverage.jacoco.xmlReportPaths>${project.reporting.outputDirectory}/jacoco/index.xml</sonar.coverage.jacoco.xmlReportPaths>

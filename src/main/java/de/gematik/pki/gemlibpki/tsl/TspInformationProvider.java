@@ -240,7 +240,7 @@ public class TspInformationProvider {
       throw new GemPkiException(productType, ErrorCode.TE_1026_SERVICESUPPLYPOINT_MISSING);
     }
 
-    log.debug("Der erste ServiceSupplyPoint wurde ermittelt {}", firstServiceSupplyPoint);
+    log.debug("First ServiceSupplyPoint was identified: {}", firstServiceSupplyPoint);
     return firstServiceSupplyPoint;
   }
 }

@@ -69,15 +69,27 @@ public final class CertificateProfileVerification {
 
   /**
    * Verify that all intended KeyUsage bit(s) of certificate profile {@link CertificateProfile}
-   * match against KeyUsage(s) of parameterized end-entity certificate.
+   * match against KeyUsage(s) of parameterized end-entity certificate and that the KeyUsages
+   * extension in the certificate is present
    *
    * @throws GemPkiException if the certificate has a wrong key usage
    */
   public void verifyKeyUsage() throws GemPkiException {
     final boolean[] certKeyUsage = x509EeCert.getKeyUsage();
     if (certKeyUsage == null) {
+      log.error("KeyUsage extension im Zertifikat nicht vorhanden.");
       throw new GemPkiException(productType, ErrorCode.SE_1016_WRONG_KEYUSAGE);
     }
+
+    final List<KeyUsage> intendedKeyUsageList =
+        getIntendedKeyUsagesFromCertificateProfile(certificateProfile);
+    if (intendedKeyUsageList.isEmpty()) {
+      log.info(
+          "Skipping check of KeyUsage, because of user request. CertProfile used: {}",
+          certificateProfile.name());
+      return;
+    }
+
     int nrBitsEe = 0;
 
     for (final boolean bit : certKeyUsage) {
@@ -85,8 +97,6 @@ public final class CertificateProfileVerification {
         nrBitsEe++;
       }
     }
-    final List<KeyUsage> intendedKeyUsageList =
-        getIntendedKeyUsagesFromCertificateProfile(certificateProfile);
     if (nrBitsEe != intendedKeyUsageList.size()) {
       throw new GemPkiException(productType, ErrorCode.SE_1016_WRONG_KEYUSAGE);
     }
@@ -118,6 +128,17 @@ public final class CertificateProfileVerification {
    * @throws GemPkiException if certificate has a wrong key usage
    */
   public void verifyExtendedKeyUsage() throws GemPkiException {
+
+    final List<String> intendedExtendedKeyUsageOidList =
+        getOidOfIntendedExtendedKeyUsagesFromCertificateProfile(certificateProfile);
+
+    if (intendedExtendedKeyUsageOidList.isEmpty() || !certificateProfile.isFailOnMissingEku()) {
+      log.info(
+          "Skipping check of extendedKeyUsage, because of user request. CertProfile used: {}",
+          certificateProfile.name());
+      return;
+    }
+
     final List<String> eeExtendedKeyUsagesOid;
     try {
       eeExtendedKeyUsagesOid = x509EeCert.getExtendedKeyUsage();
@@ -127,14 +148,9 @@ public final class CertificateProfileVerification {
               + x509EeCert.getSubjectX500Principal().getName(),
           e);
     }
-    final List<String> intendedExtendedKeyUsageOidList =
-        getOidOfIntendedExtendedKeyUsagesFromCertificateProfile(certificateProfile);
+
     if (eeExtendedKeyUsagesOid == null) {
-      if (intendedExtendedKeyUsageOidList.isEmpty() || !certificateProfile.isFailOnMissingEku()) {
-        return;
-      } else {
-        throw new GemPkiException(productType, ErrorCode.SE_1017_WRONG_EXTENDEDKEYUSAGE);
-      }
+      throw new GemPkiException(productType, ErrorCode.SE_1017_WRONG_EXTENDEDKEYUSAGE);
     }
     final List<String> filteredList =
         eeExtendedKeyUsagesOid.stream()
@@ -208,6 +224,14 @@ public final class CertificateProfileVerification {
    */
   private void verifyCertificateProfileByCertificateTypeOid(
       final Set<String> certificatePolicyOidList) throws GemPkiException {
+
+    if (certificateProfile.getCertificateType().equals(CertificateType.CERT_TYPE_ANY)) {
+      log.info(
+          "Skipping check of CertificateTypeOid, because of user request. CertProfile used: {}",
+          certificateProfile.name());
+      return;
+    }
+
     if (!certificatePolicyOidList.contains(certificateProfile.getCertificateType().getOid())) {
       log.debug("ZertifikatsTypOids im Zertifikat: {}", certificatePolicyOidList);
       log.debug(
@@ -226,7 +250,7 @@ public final class CertificateProfileVerification {
   private void verifyCertificateTypeOidInIssuerTspServiceExtension(
       final Set<String> certificateTypeOidList) throws GemPkiException {
     log.debug(
-        "Prüfe CA Authorisierung für die Herausgabe des Zertifikatstyps {} ",
+        "Prüfe CA Autorisierung für die Herausgabe des Zertifikatstyps {} ",
         certificateProfile.getCertificateType().getOidReference());
     for (final ExtensionType extensionType : tspServiceSubset.getExtensions()) {
       final List<Object> content = extensionType.getContent();

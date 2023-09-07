@@ -177,9 +177,7 @@ public class TucPki018Verifier {
         return new Admission(x509EeCert);
       } catch (final IOException e) {
         throw new GemPkiRuntimeException(
-            "Fehler bei der Verarbeitung der Admission des Zertifikats: "
-                + x509EeCert.getSubjectX500Principal().getName(),
-            e);
+            "Error in processing the admission of the end entity certificate.", e);
       } catch (final GemPkiException e) {
         errors.put(certificateProfile, e);
       }

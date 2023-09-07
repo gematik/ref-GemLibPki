@@ -113,7 +113,7 @@ public final class CertificateCommonVerification {
 
     try {
       x509EeCert.verify(x509IssuerCert.getPublicKey());
-      log.debug("Signaturprüfung von {} erfolgreich", x509EeCert.getSubjectX500Principal());
+      log.debug("Signature verification for {} successful.", x509EeCert.getSubjectX500Principal());
     } catch (final GeneralSecurityException verifyFailed) {
       throw new GemPkiException(
           productType, ErrorCode.SE_1024_CERTIFICATE_NOT_VALID_MATH, verifyFailed);
