@@ -16,6 +16,7 @@
 
 package de.gematik.pki.gemlibpki.certificate;
 
+import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_ANY;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_EGK_AUT;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_FD_OSIG;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_FD_SIG;
@@ -23,7 +24,6 @@ import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_FD_
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_FD_TLS_S;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_GSMCK_AK_AUT;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_HBA_AUT;
-import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_NONE;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_SMC_B_AUT;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_SMC_B_ENC;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_SMC_B_OSIG;
@@ -126,10 +126,12 @@ public enum CertificateProfile {
       true),
 
   CERT_PROFILE_C_TSL_SIG(
-      CERT_TYPE_NONE,
+      CERT_TYPE_ANY,
       List.of(KEYUSAGE_NON_REPUDIATION),
       List.of(EXT_KEYUSAGE_ID_TSL_KP_TSLSIGNING),
-      true);
+      true),
+
+  CERT_PROFILE_ANY(CERT_TYPE_ANY, List.of(), List.of(), false);
 
   private final CertificateType certificateType;
   private final List<KeyUsage> keyUsages;

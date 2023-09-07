@@ -41,7 +41,6 @@ public enum CertificateType {
   CERT_TYPE_HBA_AUT("C.HP.AUT", "oid_hba_aut", "1.2.276.0.76.4.75"),
   CERT_TYPE_HBA_QES("C.HP.QES", "oid_hba_qes", "1.2.276.0.76.4.72"),
   CERT_TYPE_NK_VPN("C.NK.VPN", "oid_nk_vpn", "1.2.276.0.76.4.80"),
-  CERT_TYPE_NONE("", "", ""),
   CERT_TYPE_SAK_AUT("C.SAK.AUT", "oid_sak_aut", "1.2.276.0.76.4.113"),
   CERT_TYPE_SGD_HSM_AUT("C.SGD-HSM.AUT", "oid_sgd_hsm_aut", "1.2.276.0.76.4.214"),
   CERT_TYPE_SMC_B_AUT("C.HCI.AUT", "oid_smc_b_aut", "1.2.276.0.76.4.77"),
@@ -50,6 +49,8 @@ public enum CertificateType {
   CERT_TYPE_SMKT_AUT("C.SMKT.AUT", "oid_smkt_aut", "1.2.276.0.76.4.82"),
   CERT_TYPE_ZD_SIG("C.ZD.SIG", "oid_zd_sig", "1.2.276.0.76.4.287"),
   CERT_TYPE_ZD_TLS_S("C.ZD.TLS-S", "oid_zd_tls_s", "1.2.276.0.76.4.157"),
+
+  CERT_TYPE_ANY(null, null, null),
 
   TSL_FIELD_TSL_CCA_CERT(
       "Change of TSL Signer-CA Certificate", "oid_tsl_cca_cert", "1.2.276.0.76.4.164"),

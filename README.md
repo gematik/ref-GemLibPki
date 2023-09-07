@@ -32,12 +32,14 @@ willingly.
 
 ##### Certificate checks
 
-- we check against nonQES certificate profiles specified by gematik, not against usages and contexts
+- we check against nonQES certificate profiles specified by gematik, not against usages and
+  contexts (a special certificate profile for allowing any profile, i.e. disable profile checks, is
+  available as well)
 - we provide several methods to get information about a certificate and its issuer
 - contains checks of all steps defined in TUC_PKI_018 „Zertifikatsprüfung in der TI“ specified in
   gematik document "Übergreifende Spezifikation PKI" (gemSpec_PKI)
 - OCSP requests are optional and activated by default
-- OCSP responses are verified according to TUC_PKI_006 "OCSP-Abfrage".
+- OCSP responses are verified according to TUC_PKI_006 "OCSP-Abfrage"
   See [OCSP checks](./README.md#ocsp-checks) section.
 
 ##### OCSP checks

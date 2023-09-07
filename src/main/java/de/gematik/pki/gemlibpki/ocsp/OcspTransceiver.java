@@ -167,10 +167,7 @@ public final class OcspTransceiver {
    */
   public Optional<OCSPResp> sendOcspRequest(@NonNull final OCSPReq ocspReq) throws GemPkiException {
 
-    log.info(
-        "Send OCSP Request for certificate serial number: {} to: {}",
-        ocspReq.getRequestList()[0].getCertID().getSerialNumber(),
-        ssp);
+    log.info("Sending OCSP Request for end entity certificate to: {}", ssp);
 
     final byte[] ocspReqEncoded;
     try {

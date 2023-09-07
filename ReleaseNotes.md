@@ -2,10 +2,19 @@
 
 # Release notes GemLibPki
 
+## Release 1.2.0
+
+- introduce a generic enum (`CertificateProfile.CERT_PROFILE_ANY`) to allow any certificate profile
+  for TUC_PKI_018 checks. The usage of this certificate profile disables the checks of keyUsage,
+  extendedKeyUsage and certificateTypeOids. This should resolve
+  issue https://github.com/gematik/ref-GemLibPki/issues/3.
+- remove log messages that reveal personal information
+- update dependencies
+
 ## Release 1.1.0
 
 - API change: rename some methods that provide a TSL and deliver unsigned content
-- API change: rename method `performTucPki18Checks` to `performTucPki18Checks` to match name from
+- API change: rename method `performTucPki18Checks` to `performTucPki018Checks` to match name from
   specification
 - API change: rename method `performOcspChecks` to `performTucPki006Checks` to match name from
   specification

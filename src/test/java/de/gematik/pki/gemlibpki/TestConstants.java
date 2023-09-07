@@ -18,6 +18,7 @@ package de.gematik.pki.gemlibpki;
 
 import static de.gematik.pki.gemlibpki.utils.TestUtils.readCert;
 
+import de.gematik.pki.gemlibpki.utils.TestUtils;
 import java.security.cert.X509Certificate;
 
 public class TestConstants {
@@ -40,6 +41,9 @@ public class TestConstants {
 
   public static final X509Certificate VALID_ISSUER_CERT_SMCB_RSA =
       readCert("GEM.SMCB-CA24-RSA/GEM.SMCB-CA24.pem");
+
+  public static final X509Certificate VALID_X509_EE_CERT_SMCB_RSA =
+      TestUtils.readCert("GEM.SMCB-CA24-RSA/AschoffscheApotheke.pem");
 
   public static final X509Certificate VALID_ISSUER_CERT_HBA =
       readCert("GEM.HBA-CA13/GEM.HBA-CA13_brainpoolIP256r1.pem");

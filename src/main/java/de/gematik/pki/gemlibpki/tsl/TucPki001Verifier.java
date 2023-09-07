@@ -273,7 +273,7 @@ public class TucPki001Verifier {
         return Optional.empty();
       }
 
-      log.debug("one trust anchor for update found: start its verification");
+      log.debug("one trust anchor for update found: starting its verification");
 
       final TSPServiceType certChangeTspServiceType = certChangeTspServiceTypeList.get(0);
 
