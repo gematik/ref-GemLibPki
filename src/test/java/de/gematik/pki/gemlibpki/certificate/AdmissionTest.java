@@ -16,6 +16,8 @@
 
 package de.gematik.pki.gemlibpki.certificate;
 
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.certificate.Role.OID_ZAHNARZTPRAXIS;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -33,11 +35,6 @@ import org.mockito.Mockito;
 
 final class AdmissionTest {
 
-  private final X509Certificate certValid =
-      TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
-
-  private AdmissionTest() {}
-
   @Test
   void admissionNull() {
     assertNonNullParameter(() -> new Admission(null), "x509EeCert");
@@ -45,12 +42,13 @@ final class AdmissionTest {
 
   @Test
   void getAdmissionAuthority() throws IOException {
-    assertThat(new Admission(certValid).getAdmissionAuthority()).isEqualTo("C=DE,O=KZV Berlin");
+    assertThat(new Admission(VALID_X509_EE_CERT_SMCB).getAdmissionAuthority())
+        .isEqualTo("C=DE,O=KZV Berlin");
   }
 
   @Test
   void getAdmissionAuthorityEmpty() throws IOException {
-    final Admission admission = new Admission(certValid);
+    final Admission admission = new Admission(VALID_X509_EE_CERT_SMCB);
 
     try (final MockedStatic<AdmissionSyntax> admissionSyntaxMockedStatic =
         Mockito.mockStatic(AdmissionSyntax.class)) {
@@ -66,19 +64,20 @@ final class AdmissionTest {
 
   @Test
   void getProfessionItems() throws IOException {
-    assertThat(new Admission(certValid).getProfessionItems())
-        .contains(Role.OID_ZAHNARZTPRAXIS.getProfessionItem());
+    assertThat(new Admission(VALID_X509_EE_CERT_SMCB).getProfessionItems())
+        .contains(OID_ZAHNARZTPRAXIS.getProfessionItem());
   }
 
   @Test
   void getProfessionOids() throws IOException {
-    assertThat(new Admission(certValid).getProfessionOids())
-        .contains(Role.OID_ZAHNARZTPRAXIS.getProfessionOid());
+    assertThat(new Admission(VALID_X509_EE_CERT_SMCB).getProfessionOids())
+        .contains(OID_ZAHNARZTPRAXIS.getProfessionOid());
   }
 
   @Test
   void getRegistrationNumber() throws IOException {
-    assertThat(new Admission(certValid).getRegistrationNumber()).isEqualTo("2-2.30.1.16.TestOnly");
+    assertThat(new Admission(VALID_X509_EE_CERT_SMCB).getRegistrationNumber())
+        .isEqualTo("2-2.30.1.16.TestOnly");
   }
 
   @Test
@@ -90,8 +89,16 @@ final class AdmissionTest {
   }
 
   @Test
+  void verifyMissingAdmission() throws IOException {
+    final X509Certificate missingAdmission =
+        TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther_missing-admission.pem");
+    assertDoesNotThrow(() -> new Admission(missingAdmission));
+    assertThat(new Admission(missingAdmission).getProfessionOids()).isEmpty();
+  }
+
+  @Test
   void verifyGetProfessionItems_empty1() throws IOException {
-    final Admission admission = new Admission(certValid);
+    final Admission admission = new Admission(VALID_X509_EE_CERT_SMCB);
 
     try (final MockedStatic<AdmissionSyntax> admissionSyntaxMockedStatic =
         Mockito.mockStatic(AdmissionSyntax.class)) {
@@ -107,7 +114,7 @@ final class AdmissionTest {
 
   @Test
   void verifyGetProfessionItems_empty2() throws IOException {
-    final Admission admission = new Admission(certValid);
+    final Admission admission = new Admission(VALID_X509_EE_CERT_SMCB);
 
     final AdmissionSyntax admissionInstanceMock = Mockito.mock(AdmissionSyntax.class);
     Mockito.when(admissionInstanceMock.getContentsOfAdmissions()).thenReturn(new Admissions[] {});
@@ -126,7 +133,7 @@ final class AdmissionTest {
 
   @Test
   void verifyGetProfessionItems_empty3() throws IOException {
-    final Admission admission = new Admission(certValid);
+    final Admission admission = new Admission(VALID_X509_EE_CERT_SMCB);
 
     final Admissions bcAdmissionsMock = Mockito.mock(Admissions.class);
     Mockito.when(bcAdmissionsMock.getProfessionInfos()).thenReturn(new ProfessionInfo[] {});

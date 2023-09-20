@@ -39,29 +39,56 @@ public class TestConstants {
   public static final X509Certificate VALID_X509_EE_CERT_SMCB =
       readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
 
-  public static final X509Certificate VALID_ISSUER_CERT_SMCB_RSA =
+  public static final X509Certificate VALID_ISSUER_CERT_SMCB_CA24_RSA =
       readCert("GEM.SMCB-CA24-RSA/GEM.SMCB-CA24.pem");
+  public static final X509Certificate VALID_ISSUER_CERT_SMCB_CA41_RSA =
+      readCert("GEM.SMCB-CA41-RSA/GEM.SMCB-CA41.pem");
 
-  public static final X509Certificate VALID_X509_EE_CERT_SMCB_RSA =
+  public static final X509Certificate VALID_X509_EE_CERT_SMCB_CA24_RSA =
       TestUtils.readCert("GEM.SMCB-CA24-RSA/AschoffscheApotheke.pem");
-
   public static final X509Certificate VALID_ISSUER_CERT_HBA =
       readCert("GEM.HBA-CA13/GEM.HBA-CA13_brainpoolIP256r1.pem");
 
   public static final X509Certificate VALID_ISSUER_CERT_KOMP_CA10 =
       readCert("GEM.KOMP-CA10/GEM.KOMP-CA10_brainpoolIP256r1.pem");
-
+  public static final X509Certificate VALID_ISSUER_CERT_KOMP_CA24 =
+      readCert("GEM.KOMP-CA24/GEM.KOMP-CA24-TEST-ONLY.pem");
+  public static final X509Certificate VALID_ISSUER_CERT_KOMP_CA40 =
+      readCert("GEM.KOMP-CA40/GEM.KOMP-CA40-TEST-ONLY.pem");
   public static final X509Certificate VALID_ISSUER_CERT_KOMP_CA50 =
       readCert("GEM.KOMP-CA50/GEM.KOMP-CA50-TEST-ONLY.pem");
-
+  public static final X509Certificate VALID_ISSUER_CERT_KOMP_CA51 =
+      readCert("GEM.KOMP-CA51/GEM.KOMP-CA51.pem");
   public static final X509Certificate VALID_ISSUER_CERT_KOMP_CA54 =
       readCert("GEM.KOMP-CA54/GEM.KOMP-CA54.pem");
+  public static final X509Certificate VALID_X509_EE_CERT_ALT_CA =
+      readCert("GEM.SMCB-CA33/DrMedGuntherKZV.pem");
 
   public static final X509Certificate VALID_ISSUER_CERT_TSL_CA8 =
       readCert("GEM.TSL-CA8/GEM.TSL-CA8_brainpoolIP256r1.pem");
 
   public static final X509Certificate VALID_ISSUER_CERT_EGK =
       readCert("GEM.EGK-CA10/GEM.EGK-CA10-TEST-ONLY.pem");
+
+  public static final X509Certificate VALID_X509_EE_CERT_INVALID_KEY_USAGE =
+      TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_invalid-keyusage.pem");
+
+  public static final X509Certificate VALID_HBA_AUT_ECC = readCert("GEM.HBA-CA13/GüntherOtís.pem");
+
+  public static final X509Certificate INVALID_CERT_TYPE =
+      TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_invalid-certificate-type.pem");
+
+  public static final X509Certificate MISSING_CERT_TYPE =
+      TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_missing-certificate-type.pem");
+
+  public static final X509Certificate MISSING_EXT_KEY_USAGE_EE_CERT =
+      TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_missing-extKeyUsage.pem");
+
+  public static final X509Certificate MISSING_POLICY_ID_CERT =
+      TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_missing-policyId.pem");
+
+  public static final X509Certificate INVALID_EXTENSION_NOT_CRIT_CERT =
+      TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther_invalid-extension-not-crit.pem");
 
   public static final String GEMATIK_TEST_TSP_NAME =
       "gematik Gesellschaft für Telematikanwendungen der Gesundheitskarte mbH";

@@ -4,7 +4,7 @@
 
   <groupId>de.gematik.pki</groupId>
   <artifactId>gemLibPki</artifactId>
-  <version>1.2.0</version>
+  <version>1.3.0</version>
   <packaging>jar</packaging>
   <name>GemLibPki</name>
   <description>library for implementation and tests of the gematik pki specification</description>
@@ -44,7 +44,7 @@
   </issueManagement>
 
   <properties>
-    <project.build.outputTimestamp>1694093539</project.build.outputTimestamp>
+    <project.build.outputTimestamp>1695215165</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.encoding>${project.build.sourceEncoding}</maven.compiler.encoding>
     <version.java>17</version.java>
@@ -56,7 +56,7 @@
     <version.bouncycastle>1.76</version.bouncycastle>
     <version.commons-lang3>3.13.0</version.commons-lang3>
     <version.dss-tsl-validation>5.11.1.d4j.1</version.dss-tsl-validation>
-    <version.jakarta.xml.bind-api>4.0.0</version.jakarta.xml.bind-api>
+    <version.jakarta.xml.bind-api>4.0.1</version.jakarta.xml.bind-api>
     <version.jaxb-api>2.4.0-b180830.0359</version.jaxb-api>
     <version.jaxb-impl>2.3.8</version.jaxb-impl>
     <version.junit-jupiter>5.10.0</version.junit-jupiter>
@@ -73,14 +73,14 @@
     <version.maven-clean-plugin>3.3.1</version.maven-clean-plugin>
     <version.maven-compiler-plugin>3.11.0</version.maven-compiler-plugin>
     <maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
-    <version.maven-enforcer-plugin>3.4.0</version.maven-enforcer-plugin>
+    <version.maven-enforcer-plugin>3.4.1</version.maven-enforcer-plugin>
     <version.maven-gpg-plugin>3.1.0</version.maven-gpg-plugin>
     <version.maven-jar-plugin>3.3.0</version.maven-jar-plugin>
-    <version.maven-javadoc-plugin>3.5.0</version.maven-javadoc-plugin>
+    <version.maven-javadoc-plugin>3.6.0</version.maven-javadoc-plugin>
     <version.maven-source-plugin>3.3.0</version.maven-source-plugin>
     <version.maven-surefire-plugin>3.1.2</version.maven-surefire-plugin>
     <version.nexus-staging-maven-plugin>1.6.13</version.nexus-staging-maven-plugin>
-    <version.sonar-maven-plugin>3.9.1.2184</version.sonar-maven-plugin>
+    <version.sonar-maven-plugin>3.10.0.2594</version.sonar-maven-plugin>
     <version.spotless.google-java-format>1.17.0</version.spotless.google-java-format>
     <version.spotless-maven-plugin>2.39.0</version.spotless-maven-plugin>
 

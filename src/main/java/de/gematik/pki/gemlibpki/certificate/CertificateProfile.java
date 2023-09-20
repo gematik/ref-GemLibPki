@@ -124,7 +124,6 @@ public enum CertificateProfile {
       List.of(KEYUSAGE_DIGITAL_SIGNATURE, KEYUSAGE_KEY_ENCIPHERMENT),
       List.of(EXT_KEYUSAGE_ID_KP_CLIENTAUTH),
       true),
-
   CERT_PROFILE_C_TSL_SIG(
       CERT_TYPE_ANY,
       List.of(KEYUSAGE_NON_REPUDIATION),

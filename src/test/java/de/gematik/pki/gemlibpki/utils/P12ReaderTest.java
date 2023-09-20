@@ -35,11 +35,8 @@ class P12ReaderTest {
 
   @Test
   void verifyGetContentFromP12ValidEcc() {
-    assertDoesNotThrow(
-        () ->
-            P12Reader.getContentFromP12(
-                Path.of(TestConstants.CERT_DIR, "ocsp/eccOcspSigner.p12"),
-                TestConstants.P12_PASSWORD));
+    final Path p12Path = Path.of(TestConstants.CERT_DIR, "ocsp/eccOcspSigner.p12");
+    assertDoesNotThrow(() -> P12Reader.getContentFromP12(p12Path, TestConstants.P12_PASSWORD));
   }
 
   @Test

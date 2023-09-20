@@ -16,18 +16,25 @@
 
 package de.gematik.pki.gemlibpki.certificate;
 
+import static de.gematik.pki.gemlibpki.TestConstants.INVALID_CERT_TYPE;
 import static de.gematik.pki.gemlibpki.TestConstants.LOCAL_SSP_DIR;
 import static de.gematik.pki.gemlibpki.TestConstants.OCSP_HOST;
 import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_HBA_AUT_ECC;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_EGK;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_HBA;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA10;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA24;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA40;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA50;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA51;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA54;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB;
-import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB_RSA;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB_CA24_RSA;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB_CA41_RSA;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_INVALID_KEY_USAGE;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB;
-import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB_RSA;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB_CA24_RSA;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_ANY;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_AK_AUT_ECC;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_CH_AUT_ECC;
@@ -40,12 +47,23 @@ import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFI
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_HCI_OSIG;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_HP_AUT_ECC;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_TSL_SIG;
+import static de.gematik.pki.gemlibpki.certificate.Role.OID_BUNDESWEHRAPOTHEKE;
+import static de.gematik.pki.gemlibpki.certificate.Role.OID_KOSTENTRAEGER;
+import static de.gematik.pki.gemlibpki.certificate.Role.OID_KRANKENHAUS;
+import static de.gematik.pki.gemlibpki.certificate.Role.OID_KRANKENHAUSAPOTHEKE;
+import static de.gematik.pki.gemlibpki.certificate.Role.OID_MOBILE_EINRICHTUNG_RETTUNGSDIENST;
+import static de.gematik.pki.gemlibpki.certificate.Role.OID_OEFFENTLICHE_APOTHEKE;
+import static de.gematik.pki.gemlibpki.certificate.Role.OID_PRAXIS_ARZT;
+import static de.gematik.pki.gemlibpki.certificate.Role.OID_PRAXIS_PSYCHOTHERAPEUT;
+import static de.gematik.pki.gemlibpki.certificate.Role.OID_ZAHNARZTPRAXIS;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.overwriteSspUrls;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.readCert;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import de.gematik.pki.gemlibpki.common.OcspResponderMock;
 import de.gematik.pki.gemlibpki.error.ErrorCode;
@@ -70,6 +88,7 @@ import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Set;
 import org.bouncycastle.cert.ocsp.OCSPReq;
 import org.bouncycastle.cert.ocsp.OCSPResp;
 import org.junit.jupiter.api.BeforeEach;
@@ -186,6 +205,64 @@ class TucPki018VerifierTest {
   }
 
   @Test
+  void checkAllowedProfessionOids() throws IOException {
+    // var names und einmal admission aus dem tuckverifiey
+    final Set<String> allowedProfOids =
+        Set.of(
+            OID_PRAXIS_ARZT.getProfessionOid(),
+            OID_ZAHNARZTPRAXIS.getProfessionOid(),
+            OID_PRAXIS_PSYCHOTHERAPEUT.getProfessionOid(),
+            OID_KRANKENHAUS.getProfessionOid(),
+            OID_OEFFENTLICHE_APOTHEKE.getProfessionOid(),
+            OID_KRANKENHAUSAPOTHEKE.getProfessionOid(),
+            OID_BUNDESWEHRAPOTHEKE.getProfessionOid(),
+            OID_MOBILE_EINRICHTUNG_RETTUNGSDIENST.getProfessionOid(),
+            OID_KOSTENTRAEGER.getProfessionOid());
+    final Admission admission = new Admission(VALID_X509_EE_CERT_SMCB);
+
+    assertTrue(() -> TucPki018Verifier.checkAllowedProfessionOids(admission, allowedProfOids));
+  }
+
+  @Test
+  void checkAllowedProfessionOidsNotMatching() throws IOException {
+    final Set<String> allowedProfOids = Set.of(OID_KOSTENTRAEGER.getProfessionOid());
+    final Admission admission = new Admission(VALID_X509_EE_CERT_SMCB);
+
+    assertFalse(() -> TucPki018Verifier.checkAllowedProfessionOids(admission, allowedProfOids));
+  }
+
+  @Test
+  void checkAllowedProfessionOidsNoProfessionOid() throws IOException {
+    final X509Certificate missingProfOid =
+        TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther_missing-prof-oid.pem");
+    final Set<String> allowdProfOids = Set.of(OID_ZAHNARZTPRAXIS.getProfessionOid());
+    final Admission admission = new Admission(missingProfOid);
+
+    assertFalse(() -> TucPki018Verifier.checkAllowedProfessionOids(admission, allowdProfOids));
+  }
+
+  @Test
+  void checkAllowedProfessionOidsNoAdmission() throws IOException {
+    final X509Certificate missingAdmission =
+        TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther_missing-admission.pem");
+    final Set<String> allowedProfOids = Set.of(OID_ZAHNARZTPRAXIS.getProfessionOid());
+    final Admission admission = new Admission(missingAdmission);
+
+    assertFalse(() -> TucPki018Verifier.checkAllowedProfessionOids(admission, allowedProfOids));
+  }
+
+  @Test
+  void checkAllowedProfessionOidsNull() throws IOException {
+    final Set<String> allowedProfOids = Set.of(OID_ZAHNARZTPRAXIS.getProfessionOid());
+    final Admission admission = new Admission(VALID_X509_EE_CERT_SMCB);
+
+    assertFalse(() -> TucPki018Verifier.checkAllowedProfessionOids(null, allowedProfOids));
+    assertNonNullParameter(
+        () -> TucPki018Verifier.checkAllowedProfessionOids(admission, null),
+        "allowedProfessionOids");
+  }
+
+  @Test
   void verifyEgkAutEccCertValid() {
     final X509Certificate eeCert = readCert("GEM.EGK-CA10/JunaFuchs.pem");
     ocspResponderMock.configureForOcspRequest(eeCert, VALID_ISSUER_CERT_EGK);
@@ -197,37 +274,38 @@ class TucPki018VerifierTest {
 
   @Test
   void verifyHbaAutEccCertValid() {
-    final X509Certificate eeCert = readCert("GEM.HBA-CA13/GüntherOtís.pem");
-    ocspResponderMock.configureForOcspRequest(eeCert, VALID_ISSUER_CERT_HBA);
+
+    ocspResponderMock.configureForOcspRequest(VALID_HBA_AUT_ECC, VALID_ISSUER_CERT_HBA);
     assertDoesNotThrow(
         () ->
             buildTucPki18Verifier(List.of(CERT_PROFILE_C_HP_AUT_ECC))
-                .performTucPki018Checks(eeCert));
+                .performTucPki018Checks(VALID_HBA_AUT_ECC));
   }
 
   @Test
   void verifySmcbAutRsaCertValid() {
 
     ocspResponderMock.configureForOcspRequest(
-        VALID_X509_EE_CERT_SMCB_RSA, VALID_ISSUER_CERT_SMCB_RSA);
+        VALID_X509_EE_CERT_SMCB_CA24_RSA, VALID_ISSUER_CERT_SMCB_CA24_RSA);
     assertDoesNotThrow(
         () ->
             buildTucPki18Verifier(List.of(CERT_PROFILE_C_HCI_AUT_RSA))
-                .performTucPki018Checks(VALID_X509_EE_CERT_SMCB_RSA));
+                .performTucPki018Checks(VALID_X509_EE_CERT_SMCB_CA24_RSA));
   }
 
   @Test
   void verifySigDCertValid() {
-    final X509Certificate eeCert = readCert("GEM.KOMP-CA10/c.fd.sig_keyUsage_digiSig.pem");
-    ocspResponderMock.configureForOcspRequest(eeCert, VALID_ISSUER_CERT_KOMP_CA10);
+    final X509Certificate eeCert = readCert("GEM.KOMP-CA51/fdsig_erezept.pem");
+    ocspResponderMock.configureForOcspRequest(eeCert, VALID_ISSUER_CERT_KOMP_CA51);
     assertDoesNotThrow(
         () -> buildTucPki18Verifier(List.of(CERT_PROFILE_C_FD_SIG)).performTucPki018Checks(eeCert));
   }
 
   @Test
   void verifySmcbOsigRsaCertValid() {
-    final X509Certificate eeCert = readCert("GEM.SMCB-CA24-RSA/c-hci-osig_apo.valid.crt");
-    ocspResponderMock.configureForOcspRequest(eeCert, VALID_ISSUER_CERT_SMCB_RSA);
+    final X509Certificate eeCert =
+        readCert("GEM.SMCB-CA41-RSA/80276001011699901340-C_SMCB_OSIG_R2048_X509.pem");
+    ocspResponderMock.configureForOcspRequest(eeCert, VALID_ISSUER_CERT_SMCB_CA41_RSA);
     assertDoesNotThrow(
         () ->
             buildTucPki18Verifier(List.of(CERT_PROFILE_C_HCI_OSIG)).performTucPki018Checks(eeCert));
@@ -254,9 +332,9 @@ class TucPki018VerifierTest {
   @Test
   void verifyFdTlsSRsaCertValid() {
     final X509Certificate eeCert =
-        readCert("GEM.KOMP-CA24/ixia001-fd-test.zone-ok.sig-test.telematik-test_valid.pem");
-    final X509Certificate issuer = readCert("GEM.KOMP-CA24/GEM.KOMP-CA24-TEST-ONLY.pem");
-    ocspResponderMock.configureForOcspRequest(eeCert, issuer);
+        readCert("GEM.KOMP-CA24/sgd-ref.d-trust.sgd2.telematik.test.crt");
+
+    ocspResponderMock.configureForOcspRequest(eeCert, VALID_ISSUER_CERT_KOMP_CA24);
     assertDoesNotThrow(
         () ->
             buildTucPki18Verifier(List.of(CERT_PROFILE_C_FD_TLS_S_RSA))
@@ -266,9 +344,9 @@ class TucPki018VerifierTest {
   @Test
   void verifyFdTslCRsaCertValid() {
     final X509Certificate eeCert =
-        readCert("GEM.KOMP-CA24/fd-tlsc-komle-ca24-fuer-vzd-01-valid.pem");
-    final X509Certificate issuer = readCert("GEM.KOMP-CA24/GEM.KOMP-CA24-TEST-ONLY.pem");
-    ocspResponderMock.configureForOcspRequest(eeCert, issuer);
+        readCert("GEM.KOMP-CA40/fd-tlsc-komle-ca40-fuer-vzd-01-valid.pem");
+    ocspResponderMock.configureForOcspRequest(eeCert, VALID_ISSUER_CERT_KOMP_CA40);
+
     assertDoesNotThrow(
         () ->
             buildTucPki18Verifier(List.of(CERT_PROFILE_C_FD_TLS_C_RSA))
@@ -277,20 +355,23 @@ class TucPki018VerifierTest {
 
   @Test
   void verifyProfessionOidsValid() throws GemPkiException {
-    final X509Certificate eeCert = readCert("GEM.SMCB-CA24-RSA/c-hci-osig_apo.valid.crt");
-    ocspResponderMock.configureForOcspRequest(eeCert, VALID_ISSUER_CERT_SMCB_RSA);
+    final X509Certificate eeCert =
+        readCert("GEM.SMCB-CA41-RSA/80276001011699901340-C_SMCB_OSIG_R2048_X509.pem");
+    ocspResponderMock.configureForOcspRequest(eeCert, VALID_ISSUER_CERT_SMCB_CA41_RSA);
+
     assertThat(
             buildTucPki18Verifier(List.of(CERT_PROFILE_C_HCI_OSIG))
                 .performTucPki018Checks(eeCert)
                 .getProfessionOids())
-        .contains(Role.OID_OEFFENTLICHE_APOTHEKE.getProfessionOid());
+        .contains(OID_KRANKENHAUS.getProfessionOid());
   }
 
   @Test
   void verifyNotEveryKeyUsagePresent() {
     ocspResponderMock.configureForOcspRequest(
-        VALID_X509_EE_CERT_SMCB_RSA, VALID_ISSUER_CERT_SMCB_RSA);
-    assertThatThrownBy(() -> tucPki018Verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB_RSA))
+        VALID_X509_EE_CERT_SMCB_CA24_RSA, VALID_ISSUER_CERT_SMCB_CA24_RSA);
+    assertThatThrownBy(
+            () -> tucPki018Verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB_CA24_RSA))
         .isInstanceOf(GemPkiParsingException.class)
         .hasMessageContaining(ErrorCode.SE_1016_WRONG_KEYUSAGE.name());
   }
@@ -310,24 +391,22 @@ class TucPki018VerifierTest {
 
   @Test
   void multipleCertificateProfiles_shouldThrowKeyUsageError() {
-    final X509Certificate eeWrongKeyUsage =
-        readCert("GEM.SMCB-CA10/invalid/DrMedGunther_invalid-keyusage.pem");
-    ocspResponderMock.configureForOcspRequest(eeWrongKeyUsage, VALID_ISSUER_CERT_SMCB);
+
+    ocspResponderMock.configureForOcspRequest(
+        VALID_X509_EE_CERT_INVALID_KEY_USAGE, VALID_ISSUER_CERT_SMCB);
     final TucPki018Verifier verifier =
         buildTucPki18Verifier(List.of(CERT_PROFILE_C_HCI_AUT_ECC, CERT_PROFILE_C_HP_AUT_ECC));
-    assertThatThrownBy(() -> verifier.performTucPki018Checks(eeWrongKeyUsage))
+    assertThatThrownBy(() -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_INVALID_KEY_USAGE))
         .isInstanceOf(GemPkiParsingException.class)
         .hasMessageContaining(ErrorCode.SE_1016_WRONG_KEYUSAGE.name());
   }
 
   @Test
   void multipleCertificateProfiles_shouldThrowCertTypeError() {
-    final X509Certificate eeWrongKeyUsage =
-        readCert("GEM.SMCB-CA10/invalid/DrMedGunther_invalid-certificate-type.pem");
-    ocspResponderMock.configureForOcspRequest(eeWrongKeyUsage, VALID_ISSUER_CERT_SMCB);
+    ocspResponderMock.configureForOcspRequest(INVALID_CERT_TYPE, VALID_ISSUER_CERT_SMCB);
     final TucPki018Verifier verifier =
         buildTucPki18Verifier(List.of(CERT_PROFILE_C_HCI_AUT_ECC, CERT_PROFILE_C_HP_AUT_ECC));
-    assertThatThrownBy(() -> verifier.performTucPki018Checks(eeWrongKeyUsage))
+    assertThatThrownBy(() -> verifier.performTucPki018Checks(INVALID_CERT_TYPE))
         .isInstanceOf(GemPkiParsingException.class)
         .hasMessageContaining(ErrorCode.SE_1018_CERT_TYPE_MISMATCH.name())
         .hasMessageContaining(ErrorCode.SE_1016_WRONG_KEYUSAGE.name());

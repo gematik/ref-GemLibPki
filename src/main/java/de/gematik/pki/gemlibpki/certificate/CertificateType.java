@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 public enum CertificateType {
   CERT_TYPE_AK_AUT("C.AK.AUT", "oid_ak_aut", "1.2.276.0.76.4.79"),
-  CERT_TYPE_CM_TLS_C("C.CM.TLS-CS", "oid_cm_tls_c", "1.2.276.0.76.4.175"),
+  CERT_TYPE_CM_TLS_CS("C.CM.TLS-CS", "oid_cm_tls_c", "1.2.276.0.76.4.175"),
   CERT_TYPE_EGK_AUT("C.CH.AUT", "oid_egk_aut", "1.2.276.0.76.4.70"),
   CERT_TYPE_EGK_AUTN("C.CH.AUTN", "oid_egk_autn", "1.2.276.0.76.4.71"),
   CERT_TYPE_EGK_ENC("C.CH.ENC", "oid_egk_enc", "1.2.276.0.76.4.68"),

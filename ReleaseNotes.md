@@ -2,11 +2,19 @@
 
 # Release notes GemLibPki
 
+## Release 1.3.0
+
+- add mission OIDs from gem_Spec_OID for different roles.
+- add method to check the profession oid in the returned admission of a certificate:
+  `TucPki018Verifier.checkAllowedProfessionOids()`
+- update soon expiring unit test certificates
+- update dependencies
+
 ## Release 1.2.0
 
 - introduce a generic enum (`CertificateProfile.CERT_PROFILE_ANY`) to allow any certificate profile
   for TUC_PKI_018 checks. The usage of this certificate profile disables the checks of keyUsage,
-  extendedKeyUsage and certificateTypeOids. This should resolve
+  extendedKeyUsage, and certificateTypeOids. This should resolve
   issue https://github.com/gematik/ref-GemLibPki/issues/3.
 - remove log messages that reveal personal information
 - update dependencies
@@ -20,9 +28,9 @@
   specification
 - API change: method `performTucPki006Checks()` does not need the OCSP requests anymore because of
   change in certId checks
-- change behaviour of certId checks in OCSP responses: it is calculated from announced hash
+- change behavior of certId checks in OCSP responses: it is calculated from announced hash
   algorithm and compared to the fields of the response
-- change default behaviour of certId OCSP response generation: the algorithm used is mirrored by the
+- change default behavior of certId OCSP response generation: the algorithm used is mirrored by the
   algorithm used in the OCSP request, this can be overwritten with the `responseAlgoBehavior`
   builder parameter via an enum
 - introduce handling of SHA256 hashes in OCSP context (certId)
@@ -123,14 +131,14 @@
 
 ## Release 0.8.1
 
-- change language specific code (>Java 11)
+- change language-specific code (>Java 11)
 - fix small issues
 
 ## Release 0.8.0
 
-- API change: move whole package from de.gematik.pki to de.gematik.pki.gemlibpki
-- usage of BouncyCastle as crypto provider enforced in every class/method that deals with brainpool
-  curves
+- API change: move the whole package from de.gematik.pki to de.gematik.pki.gemlibpki
+- usage of BouncyCastle as crypto provider is enforced in every class/method that deals with
+  brainpool curves
 - switch code formatting to google java formatter
 - switch from OpenJDK 11 to OpenJDK 17
 - update dependencies
@@ -167,7 +175,7 @@
 
 - add certHash extension in OCSP responses (enabled by default)
 - add certHash validation of OCSP responses (enabled by default)
-- refactor OcspVerifier class to harmonise with CertificateVerifier
+- refactor OcspVerifier class to harmonize with CertificateVerifier
 
 ## Release 0.5.3
 
@@ -190,7 +198,7 @@
 - API change: Main method for certificate checks "performTucPki18Checks(..)" in
   class [TucPki018Verifier](src/main/java/de/gematik/pki/certificate/TucPki018Verifier.java) returns
   Admission instead
-  of CertficateType.
+  of CertificateType.
 - add methods for TSL handling: read, write, modify, sign+validate (RSA/ECC)
 - OCSP request implemented, active by default
 - additional CertificateProfiles implemented

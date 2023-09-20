@@ -16,6 +16,7 @@
 
 package de.gematik.pki.gemlibpki.utils;
 
+import static de.gematik.pki.gemlibpki.TestConstants.INVALID_EXTENSION_NOT_CRIT_CERT;
 import static de.gematik.pki.gemlibpki.utils.GemLibPkiUtils.calculateSha1;
 import static de.gematik.pki.gemlibpki.utils.GemLibPkiUtils.calculateSha256;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
@@ -107,8 +108,8 @@ class GemLibPkiUtilsTest {
 
   @Test
   void testEncodeAndDecode() throws CertificateEncodingException {
-    final X509Certificate eeCert =
-        TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther_invalid-extension-not-crit.pem");
+
+    final X509Certificate eeCert = INVALID_EXTENSION_NOT_CRIT_CERT;
 
     final byte[] eeCertBytes = eeCert.getEncoded();
     final String eeCertStr = GemLibPkiUtils.toMimeBase64NoLineBreaks(eeCertBytes);

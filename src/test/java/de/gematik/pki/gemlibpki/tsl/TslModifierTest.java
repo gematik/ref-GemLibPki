@@ -18,7 +18,9 @@ package de.gematik.pki.gemlibpki.tsl;
 
 import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
 import static de.gematik.pki.gemlibpki.TestConstants.GEMATIK_TEST_TSP_NAME;
+import static de.gematik.pki.gemlibpki.TestConstants.INVALID_EXTENSION_NOT_CRIT_CERT;
 import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.tsl.TslSignerTest.SIGNER_PATH_ECC;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.readP12;
@@ -72,7 +74,7 @@ class TslModifierTest {
   @Test
   void deleteAllSspsOfOneTspAsBytes() throws GemPkiException {
 
-    final X509Certificate eeCert = TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
+    final X509Certificate eeCert = VALID_X509_EE_CERT_SMCB;
 
     final byte[] tslBytes =
         TslModifier.deleteSspsForCAsOfEndEntity(
@@ -91,7 +93,7 @@ class TslModifierTest {
   @Test
   void deleteAllSspsOfOneTsp() throws GemPkiException {
 
-    final X509Certificate eeCert = TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
+    final X509Certificate eeCert = VALID_X509_EE_CERT_SMCB;
 
     TslModifier.deleteSspsForCAsOfEndEntity(tslUnsigned, eeCert, PRODUCT_TYPE);
     final TspService tspService =
@@ -337,7 +339,7 @@ class TslModifierTest {
     assertNonNullParameter(
         () -> TslModifier.modifyIssueDateAndRelatedNextUpdate(tslUnsigned, null, 42), "issueDate");
 
-    final X509Certificate eeCert = TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
+    final X509Certificate eeCert = VALID_X509_EE_CERT_SMCB;
 
     final byte[] tslBytes = new byte[0];
 
@@ -393,8 +395,7 @@ class TslModifierTest {
                 ResourceReader.getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, getClass())),
             StandardCharsets.UTF_8);
 
-    final X509Certificate eeCert =
-        TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther_invalid-extension-not-crit.pem");
+    final X509Certificate eeCert = INVALID_EXTENSION_NOT_CRIT_CERT;
 
     final X509Certificate oldSignerCert = TslUtils.getFirstTslSignerCertificate(tslUnsigned);
 

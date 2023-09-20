@@ -16,21 +16,21 @@
 
 package de.gematik.pki.gemlibpki.certificate;
 
+import static de.gematik.pki.gemlibpki.TestConstants.MISSING_CERT_TYPE;
+import static de.gematik.pki.gemlibpki.TestConstants.MISSING_POLICY_ID_CERT;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import de.gematik.pki.gemlibpki.utils.TestUtils;
 import java.io.IOException;
-import java.security.cert.X509Certificate;
 import org.junit.jupiter.api.Test;
 
 class PoliciesTest {
 
   @Test
   void getPolicyOids() throws IOException {
-    final X509Certificate policyOids = TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
-    assertThat(new Policies(policyOids).getPolicyOids())
+    assertThat(new Policies(VALID_X509_EE_CERT_SMCB).getPolicyOids())
         .contains(CertificateType.CERT_TYPE_SMC_B_AUT.getOid());
   }
 
@@ -41,16 +41,12 @@ class PoliciesTest {
 
   @Test
   void getPolicyOidsMissing() {
-    final X509Certificate missingPolicyId =
-        TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_missing-policyId.pem");
-    assertThatThrownBy(() -> new Policies(missingPolicyId))
+    assertThatThrownBy(() -> new Policies(MISSING_POLICY_ID_CERT))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
   void getPolicyOidsEmpty() throws IOException {
-    final X509Certificate emptyPolicyId =
-        TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_missing-certificate-type.pem");
-    assertThat(new Policies(emptyPolicyId).getPolicyOids()).isEmpty();
+    assertThat(new Policies(MISSING_CERT_TYPE).getPolicyOids()).isEmpty();
   }
 }
