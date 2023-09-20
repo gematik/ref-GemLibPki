@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.isismtt.x509.AdmissionSyntax;
@@ -39,9 +40,11 @@ import org.bouncycastle.cert.X509CertificateHolder;
  * for the certificate in its constructor. As specified by gematik, there is only one admission. So
  * this class returns the first available information.
  */
+@Slf4j
 public class Admission {
 
   private final ASN1Encodable asn1Admission;
+  private static final String NO_ADMISSION_MESSAGE = "Keine Admission vorhanden.";
 
   /**
    * Constructor
@@ -54,6 +57,9 @@ public class Admission {
         new X509CertificateHolder(GemLibPkiUtils.certToBytes(x509EeCert))
             .getExtensions()
             .getExtensionParsedValue(id_isismtt_at_admission);
+    if (asn1Admission == null) {
+      log.info(NO_ADMISSION_MESSAGE);
+    }
   }
 
   /**
@@ -81,16 +87,19 @@ public class Admission {
     final AdmissionSyntax admissionInstance = AdmissionSyntax.getInstance(asn1Admission);
 
     if (admissionInstance == null) {
+      log.info(NO_ADMISSION_MESSAGE);
       return Collections.emptySet();
     }
 
     final Admissions[] admissions = admissionInstance.getContentsOfAdmissions();
     if (admissions.length == 0) {
+      log.info("Keine Elemente in der Admission vorhanden.");
       return Collections.emptySet();
     }
 
     final ProfessionInfo[] professionInfos = admissions[0].getProfessionInfos();
     if (professionInfos.length == 0) {
+      log.info("Keine ProfessionInfo vorhanden.");
       return Collections.emptySet();
     }
 
@@ -106,13 +115,27 @@ public class Admission {
    *     admission in the certificate
    */
   public Set<String> getProfessionOids() {
-    return Arrays.stream(
-            AdmissionSyntax.getInstance(asn1Admission)
-                .getContentsOfAdmissions()[0]
-                .getProfessionInfos()[0]
-                .getProfessionOIDs())
-        .map(ASN1ObjectIdentifier::getId)
-        .collect(Collectors.toSet());
+
+    final AdmissionSyntax admissionInstance = AdmissionSyntax.getInstance(asn1Admission);
+
+    if (admissionInstance == null) {
+      log.info(NO_ADMISSION_MESSAGE);
+      return Collections.emptySet();
+    }
+
+    final Set<String> professionOids =
+        Arrays.stream(
+                admissionInstance.getContentsOfAdmissions()[0].getProfessionInfos()[0]
+                    .getProfessionOIDs())
+            .map(ASN1ObjectIdentifier::getId)
+            .collect(Collectors.toSet());
+
+    if (professionOids.isEmpty()) {
+      log.info("Keine ProfessionOid vorhanden.");
+      return Collections.emptySet();
+    }
+
+    return professionOids;
   }
 
   /**
@@ -122,9 +145,18 @@ public class Admission {
    *     in the certificate
    */
   public String getRegistrationNumber() {
-    return AdmissionSyntax.getInstance(asn1Admission)
-        .getContentsOfAdmissions()[0]
-        .getProfessionInfos()[0]
-        .getRegistrationNumber();
+
+    final String regNr =
+        AdmissionSyntax.getInstance(asn1Admission)
+            .getContentsOfAdmissions()[0]
+            .getProfessionInfos()[0]
+            .getRegistrationNumber();
+
+    if (regNr.isEmpty()) {
+      log.info("Keine RegistrationNumber vorhanden.");
+      return "";
+    }
+
+    return regNr;
   }
 }

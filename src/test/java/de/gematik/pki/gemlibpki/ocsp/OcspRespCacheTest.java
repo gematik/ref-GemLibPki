@@ -17,9 +17,9 @@
 package de.gematik.pki.gemlibpki.ocsp;
 
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB;
-import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB_RSA;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB_CA24_RSA;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB;
-import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB_RSA;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB_CA24_RSA;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -113,28 +113,31 @@ class OcspRespCacheTest {
 
     final OCSPReq ocspReq2 =
         OcspRequestGenerator.generateSingleOcspRequest(
-            VALID_X509_EE_CERT_SMCB_RSA, VALID_ISSUER_CERT_SMCB_RSA);
+            VALID_X509_EE_CERT_SMCB_CA24_RSA, VALID_ISSUER_CERT_SMCB_CA24_RSA);
 
     final OCSPResp ocspResp1 =
         generateOcspResp(
             ocspReq1, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB, certificateStatus);
     final OCSPResp ocspResp2 =
         generateOcspResp(
-            ocspReq2, VALID_X509_EE_CERT_SMCB_RSA, VALID_ISSUER_CERT_SMCB_RSA, certificateStatus);
+            ocspReq2,
+            VALID_X509_EE_CERT_SMCB_CA24_RSA,
+            VALID_ISSUER_CERT_SMCB_CA24_RSA,
+            certificateStatus);
 
     ocspRespCache.saveResponse(VALID_X509_EE_CERT_SMCB.getSerialNumber(), ocspResp1);
-    ocspRespCache.saveResponse(VALID_X509_EE_CERT_SMCB_RSA.getSerialNumber(), ocspResp2);
+    ocspRespCache.saveResponse(VALID_X509_EE_CERT_SMCB_CA24_RSA.getSerialNumber(), ocspResp2);
 
     assertThat(ocspRespCache.getSize()).isEqualTo(2);
 
     Optional<OCSPResp> ocspRespX =
-        ocspRespCache.getResponse(VALID_X509_EE_CERT_SMCB_RSA.getSerialNumber());
+        ocspRespCache.getResponse(VALID_X509_EE_CERT_SMCB_CA24_RSA.getSerialNumber());
     assertThat(ocspRespX).isPresent();
     assertThat(ocspRespCache.getSize()).isEqualTo(2);
 
     TestUtils.waitSeconds(gracePeriodSeconds + 1);
 
-    ocspRespX = ocspRespCache.getResponse(VALID_X509_EE_CERT_SMCB_RSA.getSerialNumber());
+    ocspRespX = ocspRespCache.getResponse(VALID_X509_EE_CERT_SMCB_CA24_RSA.getSerialNumber());
     assertThat(ocspRespX).isEmpty();
     assertThat(ocspRespCache.getSize()).isZero();
   }

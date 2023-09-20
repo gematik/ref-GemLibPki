@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import de.gematik.pki.gemlibpki.TestConstants;
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import java.nio.file.Path;
+import java.security.cert.X509Certificate;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 
@@ -57,11 +58,10 @@ class CertReaderTest {
   @SneakyThrows
   @Test
   void readExistingX509PemCert() {
-    final byte[] file =
-        GemLibPkiUtils.readContent(
-            Path.of(TestConstants.CERT_DIR, "GEM.SMCB-CA10/valid/DrMedGunther.pem"));
-    assertThat(CertReader.readX509(file).getSubjectX500Principal().getName())
-        .contains("Zahnarztpraxis Dr. med.Gunther");
+    final Path certPath = Path.of(TestConstants.CERT_DIR, "GEM.SMCB-CA10/valid/DrMedGunther.pem");
+    final byte[] certBytes = GemLibPkiUtils.readContent(certPath);
+    final X509Certificate cert = CertReader.readX509(certBytes);
+    assertThat(cert.getSubjectX500Principal().getName()).contains("Zahnarztpraxis Dr. med.Gunther");
   }
 
   @SneakyThrows
@@ -85,10 +85,9 @@ class CertReaderTest {
   @SneakyThrows
   @Test
   void getX509CertificateFromP12() {
+    final Path p12Path = Path.of(TestConstants.CERT_DIR, "ocsp/eccOcspSigner.p12");
     assertThat(
-            CertReader.getX509FromP12(
-                    Path.of(TestConstants.CERT_DIR, "ocsp/eccOcspSigner.p12"),
-                    TestConstants.P12_PASSWORD)
+            CertReader.getX509FromP12(p12Path, TestConstants.P12_PASSWORD)
                 .getSubjectX500Principal()
                 .getName())
         .contains("OCSP Signer 09 ecc TEST-ONLY");

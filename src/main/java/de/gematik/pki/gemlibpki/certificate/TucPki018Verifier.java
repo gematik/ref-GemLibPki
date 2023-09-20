@@ -33,6 +33,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Set;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.NonNull;
@@ -65,7 +66,7 @@ public class TucPki018Verifier {
   /**
    * Verify given end-entity certificate against TucPki18 (Technical Use Case 18 "Zertifikatsprüfung
    * in der TI", specified by gematik). If there is no {@link GemPkiException} the verification
-   * process ends successfully.
+   * process ends successfully. GS-A_4660-02
    *
    * @param x509EeCert end-entity certificate to check
    * @return the determined {@link Admission}
@@ -80,7 +81,7 @@ public class TucPki018Verifier {
   /**
    * Verify given end-entity certificate against TucPki18 (Technical Use Case 18 "Zertifikatsprüfung
    * in der TI", specified by gematik). If there is no {@link GemPkiException} the verification
-   * process ends successfully.
+   * process ends successfully. GS-A_4660-02
    *
    * @param x509EeCert end-entity certificate to check
    * @param referenceDate date to check revocation, producedAt, thisUpdate and nextUpdate against
@@ -173,8 +174,12 @@ public class TucPki018Verifier {
         log.debug(
             "Übergebenes Zertifikat wurde erfolgreich gegen das Zertifikatsprofil {} getestet.",
             certificateProfile);
-        log.debug("Rolle(n): {}", new Admission(x509EeCert).getProfessionItems());
-        return new Admission(x509EeCert);
+
+        final Admission admission = new Admission(x509EeCert);
+        if (!admission.getProfessionOids().isEmpty()) {
+          log.debug("Gefundene Rolle(n): {}", admission.getProfessionItems());
+        }
+        return admission;
       } catch (final IOException e) {
         throw new GemPkiRuntimeException(
             "Error in processing the admission of the end entity certificate.", e);
@@ -231,5 +236,21 @@ public class TucPki018Verifier {
             .build();
 
     certificateCommonVerification.verifyAll();
+  }
+
+  /**
+   * Check if the professionOid from a given admission matches one from a parameterized list
+   *
+   * @param admissionToCheck the admission from the certificate
+   * @param allowedProfessionOids the list of allowed profession oid's
+   * @return Boolean if the profession item is in the list
+   */
+  public static boolean checkAllowedProfessionOids(
+      final Admission admissionToCheck, @NonNull final Set<String> allowedProfessionOids) {
+
+    // TODO lower cognitive complexity
+    return !(admissionToCheck == null
+        || admissionToCheck.getProfessionOids().isEmpty()
+        || !admissionToCheck.getProfessionOids().removeAll(allowedProfessionOids));
   }
 }

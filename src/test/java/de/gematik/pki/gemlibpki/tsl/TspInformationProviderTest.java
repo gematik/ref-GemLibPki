@@ -16,6 +16,8 @@
 
 package de.gematik.pki.gemlibpki.tsl;
 
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_ALT_CA;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -33,8 +35,6 @@ class TspInformationProviderTest {
 
   private String productType;
   private TspInformationProvider tspInformationProvider;
-  private X509Certificate VALID_X509_EE_CERT;
-  private X509Certificate VALID_X509_EE_CERT_ALT_CA;
 
   @BeforeEach
   void setUp() {
@@ -43,13 +43,12 @@ class TspInformationProviderTest {
         new TslInformationProvider(TestUtils.getDefaultTslUnsigned());
     tspInformationProvider =
         new TspInformationProvider(tslInformationProvider.getTspServices(), productType);
-    VALID_X509_EE_CERT = TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
-    VALID_X509_EE_CERT_ALT_CA = TestUtils.readCert("GEM.SMCB-CA33/DrMedGuntherKZV.pem");
   }
 
   @Test
   void generateTspServiceSubsetValidEE() {
-    assertDoesNotThrow(() -> tspInformationProvider.getIssuerTspServiceSubset(VALID_X509_EE_CERT));
+    assertDoesNotThrow(
+        () -> tspInformationProvider.getIssuerTspServiceSubset(VALID_X509_EE_CERT_SMCB));
   }
 
   @Test
@@ -93,7 +92,7 @@ class TspInformationProviderTest {
   void generateTspServiceSubsetServiceSupplyPointValid() throws GemPkiException {
     assertThat(
             tspInformationProvider
-                .getIssuerTspServiceSubset(VALID_X509_EE_CERT)
+                .getIssuerTspServiceSubset(VALID_X509_EE_CERT_SMCB)
                 .getServiceSupplyPoint())
         .isEqualTo(
             "http://ocsp-sim01-test.gem.telematik-test:8080/ocsp/OCSPSimulator/TSL_default-seq1");
@@ -115,7 +114,22 @@ class TspInformationProviderTest {
   }
 
   @Test
+  void generateTspServiceSubsetServiceSupplyPointMissing2() {
+    final TrustStatusListType tslAltCaMissingSsp =
+        TestUtils.getTslUnsigned("tsls/ecc/defect/TSL_defect_altCA_missingSsp2.xml");
+
+    assertThatThrownBy(
+            () ->
+                new TspInformationProvider(
+                        new TslInformationProvider(tslAltCaMissingSsp).getTspServices(),
+                        productType)
+                    .getIssuerTspServiceSubset(VALID_X509_EE_CERT_ALT_CA))
+        .isInstanceOf(GemPkiException.class)
+        .hasMessage(ErrorCode.TE_1026_SERVICESUPPLYPOINT_MISSING.getErrorMessage(productType));
+  }
+
+  @Test
   void verifyGetIssuerTspService() {
-    assertDoesNotThrow(() -> tspInformationProvider.getIssuerTspService(VALID_X509_EE_CERT));
+    assertDoesNotThrow(() -> tspInformationProvider.getIssuerTspService(VALID_X509_EE_CERT_SMCB));
   }
 }

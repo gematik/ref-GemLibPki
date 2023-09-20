@@ -19,6 +19,9 @@ package de.gematik.pki.gemlibpki.certificate;
 import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_ALT_CA;
 import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
 import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_ALT_CA;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -43,18 +46,13 @@ class CertificateCommonVerificationTest {
 
   private ZonedDateTime zonedDateTime;
   private CertificateCommonVerification certificateCommonVerification;
-  private X509Certificate validX509EeCertAltCa;
-  private X509Certificate validX509IssuerCert;
 
   @BeforeEach
   void setUp() throws GemPkiException {
-    final X509Certificate VALID_X509_EE_CERT =
-        TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
-    validX509EeCertAltCa = TestUtils.readCert("GEM.SMCB-CA33/DrMedGuntherKZV.pem");
-    validX509IssuerCert = TestUtils.readCert("GEM.SMCB-CA10/GEM.SMCB-CA10_TEST-ONLY.pem");
+
     zonedDateTime = ZonedDateTime.parse("2020-11-20T15:00:00Z");
     certificateCommonVerification =
-        buildCertificateCommonVerifier(FILE_NAME_TSL_ECC_DEFAULT, VALID_X509_EE_CERT);
+        buildCertificateCommonVerifier(FILE_NAME_TSL_ECC_DEFAULT, VALID_X509_EE_CERT_SMCB);
   }
 
   private CertificateCommonVerification buildCertificateCommonVerifier(
@@ -87,7 +85,7 @@ class CertificateCommonVerificationTest {
 
   @Test
   void verifySignatureValid() {
-    assertDoesNotThrow(() -> certificateCommonVerification.verifySignature(validX509IssuerCert));
+    assertDoesNotThrow(() -> certificateCommonVerification.verifySignature(VALID_ISSUER_CERT_SMCB));
   }
 
   @Test
@@ -97,7 +95,7 @@ class CertificateCommonVerificationTest {
     final CertificateCommonVerification verifier =
         buildCertificateCommonVerifier(FILE_NAME_TSL_ECC_ALT_CA, invalidX509EeCert);
 
-    assertThatThrownBy(() -> verifier.verifySignature(validX509IssuerCert))
+    assertThatThrownBy(() -> verifier.verifySignature(VALID_ISSUER_CERT_SMCB))
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.SE_1024_CERTIFICATE_NOT_VALID_MATH.getErrorMessage(PRODUCT_TYPE));
   }
@@ -139,7 +137,7 @@ class CertificateCommonVerificationTest {
   void verifyIssuerServiceStatusNotRevoked() {
     assertDoesNotThrow(
         () ->
-            buildCertificateCommonVerifier(FILE_NAME_TSL_ECC_ALT_CA, validX509EeCertAltCa)
+            buildCertificateCommonVerifier(FILE_NAME_TSL_ECC_ALT_CA, VALID_X509_EE_CERT_ALT_CA)
                 .verifyIssuerServiceStatus());
   }
 
@@ -152,7 +150,7 @@ class CertificateCommonVerificationTest {
     final String tslAltCaRevokedLater = "tsls/ecc/valid/TSL_altCA_revokedLater.xml";
     assertDoesNotThrow(
         () ->
-            buildCertificateCommonVerifier(tslAltCaRevokedLater, validX509EeCertAltCa)
+            buildCertificateCommonVerifier(tslAltCaRevokedLater, VALID_X509_EE_CERT_ALT_CA)
                 .verifyIssuerServiceStatus());
   }
 
@@ -164,7 +162,7 @@ class CertificateCommonVerificationTest {
   void verifyIssuerServiceStatusRevoked() throws GemPkiException {
     final CertificateCommonVerification verifier =
         buildCertificateCommonVerifier(
-            "tsls/ecc/valid/TSL_altCA_revoked.xml", validX509EeCertAltCa);
+            "tsls/ecc/valid/TSL_altCA_revoked.xml", VALID_X509_EE_CERT_ALT_CA);
     assertThatThrownBy(verifier::verifyIssuerServiceStatus)
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.SE_1036_CA_CERTIFICATE_REVOKED_IN_TSL.getErrorMessage(PRODUCT_TYPE));
