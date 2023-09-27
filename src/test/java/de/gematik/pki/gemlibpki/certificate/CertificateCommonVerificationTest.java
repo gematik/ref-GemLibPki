@@ -16,27 +16,19 @@
 
 package de.gematik.pki.gemlibpki.certificate;
 
-import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_ALT_CA;
-import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
-import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
-import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB;
-import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_ALT_CA;
-import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB;
-import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-
-import de.gematik.pki.gemlibpki.error.ErrorCode;
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.tsl.TslInformationProvider;
 import de.gematik.pki.gemlibpki.tsl.TspInformationProvider;
+import de.gematik.pki.gemlibpki.tsl.TspService;
 import de.gematik.pki.gemlibpki.tsl.TspServiceSubset;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
-import java.security.cert.X509Certificate;
-import java.time.ZonedDateTime;
-import lombok.NonNull;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.time.ZonedDateTime;
+import java.util.List;
+
+import static de.gematik.pki.gemlibpki.TestConstants.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 /**
  * Dieser Test arbeitet ausschließlich mit einem Zertifikatsprofil (SMCB). Andere Profile zu testen
@@ -44,127 +36,23 @@ import org.junit.jupiter.api.Test;
  */
 class CertificateCommonVerificationTest {
 
-  private ZonedDateTime zonedDateTime;
-  private CertificateCommonVerification certificateCommonVerification;
 
-  @BeforeEach
-  void setUp() throws GemPkiException {
+    @Test
+    void verifyValid() throws GemPkiException {
 
-    zonedDateTime = ZonedDateTime.parse("2020-11-20T15:00:00Z");
-    certificateCommonVerification =
-        buildCertificateCommonVerifier(FILE_NAME_TSL_ECC_DEFAULT, VALID_X509_EE_CERT_SMCB);
-  }
+        ZonedDateTime zonedDateTime = ZonedDateTime.parse("2020-11-20T15:00:00Z");
 
-  private CertificateCommonVerification buildCertificateCommonVerifier(
-      @NonNull final String tslFilename, final X509Certificate x509EeCert) throws GemPkiException {
+        List<TspService> tspServices = new TslInformationProvider(TestUtils.getTslUnsigned(FILE_NAME_TSL_ECC_DEFAULT)).getTspServices();
+        TspServiceSubset tspServiceSubset = new TspInformationProvider(tspServices, PRODUCT_TYPE).getIssuerTspServiceSubset(VALID_X509_EE_CERT_SMCB);
 
-    final TspServiceSubset tspServiceSubset =
-        new TspInformationProvider(
-                new TslInformationProvider(TestUtils.getTslUnsigned(tslFilename)).getTspServices(),
-                PRODUCT_TYPE)
-            .getIssuerTspServiceSubset(x509EeCert);
+        CertificateCommonVerification tested = CertificateCommonVerification.builder()
+                .productType(PRODUCT_TYPE)
+                .x509EeCert(VALID_X509_EE_CERT_SMCB)
+                .tspServiceSubset(tspServiceSubset)
+                .referenceDate(zonedDateTime)
+                .build();
 
-    return CertificateCommonVerification.builder()
-        .productType(PRODUCT_TYPE)
-        .x509EeCert(x509EeCert)
-        .tspServiceSubset(tspServiceSubset)
-        .build();
-  }
+        assertDoesNotThrow(tested::verifyAll);
+    }
 
-  @Test
-  void verifyCertificateEndEntityNull() {
-    assertNonNullParameter(
-        () -> buildCertificateCommonVerifier(FILE_NAME_TSL_ECC_DEFAULT, null), "x509EeCert");
-  }
-
-  @Test
-  void verifySignatureIssuerNull() {
-    assertNonNullParameter(
-        () -> certificateCommonVerification.verifySignature(null), "x509IssuerCert");
-  }
-
-  @Test
-  void verifySignatureValid() {
-    assertDoesNotThrow(() -> certificateCommonVerification.verifySignature(VALID_ISSUER_CERT_SMCB));
-  }
-
-  @Test
-  void verifySignatureNotValid() throws GemPkiException {
-    final X509Certificate invalidX509EeCert =
-        TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_invalid-signature.pem");
-    final CertificateCommonVerification verifier =
-        buildCertificateCommonVerifier(FILE_NAME_TSL_ECC_ALT_CA, invalidX509EeCert);
-
-    assertThatThrownBy(() -> verifier.verifySignature(VALID_ISSUER_CERT_SMCB))
-        .isInstanceOf(GemPkiException.class)
-        .hasMessage(ErrorCode.SE_1024_CERTIFICATE_NOT_VALID_MATH.getErrorMessage(PRODUCT_TYPE));
-  }
-
-  @Test
-  void verifyValidityReferenceDateNull() {
-    assertNonNullParameter(
-        () -> certificateCommonVerification.verifyValidity(null), "referenceDate");
-  }
-
-  @Test
-  void verifyValidityCertificateExpired() throws GemPkiException {
-    final X509Certificate expiredEeCert =
-        TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_expired.pem");
-    final CertificateCommonVerification verifier =
-        buildCertificateCommonVerifier(FILE_NAME_TSL_ECC_DEFAULT, expiredEeCert);
-    assertThatThrownBy(() -> verifier.verifyValidity(zonedDateTime))
-        .isInstanceOf(GemPkiException.class)
-        .hasMessage(ErrorCode.SE_1021_CERTIFICATE_NOT_VALID_TIME.getErrorMessage(PRODUCT_TYPE));
-  }
-
-  @Test
-  void verifyValidityCertificateNotYetValid() throws GemPkiException {
-    final X509Certificate notYetValidEeCert =
-        TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_not-yet-valid.pem");
-    final CertificateCommonVerification verifier =
-        buildCertificateCommonVerifier(FILE_NAME_TSL_ECC_DEFAULT, notYetValidEeCert);
-    assertThatThrownBy(() -> verifier.verifyValidity(zonedDateTime))
-        .isInstanceOf(GemPkiException.class)
-        .hasMessage(ErrorCode.SE_1021_CERTIFICATE_NOT_VALID_TIME.getErrorMessage(PRODUCT_TYPE));
-  }
-
-  @Test
-  void verifyValidityCertificateValid() {
-    assertDoesNotThrow(() -> certificateCommonVerification.verifyValidity(zonedDateTime));
-  }
-
-  @Test
-  void verifyIssuerServiceStatusNotRevoked() {
-    assertDoesNotThrow(
-        () ->
-            buildCertificateCommonVerifier(FILE_NAME_TSL_ECC_ALT_CA, VALID_X509_EE_CERT_ALT_CA)
-                .verifyIssuerServiceStatus());
-  }
-
-  /**
-   * Timestamp "notBefore" of VALID_X509_EE_CERT_ALT_CA is before StatusStartingTime of TSPService
-   * (issuer of VALID_X509_EE_CERT_ALT_CA) in TSL FILE_NAME_TSL_ALT_CA_REVOKED
-   */
-  @Test
-  void verifyIssuerServiceStatusRevokedLater() {
-    final String tslAltCaRevokedLater = "tsls/ecc/valid/TSL_altCA_revokedLater.xml";
-    assertDoesNotThrow(
-        () ->
-            buildCertificateCommonVerifier(tslAltCaRevokedLater, VALID_X509_EE_CERT_ALT_CA)
-                .verifyIssuerServiceStatus());
-  }
-
-  /**
-   * Timestamp "notBefore" of VALID_X509_EE_CERT_ALT_CA is after StatusStartingTime of TSPService
-   * (issuer of VALID_X509_EE_CERT_ALT_CA) in TSL FILE_NAME_TSL_ALT_CA_REVOKED
-   */
-  @Test
-  void verifyIssuerServiceStatusRevoked() throws GemPkiException {
-    final CertificateCommonVerification verifier =
-        buildCertificateCommonVerifier(
-            "tsls/ecc/valid/TSL_altCA_revoked.xml", VALID_X509_EE_CERT_ALT_CA);
-    assertThatThrownBy(verifier::verifyIssuerServiceStatus)
-        .isInstanceOf(GemPkiException.class)
-        .hasMessage(ErrorCode.SE_1036_CA_CERTIFICATE_REVOKED_IN_TSL.getErrorMessage(PRODUCT_TYPE));
-  }
 }
