@@ -454,22 +454,23 @@ class TucPki018VerifierTest {
                 VALID_X509_EE_CERT_SMCB, CERT_PROFILE_C_HCI_AUT_ECC, null),
         "tspServiceSubset");
 
-    assertNonNullParameter(
-        () -> tucPki018Verifier.commonChecks(null, tspServiceSubset), "x509EeCert");
-
-    assertNonNullParameter(
-        () -> tucPki018Verifier.commonChecks(VALID_X509_EE_CERT_SMCB, null), "tspServiceSubset");
-
     final ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
-    assertNonNullParameter(
-        () -> tucPki018Verifier.doOcspIfConfigured(null, tspServiceSubset, now), "x509EeCert");
 
     assertNonNullParameter(
-        () -> tucPki018Verifier.doOcspIfConfigured(VALID_X509_EE_CERT_SMCB, null, now),
-        "tspServiceSubset");
+        () -> tucPki018Verifier.commonChecks(null, tspServiceSubset, now), "x509EeCert");
 
     assertNonNullParameter(
-        () -> tucPki018Verifier.doOcspIfConfigured(VALID_X509_EE_CERT_SMCB, tspServiceSubset, null),
+        () -> tucPki018Verifier.commonChecks(VALID_X509_EE_CERT_SMCB, null, now), "tspServiceSubset");
+
+    assertNonNullParameter(
+            () -> tucPki018Verifier.commonChecks(VALID_X509_EE_CERT_SMCB, tspServiceSubset, null), "referenceDate");
+
+    assertNonNullParameter(
+        () -> tucPki018Verifier.doOcspIfConfigured(null, now), "x509EeCert");
+
+
+    assertNonNullParameter(
+        () -> tucPki018Verifier.doOcspIfConfigured(VALID_X509_EE_CERT_SMCB, null),
         "referenceDate");
   }
 
@@ -527,7 +528,7 @@ class TucPki018VerifierTest {
   @Test
   void verifyPerformTucPki18ChecksWithGivenOcspResponseValid() {
 
-    final ZonedDateTime referenceDate = GemLibPkiUtils.now().minusYears(10);
+    final ZonedDateTime referenceDate = ZonedDateTime.parse("2022-06-20T15:00:00Z");
 
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(

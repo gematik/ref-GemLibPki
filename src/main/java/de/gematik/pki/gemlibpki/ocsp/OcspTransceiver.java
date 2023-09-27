@@ -65,7 +65,7 @@ public final class OcspTransceiver {
 
   @Builder.Default private final boolean tolerateOcspFailure = false;
 
-  private TucPki006OcspVerifier getTucPki006Verifier(final OCSPResp ocspResp) {
+  public TucPki006OcspVerifier getTucPki006Verifier(final OCSPResp ocspResp) {
 
     return TucPki006OcspVerifier.builder()
         .productType(productType)

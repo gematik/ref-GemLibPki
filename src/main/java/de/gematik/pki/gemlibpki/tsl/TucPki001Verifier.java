@@ -29,6 +29,7 @@ import de.gematik.pki.gemlibpki.ocsp.OcspConstants;
 import de.gematik.pki.gemlibpki.ocsp.OcspRespCache;
 import de.gematik.pki.gemlibpki.utils.CertReader;
 import de.gematik.pki.gemlibpki.utils.GemLibPkiUtils;
+import de.gematik.pki.gemlibpki.validators.ValidityValidator;
 import eu.europa.esig.trustedlist.jaxb.tsl.TSPServiceType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.io.IOException;
@@ -295,15 +296,7 @@ public class TucPki001Verifier {
       final X509Certificate futureTrustAnchor =
           CertReader.readX509(productType, futureTrustAnchorBytes);
 
-      final TspServiceSubset tspServiceTrustAnchorSubset =
-          TspServiceSubset.builder().x509IssuerCert(futureTrustAnchor).build();
-
-      CertificateCommonVerification.builder()
-          .productType(productType)
-          .x509EeCert(futureTrustAnchor)
-          .tspServiceSubset(tspServiceTrustAnchorSubset)
-          .build()
-          .verifyValidity(referenceDate);
+      new ValidityValidator(productType).validateCertificate(futureTrustAnchor, referenceDate);
 
       log.debug(
           "verification of the trust anchor successful: certSerialNr {}, statusStartingTime {}",
