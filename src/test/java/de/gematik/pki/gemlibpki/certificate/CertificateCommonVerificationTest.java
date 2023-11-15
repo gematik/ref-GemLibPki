@@ -16,19 +16,20 @@
 
 package de.gematik.pki.gemlibpki.certificate;
 
+import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
+import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.tsl.TslInformationProvider;
 import de.gematik.pki.gemlibpki.tsl.TspInformationProvider;
 import de.gematik.pki.gemlibpki.tsl.TspService;
 import de.gematik.pki.gemlibpki.tsl.TspServiceSubset;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
-import org.junit.jupiter.api.Test;
-
 import java.time.ZonedDateTime;
 import java.util.List;
-
-import static de.gematik.pki.gemlibpki.TestConstants.*;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import org.junit.jupiter.api.Test;
 
 /**
  * Dieser Test arbeitet ausschließlich mit einem Zertifikatsprofil (SMCB). Andere Profile zu testen
@@ -36,23 +37,26 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
  */
 class CertificateCommonVerificationTest {
 
+  @Test
+  void verifyValid() throws GemPkiException {
 
-    @Test
-    void verifyValid() throws GemPkiException {
+    final ZonedDateTime zonedDateTime = ZonedDateTime.parse("2020-11-20T15:00:00Z");
 
-        ZonedDateTime zonedDateTime = ZonedDateTime.parse("2020-11-20T15:00:00Z");
+    final List<TspService> tspServices =
+        new TslInformationProvider(TestUtils.getTslUnsigned(FILE_NAME_TSL_ECC_DEFAULT))
+            .getTspServices();
+    final TspServiceSubset tspServiceSubset =
+        new TspInformationProvider(tspServices, PRODUCT_TYPE)
+            .getIssuerTspServiceSubset(VALID_X509_EE_CERT_SMCB);
 
-        List<TspService> tspServices = new TslInformationProvider(TestUtils.getTslUnsigned(FILE_NAME_TSL_ECC_DEFAULT)).getTspServices();
-        TspServiceSubset tspServiceSubset = new TspInformationProvider(tspServices, PRODUCT_TYPE).getIssuerTspServiceSubset(VALID_X509_EE_CERT_SMCB);
+    final CertificateCommonVerification tested =
+        CertificateCommonVerification.builder()
+            .productType(PRODUCT_TYPE)
+            .x509EeCert(VALID_X509_EE_CERT_SMCB)
+            .tspServiceSubset(tspServiceSubset)
+            .referenceDate(zonedDateTime)
+            .build();
 
-        CertificateCommonVerification tested = CertificateCommonVerification.builder()
-                .productType(PRODUCT_TYPE)
-                .x509EeCert(VALID_X509_EE_CERT_SMCB)
-                .tspServiceSubset(tspServiceSubset)
-                .referenceDate(zonedDateTime)
-                .build();
-
-        assertDoesNotThrow(tested::verifyAll);
-    }
-
+    assertDoesNotThrow(tested::verifyAll);
+  }
 }

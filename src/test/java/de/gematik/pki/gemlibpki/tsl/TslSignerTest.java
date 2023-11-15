@@ -73,6 +73,9 @@ class TslSignerTest {
 
   @BeforeEach
   public void setup() {
+
+    GemLibPkiUtils.setBouncyCastleProvider();
+
     tslRsa = TestUtils.getTslAsDoc(FILE_NAME_TSL_RSA_DEFAULT);
 
     final P12Container signerRsa = readP12(SIGNER_PATH_RSA);
@@ -146,21 +149,9 @@ class TslSignerTest {
     final P12Container signerRsa = readP12(SIGNER_PATH_RSA);
     final TslSigner tslSigner = tslSignerBuilder.tslToSign(tslRsa).tslSignerP12(signerRsa).build();
 
-    assertDoesNotThrow(tslSigner::sign);
-
     // now remove the BouncyCastleProvider
     Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
-    assertThatThrownBy(tslSigner::sign)
-        .isInstanceOf(GemPkiRuntimeException.class)
-        .cause()
-        .isInstanceOf(XAdES4jXMLSigException.class)
-        .hasMessage(
-            "The requested algorithm http://www.w3.org/2007/05/xmldsig-more#sha256-rsa-MGF1 does"
-                + " not exist. Original Message was:"
-                + " org.apache.xml.security.algorithms.implementations.SignatureBaseRSA$SignatureRSASHA256MGF1");
-    // ... and then restore the BouncyCastleProvider
-
-    GemLibPkiUtils.setBouncyCastleProvider();
+    assertDoesNotThrow(tslSigner::sign);
   }
 
   @Test
@@ -180,9 +171,6 @@ class TslSignerTest {
         .cause()
         .isInstanceOf(XAdES4jXMLSigException.class)
         .hasMessageStartingWith("Curve not supported: org.bouncycastle.jce.spec.ECNamedCurveSpec@");
-    // ... and then restore the BouncyCastleProvider
-
-    GemLibPkiUtils.setBouncyCastleProvider();
   }
 
   @Test

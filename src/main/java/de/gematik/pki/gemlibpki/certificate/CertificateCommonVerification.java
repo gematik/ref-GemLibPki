@@ -16,22 +16,21 @@
 
 package de.gematik.pki.gemlibpki.certificate;
 
+import static de.gematik.pki.gemlibpki.utils.GemLibPkiUtils.setBouncyCastleProvider;
+
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.tsl.TspServiceSubset;
-import de.gematik.pki.gemlibpki.validators.CertificateValidator;
 import de.gematik.pki.gemlibpki.validators.IssuerServiceStatusValidator;
 import de.gematik.pki.gemlibpki.validators.SignatureValidator;
 import de.gematik.pki.gemlibpki.validators.ValidityValidator;
+import java.security.cert.X509Certificate;
+import java.time.ZonedDateTime;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import java.security.cert.X509Certificate;
-import java.time.ZonedDateTime;
-
-import static de.gematik.pki.gemlibpki.utils.GemLibPkiUtils.setBouncyCastleProvider;
 
 /**
  * Class for common verification checks on a certificate. This class works with parameterized
@@ -40,35 +39,46 @@ import static de.gematik.pki.gemlibpki.utils.GemLibPkiUtils.setBouncyCastleProvi
  */
 @Slf4j
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 public final class CertificateCommonVerification {
 
-    static {
-        setBouncyCastleProvider();
+  static {
+    setBouncyCastleProvider();
+  }
+
+  @NonNull private final String productType;
+  @NonNull private final TspServiceSubset tspServiceSubset;
+  @NonNull private final X509Certificate x509EeCert;
+  @NonNull private final ZonedDateTime referenceDate;
+
+  @Builder.Default private ValidityValidator validityValidator = null;
+  @Builder.Default private SignatureValidator signatureValidator = null;
+  @Builder.Default private IssuerServiceStatusValidator issuerServiceStatusValidator = null;
+
+  private void initializeValidators() {
+
+    if (validityValidator != null) {
+      return;
     }
 
-    @NonNull
-    private final String productType;
-    @NonNull
-    private final TspServiceSubset tspServiceSubset;
-    @NonNull
-    private final X509Certificate x509EeCert;
-    @NonNull
-    private final ZonedDateTime referenceDate;
+    validityValidator = new ValidityValidator(productType);
+    signatureValidator = new SignatureValidator(productType, tspServiceSubset.getX509IssuerCert());
+    issuerServiceStatusValidator = new IssuerServiceStatusValidator(productType, tspServiceSubset);
+  }
 
-    /**
-     * Perform verifications of validity, signature and issue service status
-     *
-     * @throws GemPkiException thrown if cert is not valid according to time, signature or issuer
-     *                         service status
-     */
-    public void verifyAll() throws GemPkiException {
+  /**
+   * Perform verifications of validity, signature and issue service status
+   *
+   * @throws GemPkiException thrown if cert is not valid according to time, signature or issuer
+   *     service status
+   */
+  public void verifyAll() throws GemPkiException {
 
-        CertificateValidator.ValidationContext validationContext = new CertificateValidator.ValidationContext();
+    initializeValidators();
 
-        new ValidityValidator(productType).validateCertificate(x509EeCert, referenceDate, validationContext);
-        new SignatureValidator(productType, tspServiceSubset.getX509IssuerCert()).validateCertificate(x509EeCert, referenceDate, validationContext);
-        new IssuerServiceStatusValidator(productType, tspServiceSubset).validateCertificate(x509EeCert, referenceDate, validationContext);
-    }
-
+    validityValidator.validateCertificate(x509EeCert, referenceDate);
+    signatureValidator.validateCertificate(x509EeCert, referenceDate);
+    issuerServiceStatusValidator.validateCertificate(x509EeCert, referenceDate);
+  }
 }

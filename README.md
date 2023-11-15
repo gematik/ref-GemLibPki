@@ -6,7 +6,7 @@
 <img align="left" height="150" src="doc/images/logo.svg" />
 
 A java library for functionalities in PKI (Public Key Infrastructure) of products specified by
-gematik
+gematik.
 
 Products specified by gematik which have to deal with PKI will have to handle certificates and
 TSLs (TrustedServiceProvider Status List). This library may help to understand the intention of the
@@ -32,36 +32,64 @@ willingly.
 
 ##### Certificate checks
 
-- we check against nonQES certificate profiles specified by gematik, not against usages and
-  contexts (a special certificate profile for allowing any profile, i.e. disable profile checks, is
-  available as well)
-- we provide several methods to get information about a certificate and its issuer
-- contains checks of all steps defined in TUC_PKI_018 „Zertifikatsprüfung in der TI“ specified in
-  gematik document "Übergreifende Spezifikation PKI" (gemSpec_PKI)
-- OCSP requests are optional and activated by default
-- OCSP responses are verified according to TUC_PKI_006 "OCSP-Abfrage"
-  See [OCSP checks](./README.md#ocsp-checks) section.
+For certificate checks the library offers interfaces:
+
+- [CertificateValidator.java](src%2Fmain%2Fjava%2Fde%2Fgematik%2Fpki%2Fgemlibpki%2Fvalidators%2FCertificateValidator.java)
+- [CertificateProfileValidator.java](src%2Fmain%2Fjava%2Fde%2Fgematik%2Fpki%2Fgemlibpki%2Fvalidators%2FCertificateProfileValidator.java)
+
+as well as a couple of implementations for different checks alongside
+(see [validators](src%2Fmain%2Fjava%2Fde%2Fgematik%2Fpki%2Fgemlibpki%2Fvalidators)). You can build a
+chain of different checks or extend the library for your own requirements.
+
+###### TUC_PKI_018 - Zertifikatsprüfung in der TI
+
+A complete implementation of the TUC_PKI_018 „Zertifikatsprüfung in der TI“ of the gematik
+document "Übergreifende Spezifikation PKI" (gemSpec_PKI)can be found
+in [TucPki018Verifier](src/main/java/de/gematik/pki/gemlibpki/certificate/TucPki018Verifier.java)
+Here we check against nonQES certificate profiles specified by gematik, not against usages and
+contexts (a special certificate profile for allowing any profile, i.e., disable profile checks is
+available as well)
+
+OCSP requests are optional and activated by default. OCSP responses are verified according to
+TUC_PKI_006 "OCSP-Abfrage"
+(see [OCSP checks](./README.md#ocsp-checks) section).
+
+For examples of how to use the TUC_PKI_018 implementation
+see [TucPki018VerifierTest.java](src%2Ftest%2Fjava%2Fde%2Fgematik%2Fpki%2Fgemlibpki%2Fcertificate%2FTucPki018VerifierTest.java)
 
 ##### OCSP checks
 
-- OCSP responses can be generated with different properties. By default, a valid OCSP response
-  according to rf2560 is generated
-- OCSP responses are validated according to TUC_PKI_006 of gemSpec_PKI.
-- OCSP validation can be disabled via builder parameter `withOcspCheck` of
-  [TucPki018Verifier](src/main/java/de/gematik/pki/gemlibpki/certificate/TucPki018Verifier.java).
+OCSP responses can be generated with different properties. By default, a valid OCSP response,
+according to rf2560, is generated. OCSP responses are validated according to TUC_PKI_006 of
+gemSpec_PKI.
+
+OCSP validation can be disabled via builder parameter `withOcspCheck` of
+[TucPki018Verifier](src/main/java/de/gematik/pki/gemlibpki/certificate/TucPki018Verifier.java).
 
 ##### TSL handling
 
-- contains checks defined in TUC_PKI_001 „Periodische Aktualisierung TI-Vertrauensraum“ specified in
-  gematik document "Übergreifende Spezifikation PKI" (gemSpec_PKI)
-- we provide several methods to get information about a TSL. (
-  see: [TSL package](src/main/java/de/gematik/pki/gemlibpki/tsl))
-- methods for parsing, modifying, signing and validation of a TSL
+The library contains checks defined in TUC_PKI_001 „Periodische Aktualisierung TI-Vertrauensraum“
+specified in gematik document "Übergreifende Spezifikation PKI" (gemSpec_PKI)
+
+We provide several methods to get information, for parsing, modifying, signing and validation of a
+TSL. (see: [TSL package](src/main/java/de/gematik/pki/gemlibpki/tsl))
 
 Attention: the trust anchor change mechanism is not completely implemented in this library,
 because it has to be part of the TSL downloading component. An example of an implementation
 can be found in the system under test simulator of the gematik PKI test
 suite: [TslProcurer](https://github.com/gematik/app-PkiTestsuite/blob/1.1.3/pkits-sut-server-sim/src/main/java/de/gematik/pki/pkits/sut/server/sim/tsl/TslProcurer.java)
+
+###### Steps to perform TSL checks
+
+- instantiate a [TslReader](src/main/java/de/gematik/pki/gemlibpki/tsl/TslReader.java) to read a TSL
+- use the result of the TslReader to instantiate
+  a [TslInformationProvider](src/main/java/de/gematik/pki/gemlibpki/tsl/TslInformationProvider.java)
+  and call its public methods
+- get TspServices from TslInformationProvider
+- instantiate
+  a [TucPki001Verifier](src/main/java/de/gematik/pki/gemlibpki/tsl/TucPki001Verifier.java) (via
+  builder) and call its public method `performTucPki001Checks()`
+- the offline mode for TUC_PKI_001 (used solely for a Konnektor) is not implemented
 
 ##### Error codes
 
@@ -86,29 +114,6 @@ mvn clean verify artifact:compare
 ```
 
 in any compatible unix environment.
-
-### Steps to perform certificate checks
-
-- instantiate a [TslReader](src/main/java/de/gematik/pki/gemlibpki/tsl/TslReader.java) to read a TSL
-- use the result of the TslReader to instantiate
-  a [TslInformationProvider](src/main/java/de/gematik/pki/gemlibpki/tsl/TslInformationProvider.java)
-  and call its public methods
-- get TspServices from TslInformationProvider
-- instantiate
-  a [TucPki018Verifier](src/main/java/de/gematik/pki/gemlibpki/certificate/TucPki018Verifier.java)
-  (via builder) and call its public method `performTucPki018Checks(x509EeCert)`
-
-### Steps to perform TSL checks
-
-- instantiate a [TslReader](src/main/java/de/gematik/pki/gemlibpki/tsl/TslReader.java) to read a TSL
-- use the result of the TslReader to instantiate
-  a [TslInformationProvider](src/main/java/de/gematik/pki/gemlibpki/tsl/TslInformationProvider.java)
-  and call its public methods
-- get TspServices from TslInformationProvider
-- instantiate
-  a [TucPki001Verifier](src/main/java/de/gematik/pki/gemlibpki/tsl/TucPki001Verifier.java) (via
-  builder) and call its public method `performTucPki001Checks()`
-- the offline mode for TUC_PKI_001 (used solely for a Konnektor) is not implemented
 
 ## License
 

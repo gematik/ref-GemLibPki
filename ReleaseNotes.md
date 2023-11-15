@@ -2,9 +2,18 @@
 
 # Release notes GemLibPki
 
+## Release 2.0.1
+
+- introduce validation interface to encapsulate validation
+  steps https://github.com/gematik/ref-GemLibPki/pull/7
+- add NONCE extension to OCSP response if it existed in request
+- refactor code for better readability
+- add gitHub templates for issues and pull requests
+- update dependencies
+
 ## Release 1.3.0
 
-- add mission OIDs from gem_Spec_OID for different roles.
+- add missing OIDs from gem_Spec_OID for different roles
 - add method to check the profession oid in the returned admission of a certificate:
   `TucPki018Verifier.checkAllowedProfessionOids()`
 - update soon expiring unit test certificates

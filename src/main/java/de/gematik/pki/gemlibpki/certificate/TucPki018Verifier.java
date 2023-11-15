@@ -16,17 +16,15 @@
 
 package de.gematik.pki.gemlibpki.certificate;
 
-import de.gematik.pki.gemlibpki.error.ErrorCode;
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.exception.GemPkiParsingException;
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.ocsp.OcspConstants;
 import de.gematik.pki.gemlibpki.ocsp.OcspRespCache;
-import de.gematik.pki.gemlibpki.ocsp.OcspTransceiver;
-import de.gematik.pki.gemlibpki.ocsp.TucPki006OcspVerifier;
 import de.gematik.pki.gemlibpki.tsl.TspInformationProvider;
 import de.gematik.pki.gemlibpki.tsl.TspService;
 import de.gematik.pki.gemlibpki.tsl.TspServiceSubset;
+import de.gematik.pki.gemlibpki.validators.OcspValidator;
 import java.io.IOException;
 import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
@@ -34,9 +32,8 @@ import java.time.ZonedDateTime;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Set;
-
-import de.gematik.pki.gemlibpki.validators.OCSPValidator;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +47,7 @@ import org.bouncycastle.cert.ocsp.OCSPResp;
  */
 @Slf4j
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
 public class TucPki018Verifier {
 
@@ -64,6 +62,8 @@ public class TucPki018Verifier {
   protected final int ocspTimeoutSeconds = OcspConstants.DEFAULT_OCSP_TIMEOUT_SECONDS;
 
   @Builder.Default protected final boolean tolerateOcspFailure = false;
+
+  @Builder.Default private OcspValidator ocspValidator = null;
 
   /**
    * Verify given end-entity certificate against TucPki18 (Technical Use Case 18 "Zertifikatsprüfung
@@ -103,19 +103,35 @@ public class TucPki018Verifier {
     return tucPki018ProfileChecks(x509EeCert, tspServiceSubset);
   }
 
+  private void initializeValidator() {
+
+    if (ocspValidator != null) {
+      return;
+    }
+
+    ocspValidator =
+        OcspValidator.builder()
+            .productType(productType)
+            .tspServiceList(tspServiceList)
+            .withOcspCheck(withOcspCheck)
+            .ocspResponse(ocspResponse)
+            .ocspRespCache(ocspRespCache)
+            .ocspTimeoutSeconds(ocspTimeoutSeconds)
+            .tolerateOcspFailure(tolerateOcspFailure)
+            .build();
+  }
+
   /**
    * @param x509EeCert Certificate to check the OCSP status from
    * @param referenceDate date to check revocation, producedAt, thisUpdate and nextUpdate against
    * @throws GemPkiException thrown if OCSP status is not "good" for the certificate
    */
   protected void doOcspIfConfigured(
-      @NonNull final X509Certificate x509EeCert,
-      @NonNull final ZonedDateTime referenceDate)
+      @NonNull final X509Certificate x509EeCert, @NonNull final ZonedDateTime referenceDate)
       throws GemPkiException {
-    new OCSPValidator(productType, tspServiceList, withOcspCheck, ocspResponse, ocspRespCache, ocspTimeoutSeconds, tolerateOcspFailure).validateCertificate(x509EeCert, referenceDate);
-
+    initializeValidator();
+    ocspValidator.validateCertificate(x509EeCert, referenceDate);
   }
-
 
   /**
    * Performs TUC_PKI_018 checks (Certificate verification). Verifies given end-entity certificate
@@ -192,7 +208,9 @@ public class TucPki018Verifier {
    * @throws GemPkiException if the certificate verification fails
    */
   protected void commonChecks(
-      @NonNull final X509Certificate x509EeCert, @NonNull final TspServiceSubset tspServiceSubset, @NonNull final ZonedDateTime referenceDate)
+      @NonNull final X509Certificate x509EeCert,
+      @NonNull final TspServiceSubset tspServiceSubset,
+      @NonNull final ZonedDateTime referenceDate)
       throws GemPkiException {
 
     final CertificateCommonVerification certificateCommonVerification =
@@ -216,9 +234,14 @@ public class TucPki018Verifier {
   public static boolean checkAllowedProfessionOids(
       final Admission admissionToCheck, @NonNull final Set<String> allowedProfessionOids) {
 
-    // TODO lower cognitive complexity
-    return !(admissionToCheck == null
-        || admissionToCheck.getProfessionOids().isEmpty()
-        || !admissionToCheck.getProfessionOids().removeAll(allowedProfessionOids));
+    if (admissionToCheck == null) return false;
+
+    if (admissionToCheck.getProfessionOids().isEmpty()) return false;
+
+    return isPresent(admissionToCheck.getProfessionOids(), allowedProfessionOids);
+  }
+
+  private static boolean isPresent(final Set<String> setToSearch, final Set<String> set) {
+    return setToSearch.removeAll(set);
   }
 }
