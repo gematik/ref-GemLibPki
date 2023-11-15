@@ -460,18 +460,17 @@ class TucPki018VerifierTest {
         () -> tucPki018Verifier.commonChecks(null, tspServiceSubset, now), "x509EeCert");
 
     assertNonNullParameter(
-        () -> tucPki018Verifier.commonChecks(VALID_X509_EE_CERT_SMCB, null, now), "tspServiceSubset");
+        () -> tucPki018Verifier.commonChecks(VALID_X509_EE_CERT_SMCB, null, now),
+        "tspServiceSubset");
 
     assertNonNullParameter(
-            () -> tucPki018Verifier.commonChecks(VALID_X509_EE_CERT_SMCB, tspServiceSubset, null), "referenceDate");
-
-    assertNonNullParameter(
-        () -> tucPki018Verifier.doOcspIfConfigured(null, now), "x509EeCert");
-
-
-    assertNonNullParameter(
-        () -> tucPki018Verifier.doOcspIfConfigured(VALID_X509_EE_CERT_SMCB, null),
+        () -> tucPki018Verifier.commonChecks(VALID_X509_EE_CERT_SMCB, tspServiceSubset, null),
         "referenceDate");
+
+    assertNonNullParameter(() -> tucPki018Verifier.doOcspIfConfigured(null, now), "x509EeCert");
+
+    assertNonNullParameter(
+        () -> tucPki018Verifier.doOcspIfConfigured(VALID_X509_EE_CERT_SMCB, null), "referenceDate");
   }
 
   @Test

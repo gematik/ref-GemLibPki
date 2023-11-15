@@ -116,7 +116,7 @@ public final class TslUtils {
     return CertReader.readX509(signatureCertificateJaxbElem.getValue());
   }
 
-  public static <T> JAXBElement<T> getFirstSignatureCertificateJaxbElement(
+  public static JAXBElement<byte[]> getFirstSignatureCertificateJaxbElement(
       final TrustStatusListType tsl) {
     return tsl.getSignature().getKeyInfo().getContent().stream()
         .filter(JAXBElement.class::isInstance)
@@ -127,7 +127,12 @@ public final class TslUtils {
         .map(X509DataType::getX509IssuerSerialOrX509SKIOrX509SubjectName)
         .flatMap(List::stream)
         .filter(JAXBElement.class::isInstance)
-        .map(z -> (JAXBElement<T>) z)
+        .map(
+            obj -> {
+              @SuppressWarnings("unchecked")
+              final JAXBElement<byte[]> jaxElem = (JAXBElement<byte[]>) obj;
+              return jaxElem;
+            })
         .findFirst()
         .orElseThrow(() -> new GemPkiRuntimeException("tsl without a signer certificate element"));
   }

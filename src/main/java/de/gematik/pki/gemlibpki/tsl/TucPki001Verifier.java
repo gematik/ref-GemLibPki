@@ -19,7 +19,6 @@ package de.gematik.pki.gemlibpki.tsl;
 import static de.gematik.pki.gemlibpki.utils.ResourceReader.getUrlFromResources;
 import static javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI;
 
-import de.gematik.pki.gemlibpki.certificate.CertificateCommonVerification;
 import de.gematik.pki.gemlibpki.certificate.CertificateProfile;
 import de.gematik.pki.gemlibpki.certificate.TucPki018Verifier;
 import de.gematik.pki.gemlibpki.error.ErrorCode;
@@ -65,6 +64,7 @@ import org.xml.sax.SAXException;
  */
 @Slf4j
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 public class TucPki001Verifier {
 
@@ -85,8 +85,10 @@ public class TucPki001Verifier {
 
   @Builder.Default protected final boolean tolerateOcspFailure = false;
 
+  @Builder.Default private ValidityValidator validityValidator = null;
+
   /**
-   * Performs TSL validity verification: This method is implementad static, as it ist not part of
+   * Performs TSL validity verification: This method is implemented static, as it ist not part of
    * the checks of TucPki001. The product has to call the method separately to decide if the current
    * tsl can be used for checks according to the TUC
    *
@@ -255,6 +257,14 @@ public class TucPki001Verifier {
     return getVerifiedAnnouncedTrustAnchorUpdate(GemLibPkiUtils.now());
   }
 
+  private void initializeValidator() {
+    if (validityValidator != null) {
+      return;
+    }
+
+    validityValidator = new ValidityValidator(productType);
+  }
+
   private Optional<TrustAnchorUpdate> getVerifiedAnnouncedTrustAnchorUpdate(
       final ZonedDateTime referenceDate) {
 
@@ -296,7 +306,9 @@ public class TucPki001Verifier {
       final X509Certificate futureTrustAnchor =
           CertReader.readX509(productType, futureTrustAnchorBytes);
 
-      new ValidityValidator(productType).validateCertificate(futureTrustAnchor, referenceDate);
+      initializeValidator();
+
+      validityValidator.validateCertificate(futureTrustAnchor, referenceDate);
 
       log.debug(
           "verification of the trust anchor successful: certSerialNr {}, statusStartingTime {}",
