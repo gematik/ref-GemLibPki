@@ -50,6 +50,7 @@ import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.isismtt.ocsp.CertHash;
 import org.bouncycastle.asn1.nist.NISTObjectIdentifiers;
 import org.bouncycastle.asn1.ocsp.CertID;
+import org.bouncycastle.asn1.ocsp.OCSPObjectIdentifiers;
 import org.bouncycastle.asn1.ocsp.OCSPResponse;
 import org.bouncycastle.asn1.ocsp.OCSPResponseStatus;
 import org.bouncycastle.asn1.ocsp.ResponderID;
@@ -248,8 +249,14 @@ public class OcspResponseGenerator {
       basicOcspRespBuilder = new BasicOCSPRespBuilder(respId);
     }
 
-    final List<Extension> extensionList = new ArrayList<>();
+    final List<Extension> responseExtensionList = new ArrayList<>();
+    addNonceExtensionIfNecessary(ocspReq, responseExtensionList);
 
+    final Extensions responseExtensions =
+        new Extensions(responseExtensionList.toArray(Extension[]::new));
+    basicOcspRespBuilder.setResponseExtensions(responseExtensions);
+
+    final List<Extension> extensionList = new ArrayList<>();
     addCertHashExtIfNecessary(eeCert, certificateStatus, extensionList);
 
     final Extensions extensions = new Extensions(extensionList.toArray(Extension[]::new));
@@ -296,6 +303,13 @@ public class OcspResponseGenerator {
     }
 
     return createOcspResp(respStatus, basicOcspResp);
+  }
+
+  private void addNonceExtensionIfNecessary(final OCSPReq req, final List<Extension> extensionList) {
+    final Extension nonceExtension = req.getExtension(OCSPObjectIdentifiers.id_pkix_ocsp_nonce);
+    if (nonceExtension != null) {
+      extensionList.add(nonceExtension);
+    }
   }
 
   private void addCertHashExtIfNecessary(

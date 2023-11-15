@@ -8,3 +8,10 @@ Pipeline.DeployGitHub.Jenkinsfile
 Pipeline.InternalRelease.Jenkinsfile
 Pipeline.PublishToMavenCentral.Jenkinsfile
 
+
+doc/dev/
+Pipeline.CI.Jenkinsfile
+Pipeline.DeployGitHub.Jenkinsfile
+Pipeline.InternalRelease.Jenkinsfile
+Pipeline.PublishToMavenCentral.Jenkinsfile
+

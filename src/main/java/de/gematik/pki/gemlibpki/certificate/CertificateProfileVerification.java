@@ -18,14 +18,18 @@ package de.gematik.pki.gemlibpki.certificate;
 
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.tsl.TspServiceSubset;
-import de.gematik.pki.gemlibpki.validators.*;
+import de.gematik.pki.gemlibpki.validators.CertificateProfileByCertificateTypeOidValidator;
+import de.gematik.pki.gemlibpki.validators.CertificateTypeOidInIssuerTspServiceExtensionValidator;
+import de.gematik.pki.gemlibpki.validators.CriticalExtensionsValidator;
+import de.gematik.pki.gemlibpki.validators.ExtendedKeyUsageValidator;
+import de.gematik.pki.gemlibpki.validators.KeyUsageValidator;
+import java.security.cert.X509Certificate;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import java.security.cert.X509Certificate;
 
 /**
  * Class for verification checks on a certificate against a profile. This class works with
@@ -34,33 +38,61 @@ import java.security.cert.X509Certificate;
  */
 @Slf4j
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 public final class CertificateProfileVerification {
 
-    @NonNull
-    private final String productType;
-    @NonNull
-    private final TspServiceSubset tspServiceSubset;
-    @NonNull
-    private final CertificateProfile certificateProfile;
-    @NonNull
-    private final X509Certificate x509EeCert;
+  @NonNull private final String productType;
+  @NonNull private final TspServiceSubset tspServiceSubset;
+  @NonNull private final CertificateProfile certificateProfile;
+  @NonNull private final X509Certificate x509EeCert;
 
-    /**
-     * Perform all verification checks
-     *
-     * @throws GemPkiException thrown if cert cannot be verified according to KeyUsage, ExtKeyUsage or
-     *                         CertType
-     */
-    public void verifyAll() throws GemPkiException {
+  @Builder.Default private KeyUsageValidator keyUsageValidator = null;
+  @Builder.Default private ExtendedKeyUsageValidator extendedKeyUsageValidator = null;
 
-        new KeyUsageValidator(productType).validateCertificate(x509EeCert, certificateProfile);
-        new ExtendedKeyUsageValidator(productType).validateCertificate(x509EeCert, certificateProfile);
+  @Builder.Default
+  private CertificateProfileByCertificateTypeOidValidator
+      certificateProfileByCertificateTypeOidValidator = null;
 
-        new CertificateProfileByCertificateTypeOidValidator(productType).validateCertificate(x509EeCert, certificateProfile);
-        new CertificateTypeOidInIssuerTspServiceExtensionValidator(productType, tspServiceSubset).validateCertificate(x509EeCert, certificateProfile);
+  @Builder.Default
+  private CertificateTypeOidInIssuerTspServiceExtensionValidator
+      certificateTypeOidInIssuerTspServiceExtensionValidator = null;
 
-        new CriticalExtensionsValidator(productType).validateCertificate(x509EeCert, certificateProfile);
+  @Builder.Default private CriticalExtensionsValidator criticalExtensionsValidator = null;
+
+  private void initializeValidators() {
+
+    if (keyUsageValidator != null) {
+      return;
     }
 
+    keyUsageValidator = new KeyUsageValidator(productType);
+    extendedKeyUsageValidator = new ExtendedKeyUsageValidator(productType);
+    certificateProfileByCertificateTypeOidValidator =
+        new CertificateProfileByCertificateTypeOidValidator(productType);
+    certificateTypeOidInIssuerTspServiceExtensionValidator =
+        new CertificateTypeOidInIssuerTspServiceExtensionValidator(productType, tspServiceSubset);
+    criticalExtensionsValidator = new CriticalExtensionsValidator(productType);
+  }
+
+  /**
+   * Perform all verification checks
+   *
+   * @throws GemPkiException thrown if cert cannot be verified according to KeyUsage, ExtKeyUsage or
+   *     CertType
+   */
+  public void verifyAll() throws GemPkiException {
+
+    initializeValidators();
+
+    keyUsageValidator.validateCertificate(x509EeCert, certificateProfile);
+    extendedKeyUsageValidator.validateCertificate(x509EeCert, certificateProfile);
+
+    certificateProfileByCertificateTypeOidValidator.validateCertificate(
+        x509EeCert, certificateProfile);
+    certificateTypeOidInIssuerTspServiceExtensionValidator.validateCertificate(
+        x509EeCert, certificateProfile);
+
+    criticalExtensionsValidator.validateCertificate(x509EeCert, certificateProfile);
+  }
 }

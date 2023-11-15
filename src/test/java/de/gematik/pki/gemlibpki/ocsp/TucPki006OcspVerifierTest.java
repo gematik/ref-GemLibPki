@@ -377,10 +377,12 @@ class TucPki006OcspVerifierTest {
       final boolean responseWithNullParameterHashAlgoOfCertId) {
 
     log.info(
-        "\n"
-            + "requestAlgorithmIdentifier: {} {}\n"
-            + "responseAlgoBehavior: {}\n"
-            + "responseWithNullParameterHashAlgoOfCertId: {}\n",
+        """
+
+            requestAlgorithmIdentifier: {} {}
+            responseAlgoBehavior: {}
+            responseWithNullParameterHashAlgoOfCertId: {}
+            """,
         requestAlgorithmIdentifier.getAlgorithm().getId(),
         requestAlgorithmIdentifier.getParameters(),
         responseAlgoBehavior,
@@ -953,8 +955,7 @@ class TucPki006OcspVerifierTest {
 
     final TucPki006OcspVerifier verifier = pair.getRight();
 
-    final X509Certificate x509Cert = VALID_X509_EE_CERT_SMCB;
-    final X509Certificate x509CertSpy = Mockito.spy(x509Cert);
+    final X509Certificate x509CertSpy = Mockito.spy(VALID_X509_EE_CERT_SMCB);
     Mockito.doThrow(CertificateEncodingException.class).when(x509CertSpy).getEncoded();
 
     try (final MockedConstruction<JcaX509CertificateConverter> ignored =
@@ -971,8 +972,7 @@ class TucPki006OcspVerifierTest {
   @Test
   void verifyCertHash_MockCertificateEncodingException() throws CertificateEncodingException {
 
-    final X509Certificate x509Cert = VALID_X509_EE_CERT_SMCB;
-    final X509Certificate x509CertSpy = Mockito.spy(x509Cert);
+    final X509Certificate x509CertSpy = Mockito.spy(VALID_X509_EE_CERT_SMCB);
 
     final Pair<OCSPResp, TucPki006OcspVerifier> pair =
         getPairForMocks(x509CertSpy, VALID_ISSUER_CERT_SMCB);
