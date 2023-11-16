@@ -94,7 +94,7 @@ class OcspUtilsTest {
 
     assertThatThrownBy(() -> OcspUtils.getFirstSingleResp(ocspRespMock))
         .isInstanceOf(GemPkiRuntimeException.class)
-        .hasMessage("Mehr als eine OCSP Response erhalten: 2");
+        .hasMessage("Nicht genau eine OCSP Response erhalten, sondern: 2");
   }
 
   @Test

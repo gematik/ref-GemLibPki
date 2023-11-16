@@ -36,7 +36,8 @@ public class CriticalExtensionsValidator implements CertificateProfileValidator 
   /** AFO GS-A_4661-01 (RFC5280#4.2) */
   @Override
   public void validateCertificate(
-      @NonNull final X509Certificate x509EeCert, @NonNull final CertificateProfile certificateProfile)
+      @NonNull final X509Certificate x509EeCert,
+      @NonNull final CertificateProfile certificateProfile)
       throws GemPkiException {
 
     final Set<String> certCriticalExtensions = x509EeCert.getCriticalExtensionOIDs();

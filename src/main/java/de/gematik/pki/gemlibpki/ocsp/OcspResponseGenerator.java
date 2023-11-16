@@ -251,24 +251,22 @@ public class OcspResponseGenerator {
 
     final List<Extension> responseExtensionList = new ArrayList<>();
     addNonceExtensionIfNecessary(ocspReq, responseExtensionList);
+    addCertHashExtIfNecessary(eeCert, certificateStatus, responseExtensionList);
 
-    final Extensions responseExtensions =
-        new Extensions(responseExtensionList.toArray(Extension[]::new));
-    basicOcspRespBuilder.setResponseExtensions(responseExtensions);
+    Extensions responseExtensions = null;
+    if (!responseExtensionList.isEmpty()) {
+      responseExtensions = new Extensions(responseExtensionList.toArray(Extension[]::new));
+      basicOcspRespBuilder.setResponseExtensions(responseExtensions);
+    }
 
-    final List<Extension> extensionList = new ArrayList<>();
-    addCertHashExtIfNecessary(eeCert, certificateStatus, extensionList);
-
-    final Extensions extensions = new Extensions(extensionList.toArray(Extension[]::new));
     for (final Req singleRequest : ocspReq.getRequestList()) {
-
       final CertificateID certificateId = generateCertificateId(singleRequest, issuerCert);
       basicOcspRespBuilder.addResponse(
           certificateId,
           certificateStatus,
           Date.from(thisUpdate.toInstant()),
           (nextUpdate != null) ? Date.from(nextUpdate.toInstant()) : null,
-          extensions);
+          responseExtensions);
     }
 
     final X509CertificateHolder[] chain = {
@@ -305,7 +303,8 @@ public class OcspResponseGenerator {
     return createOcspResp(respStatus, basicOcspResp);
   }
 
-  private void addNonceExtensionIfNecessary(final OCSPReq req, final List<Extension> extensionList) {
+  private void addNonceExtensionIfNecessary(
+      final OCSPReq req, final List<Extension> extensionList) {
     final Extension nonceExtension = req.getExtension(OCSPObjectIdentifiers.id_pkix_ocsp_nonce);
     if (nonceExtension != null) {
       extensionList.add(nonceExtension);

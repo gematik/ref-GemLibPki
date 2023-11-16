@@ -2,6 +2,11 @@
 
 # Release notes GemLibPki
 
+## Release 2.0.2
+
+- refactor code for better readability
+- bump bouncy castle
+
 ## Release 2.0.1
 
 - introduce validation interface to encapsulate validation

@@ -41,7 +41,8 @@ public class KeyUsageValidator implements CertificateProfileValidator {
    */
   @Override
   public void validateCertificate(
-      @NonNull final X509Certificate x509EeCert, @NonNull final CertificateProfile certificateProfile)
+      @NonNull final X509Certificate x509EeCert,
+      @NonNull final CertificateProfile certificateProfile)
       throws GemPkiException {
 
     final boolean[] certKeyUsage = x509EeCert.getKeyUsage();

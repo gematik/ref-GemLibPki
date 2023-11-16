@@ -24,7 +24,8 @@ import lombok.NonNull;
 
 public interface CertificateValidator {
 
-  default void validateCertificate(@NonNull final X509Certificate x509EeCert) throws GemPkiException {
+  default void validateCertificate(@NonNull final X509Certificate x509EeCert)
+      throws GemPkiException {
     validateCertificate(x509EeCert, ZonedDateTime.now(ZoneOffset.UTC));
   }
 
