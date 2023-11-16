@@ -557,35 +557,35 @@ class OcspResponseGeneratorTest {
   @Test
   void testCreateResponseWithNonceExtension() throws OCSPException {
     final CertificateID certificateId =
-            OcspRequestGenerator.createCertificateId(
-                    VALID_X509_EE_CERT_SMCB.getSerialNumber(),
-                    VALID_ISSUER_CERT_SMCB,
-                    new AlgorithmIdentifier(OIWObjectIdentifiers.idSHA1, DERNull.INSTANCE));
+        OcspRequestGenerator.createCertificateId(
+            VALID_X509_EE_CERT_SMCB.getSerialNumber(),
+            VALID_ISSUER_CERT_SMCB,
+            new AlgorithmIdentifier(OIWObjectIdentifiers.idSHA1, DERNull.INSTANCE));
     final OCSPReqBuilder ocspReqBuilder = new OCSPReqBuilder();
     ocspReqBuilder.addRequest(certificateId);
 
     final byte[] nonceBytes =
-            new byte[] {
-                    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-                    0x01
-            };
+        new byte[] {
+          0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+          0x01
+        };
     final Extension nonceExtension =
-            new Extension(OCSPObjectIdentifiers.id_pkix_ocsp_nonce, false, nonceBytes);
+        new Extension(OCSPObjectIdentifiers.id_pkix_ocsp_nonce, false, nonceBytes);
     ocspReqBuilder.setRequestExtensions(new Extensions(nonceExtension));
 
     final OCSPReq ocspRequest = ocspReqBuilder.build();
 
     final OCSPResp ocspResponse =
-            OcspResponseGenerator.builder()
-                    .signer(OcspTestConstants.getOcspSignerRsa())
-                    .build()
-                    .generate(
-                            ocspRequest, VALID_X509_EE_CERT_SMCB_CA24_RSA, VALID_ISSUER_CERT_SMCB_CA24_RSA);
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerRsa())
+            .build()
+            .generate(
+                ocspRequest, VALID_X509_EE_CERT_SMCB_CA24_RSA, VALID_ISSUER_CERT_SMCB_CA24_RSA);
 
     final BasicOCSPResp basicOcspResp = OcspUtils.getBasicOcspResp(ocspResponse);
 
     final Extension responseNonceExtension =
-            basicOcspResp.getExtension(OCSPObjectIdentifiers.id_pkix_ocsp_nonce);
+        basicOcspResp.getExtension(OCSPObjectIdentifiers.id_pkix_ocsp_nonce);
     assertThat(responseNonceExtension).isEqualTo(nonceExtension);
   }
 

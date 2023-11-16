@@ -4,7 +4,7 @@
 
   <groupId>de.gematik.pki</groupId>
   <artifactId>gemLibPki</artifactId>
-  <version>2.0.1</version>
+  <version>2.0.2</version>
   <packaging>jar</packaging>
   <name>GemLibPki</name>
   <description>library for implementation and tests of the gematik pki specification</description>
@@ -44,7 +44,7 @@
   </issueManagement>
 
   <properties>
-    <project.build.outputTimestamp>1700053510</project.build.outputTimestamp>
+    <project.build.outputTimestamp>1700142866</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.encoding>${project.build.sourceEncoding}</maven.compiler.encoding>
     <version.java>17</version.java>
@@ -53,7 +53,7 @@
     <!-- dependencies -->
     <version.assertj>3.24.2</version.assertj>
     <version.awaitility>4.2.0</version.awaitility>
-    <version.bouncycastle>1.76</version.bouncycastle>
+    <version.bouncycastle>1.77</version.bouncycastle>
     <version.commons-lang3>3.13.0</version.commons-lang3>
     <version.dss-tsl-validation>5.11.1.d4j.1</version.dss-tsl-validation>
     <version.jakarta.xml.bind-api>4.0.1</version.jakarta.xml.bind-api>

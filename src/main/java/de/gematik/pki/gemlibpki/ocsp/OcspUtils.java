@@ -75,7 +75,7 @@ public final class OcspUtils {
 
     if (singleResps.length != 1) {
       throw new GemPkiRuntimeException(
-          "Mehr als eine OCSP Response erhalten: " + singleResps.length);
+          "Nicht genau eine OCSP Response erhalten, sondern: " + singleResps.length);
     }
     return singleResps[0];
   }

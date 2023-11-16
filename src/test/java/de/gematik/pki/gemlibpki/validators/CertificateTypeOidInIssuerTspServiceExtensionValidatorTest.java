@@ -103,7 +103,8 @@ class CertificateTypeOidInIssuerTspServiceExtensionValidatorTest {
 
   @Test
   void testGetCertificatePolicyOidsException() {
-    final X509Certificate validX509EeCert = TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
+    final X509Certificate validX509EeCert =
+        TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
 
     try (final MockedConstruction<Policies> ignored =
         Mockito.mockConstructionWithAnswer(
