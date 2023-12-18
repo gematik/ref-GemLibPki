@@ -40,6 +40,8 @@ public enum CertificateType {
   CERT_TYPE_GSMCK_SAK_AUT("C.SAK.AUT", "oid_sak_aut", "1.2.276.0.76.4.113"),
   CERT_TYPE_HBA_AUT("C.HP.AUT", "oid_hba_aut", "1.2.276.0.76.4.75"),
   CERT_TYPE_HBA_QES("C.HP.QES", "oid_hba_qes", "1.2.276.0.76.4.72"),
+  CERT_TYPE_HSK_ENC("C.HSK.ENC", "oid_hsk_enc", "1.2.276.0.76.4.301"),
+  CERT_TYPE_HSK_SIG("C.HSK.SIG", "oid_hsk_sig", "1.2.276.0.76.4.300"),
   CERT_TYPE_NK_VPN("C.NK.VPN", "oid_nk_vpn", "1.2.276.0.76.4.80"),
   CERT_TYPE_SAK_AUT("C.SAK.AUT", "oid_sak_aut", "1.2.276.0.76.4.113"),
   CERT_TYPE_SGD_HSM_AUT("C.SGD-HSM.AUT", "oid_sgd_hsm_aut", "1.2.276.0.76.4.214"),

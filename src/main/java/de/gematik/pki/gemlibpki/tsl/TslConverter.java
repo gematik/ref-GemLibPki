@@ -174,7 +174,7 @@ public final class TslConverter {
 
   /**
    * @param tslBytes A TSL as byte array
-   * @return A TSL as TrustStatusListType
+   * @return A TSL as TrustStatusListType with invalid/broken signature
    */
   public static TrustStatusListType bytesToTslUnsigned(final byte @NonNull [] tslBytes) {
     try {

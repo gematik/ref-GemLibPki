@@ -35,6 +35,8 @@ public final class TslConstants {
 
   public static final String STI_OCSP = "http://uri.etsi.org/TrstSvc/Svctype/Certstatus/OCSP";
 
+  public static final String STI_CRL = "http://uri.etsi.org/TrstSvc/Svctype/Certstatus/CRL";
+
   public static final List<String> STI_CA_LIST = List.of(STI_PKC, STI_SRV_CERT_CHANGE);
 
   public static final String TSL_DOWNLOAD_URL_OID_PRIMARY = "1.2.276.0.76.4.120";

@@ -60,6 +60,14 @@ class TslInformationProviderTest {
   }
 
   @Test
+  void readTspServices_CrlServicesProviderSizeShouldBeCorrect() {
+    assertThat(
+            tslInformationProvider.getFilteredTspServices(
+                Collections.singletonList(TslConstants.STI_CRL)))
+        .hasSize(3);
+  }
+
+  @Test
   void readAllTspServices_ServicesSizeShouldBeCorrect() {
     assertThat(tslInformationProvider.getTspServices()).hasSize(271);
   }

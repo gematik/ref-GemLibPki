@@ -24,6 +24,8 @@ import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_FD_
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_FD_TLS_S;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_GSMCK_AK_AUT;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_HBA_AUT;
+import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_HSK_ENC;
+import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_HSK_SIG;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_SMC_B_AUT;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_SMC_B_ENC;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_SMC_B_OSIG;
@@ -128,6 +130,18 @@ public enum CertificateProfile {
       CERT_TYPE_ANY,
       List.of(KEYUSAGE_NON_REPUDIATION),
       List.of(EXT_KEYUSAGE_ID_TSL_KP_TSLSIGNING),
+      true),
+
+  CERT_PROFILE_C_HSK_ENC_ECC(
+      CERT_TYPE_HSK_ENC,
+      List.of(KEYUSAGE_KEY_AGREEMENT),
+      List.of(EXT_KEYUSAGE_ID_KP_SERVERAUTH, EXT_KEYUSAGE_ID_KP_CLIENTAUTH),
+      true),
+
+  CERT_PROFILE_C_HSK_SIG_ECC(
+      CERT_TYPE_HSK_SIG,
+      List.of(KEYUSAGE_NON_REPUDIATION),
+      List.of(EXT_KEYUSAGE_ID_KP_SERVERAUTH, EXT_KEYUSAGE_ID_KP_CLIENTAUTH),
       true),
 
   CERT_PROFILE_ANY(CERT_TYPE_ANY, List.of(), List.of(), false);

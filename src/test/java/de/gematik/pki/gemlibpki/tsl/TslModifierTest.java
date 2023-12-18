@@ -34,7 +34,6 @@ import de.gematik.pki.gemlibpki.tsl.TslConverter.DocToBytesOption;
 import de.gematik.pki.gemlibpki.tsl.TslSigner.TslSignerBuilder;
 import de.gematik.pki.gemlibpki.utils.GemLibPkiUtils;
 import de.gematik.pki.gemlibpki.utils.P12Container;
-import de.gematik.pki.gemlibpki.utils.ResourceReader;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.io.IOException;
@@ -389,26 +388,15 @@ class TslModifierTest {
   void testModifySignerCert() {
 
     tslUnsigned = TestUtils.getTslUnsigned(FILE_NAME_TSL_ECC_DEFAULT);
-    final String tslStr =
-        new String(
-            GemLibPkiUtils.readContent(
-                ResourceReader.getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, getClass())),
-            StandardCharsets.UTF_8);
-
-    final X509Certificate eeCert = INVALID_EXTENSION_NOT_CRIT_CERT;
-
     final X509Certificate oldSignerCert = TslUtils.getFirstTslSignerCertificate(tslUnsigned);
-
+    final X509Certificate eeCert = INVALID_EXTENSION_NOT_CRIT_CERT;
     assertThat(oldSignerCert).isNotEqualTo(eeCert);
-
-    assertSignerCertInTsl(tslStr, oldSignerCert);
 
     final byte[] tslBytes = TslConverter.tslUnsignedToBytes(tslUnsigned);
     final byte[] tslBytesNew = TslModifier.modifiedSignerCert(tslBytes, eeCert);
     final String tslStrNew = new String(tslBytesNew, StandardCharsets.UTF_8);
 
     final TrustStatusListType tslNewUnsigned = TslConverter.bytesToTslUnsigned(tslBytesNew);
-
     final X509Certificate eeCertNew = TslUtils.getFirstTslSignerCertificate(tslNewUnsigned);
 
     assertThat(eeCertNew).isEqualTo(eeCert);
@@ -439,27 +427,19 @@ class TslModifierTest {
   void testModifyWithSameSignerCert() {
 
     tslUnsigned = TestUtils.getTslUnsigned(FILE_NAME_TSL_ECC_DEFAULT);
-    final String tslStr =
-        new String(
-            GemLibPkiUtils.readContent(
-                ResourceReader.getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, getClass())),
-            StandardCharsets.UTF_8);
-
-    final X509Certificate signerCert = TslUtils.getFirstTslSignerCertificate(tslUnsigned);
-
-    assertSignerCertInTsl(tslStr, signerCert);
+    final X509Certificate signerCertFromTsl = TslUtils.getFirstTslSignerCertificate(tslUnsigned);
 
     final byte[] tslBytes = TslConverter.tslUnsignedToBytes(tslUnsigned);
-    final byte[] tslBytesNew = TslModifier.modifiedSignerCert(tslBytes, signerCert);
+    final byte[] tslBytesNew = TslModifier.modifiedSignerCert(tslBytes, signerCertFromTsl);
     final String tslStrNew = new String(tslBytesNew, StandardCharsets.UTF_8);
 
     final TrustStatusListType tslNewUnsigned = TslConverter.bytesToTslUnsigned(tslBytesNew);
 
     final X509Certificate signerCertNew = TslUtils.getFirstTslSignerCertificate(tslNewUnsigned);
 
-    assertThat(signerCertNew).isEqualTo(signerCert);
+    assertThat(signerCertNew).isEqualTo(signerCertFromTsl);
 
-    assertSignerCertInTsl(tslStrNew, signerCert);
+    assertSignerCertInTsl(tslStrNew, signerCertFromTsl);
   }
 
   @Test

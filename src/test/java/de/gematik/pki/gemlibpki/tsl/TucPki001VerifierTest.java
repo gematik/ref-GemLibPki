@@ -21,6 +21,7 @@ import static de.gematik.pki.gemlibpki.TestConstants.OCSP_HOST;
 import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_TSL_CA8;
 import static de.gematik.pki.gemlibpki.tsl.TslConverter.ERROR_READING_TSL;
+import static de.gematik.pki.gemlibpki.tsl.TslUtils.getFirstTslSignerCertificate;
 import static de.gematik.pki.gemlibpki.utils.ResourceReader.getFileFromResourceAsBytes;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.overwriteSspUrls;
@@ -87,8 +88,8 @@ class TucPki001VerifierTest {
   @Test
   void verifyPerformTucPki001ChecksValid() {
     final OcspResponderMock ocspResponderMock = new OcspResponderMock(LOCAL_SSP_DIR, OCSP_HOST);
-    final X509Certificate tslSigner =
-        TestUtils.readP12(TslSignerTest.SIGNER_PATH_ECC).getCertificate();
+    final X509Certificate tslSigner = getFirstTslSignerCertificate(tslToCheckTslUnsigned);
+
     ocspResponderMock.configureForOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA8);
     overwriteSspUrls(tspServicesInTruststore, ocspResponderMock.getSspUrl());
 
@@ -105,16 +106,13 @@ class TucPki001VerifierTest {
 
   @Test
   void verifyInvalidTslSig() {
+    final byte[] tslBytesUnsigned = TslConverter.tslUnsignedToBytes(tslToCheckTslUnsigned);
+
+    final X509Certificate tslSigner = getFirstTslSignerCertificate(tslToCheckTslUnsigned);
 
     final OcspResponderMock ocspResponderMock = new OcspResponderMock(LOCAL_SSP_DIR, OCSP_HOST);
-    final X509Certificate tslSigner =
-        TestUtils.readP12(TslSignerTest.SIGNER_PATH_ECC).getCertificate();
     ocspResponderMock.configureForOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA8);
     overwriteSspUrls(tspServicesInTruststore, ocspResponderMock.getSspUrl());
-
-    final TrustStatusListType tslToCheckUnsigned =
-        TestUtils.getTslUnsigned("tsls/ecc/invalid/TSL_invalid_xmlSignature_altCA.xml");
-    final byte[] tslBytesUnsigned = TslConverter.tslUnsignedToBytes(tslToCheckUnsigned);
 
     final TucPki001Verifier tucPki001Verifier =
         TucPki001Verifier.builder()
@@ -309,8 +307,7 @@ class TucPki001VerifierTest {
 
   private void verifyPerformTucPki001ChecksTslIdAndTslSeqNr_init() {
     final OcspResponderMock ocspResponderMock = new OcspResponderMock(LOCAL_SSP_DIR, OCSP_HOST);
-    final X509Certificate tslSigner =
-        TestUtils.readP12(TslSignerTest.SIGNER_PATH_ECC).getCertificate();
+    final X509Certificate tslSigner = getFirstTslSignerCertificate(tslToCheckTslUnsigned);
     ocspResponderMock.configureForOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA8);
     overwriteSspUrls(tspServicesInTruststore, ocspResponderMock.getSspUrl());
   }
