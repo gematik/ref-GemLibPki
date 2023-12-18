@@ -2,6 +2,14 @@
 
 # Release notes GemLibPki
 
+## Release 2.0.3
+
+- update tsl signer
+- add CRL service type identifier
+- new certificate types C.HSK.SIG and C.HSK.ENC
+- new OID SM-B NCPeH
+- update dependencies
+
 ## Release 2.0.2
 
 - refactor code for better readability

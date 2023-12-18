@@ -34,6 +34,7 @@ import de.gematik.pki.gemlibpki.tsl.TspServiceSubset;
 import de.gematik.pki.gemlibpki.utils.GemLibPkiUtils;
 import eu.europa.esig.trustedlist.jaxb.tsl.DigitalIdentityType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TSPServiceType;
+import java.security.MessageDigest;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -269,13 +270,13 @@ public class TucPki006OcspVerifier {
       return;
     }
     try {
-
-      final ASN1Encodable singleRespAsn1 =
+      final ASN1Encodable singleOcspRespAsn1 =
           getFirstSingleResp(ocspResponse).getExtension(id_isismtt_at_certHash).getParsedValue();
-      final CertHash asn1CertHash = CertHash.getInstance(singleRespAsn1);
+      final byte[] ocspCertHashBytes =
+          CertHash.getInstance(singleOcspRespAsn1).getCertificateHash();
+      final byte[] eeCertHashBytes = calculateSha256(GemLibPkiUtils.certToBytes(eeCert));
 
-      final byte[] eeCertHash = calculateSha256(GemLibPkiUtils.certToBytes(eeCert));
-      if (!Arrays.equals(asn1CertHash.getCertificateHash(), eeCertHash)) {
+      if (!MessageDigest.isEqual(ocspCertHashBytes, eeCertHashBytes)) {
         throw new GemPkiException(productType, ErrorCode.SE_1041_CERTHASH_MISMATCH);
       }
     } catch (final NullPointerException e) {
@@ -293,7 +294,7 @@ public class TucPki006OcspVerifier {
             .getX509Certificate());
   }
 
-  private boolean identicalServiceTypeIdentifier(final TSPServiceType tspServiceType) {
+  private boolean isServiceTypeIdentifierOcsp(final TSPServiceType tspServiceType) {
 
     final String targetServiceTypeIdentifier =
         tspServiceType.getServiceInformation().getServiceTypeIdentifier();
@@ -301,7 +302,7 @@ public class TucPki006OcspVerifier {
     return targetServiceTypeIdentifier.equals(TslConstants.STI_OCSP);
   }
 
-  private boolean identicalCertificates(
+  private boolean isSameCertificate(
       final TSPServiceType tspServiceType, final byte[] derX509EeCert) {
 
     final List<DigitalIdentityType> digitalIdentityTypes =
@@ -334,8 +335,8 @@ public class TucPki006OcspVerifier {
         tspServiceList.stream()
             .filter(
                 tspService ->
-                    identicalServiceTypeIdentifier(tspService.getTspServiceType())
-                        && identicalCertificates(tspService.getTspServiceType(), derX509EeCert))
+                    isServiceTypeIdentifierOcsp(tspService.getTspServiceType())
+                        && isSameCertificate(tspService.getTspServiceType(), derX509EeCert))
             .findAny();
 
     return getFirstCertificate(

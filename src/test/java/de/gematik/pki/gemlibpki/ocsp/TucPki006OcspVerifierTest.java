@@ -987,7 +987,7 @@ class TucPki006OcspVerifierTest {
                 Mockito.when(mock.getCertificate(Mockito.any())).thenReturn(x509CertSpy))) {
       assertThatThrownBy(verifier::verifyCertHash)
           .isInstanceOf(GemPkiRuntimeException.class)
-          .hasMessage("Cannot convert certificate to bytes");
+          .hasMessage("Cannot convert certificate to bytes.");
     }
   }
 }

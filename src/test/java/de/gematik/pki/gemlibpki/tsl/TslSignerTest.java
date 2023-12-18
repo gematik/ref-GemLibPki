@@ -19,6 +19,7 @@ package de.gematik.pki.gemlibpki.tsl;
 import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_RSA_ALT_TA;
 import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_RSA_DEFAULT;
 import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_RSA_NOSIG;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_TSL_CA8;
 import static de.gematik.pki.gemlibpki.tsl.TslConverter.docToBytes;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.readP12;
@@ -89,9 +90,6 @@ class TslSignerTest {
     final P12Container signerEcc = readP12(SIGNER_PATH_ECC);
     tslSignerBuilder.tslToSign(tslEcc).tslSignerP12(signerEcc).build().sign();
   }
-
-  public static final X509Certificate TRUST_ANCHOR_ECC =
-      TestUtils.readCert("GEM.TSL-CA8/GEM.TSL-CA8_brainpoolIP256r1.der");
 
   @Test
   void verifyCheckKeyUsageDisabled() {
@@ -185,7 +183,7 @@ class TslSignerTest {
 
   @Test
   void verifySignatureEccValid() {
-    assertThat(TslValidator.checkSignature(tslEcc, TRUST_ANCHOR_ECC)).isTrue();
+    assertThat(TslValidator.checkSignature(tslEcc, VALID_ISSUER_CERT_TSL_CA8)).isTrue();
   }
 
   @Test
@@ -200,7 +198,7 @@ class TslSignerTest {
     try (final MockedStatic<KeyStore> keyStoreStatic = Mockito.mockStatic(KeyStore.class)) {
       keyStoreStatic.when(() -> KeyStore.getInstance(any())).thenReturn(trustAnchorStoreMock);
 
-      assertThatThrownBy(() -> TslValidator.checkSignature(tslEcc, TRUST_ANCHOR_ECC))
+      assertThatThrownBy(() -> TslValidator.checkSignature(tslEcc, VALID_ISSUER_CERT_TSL_CA8))
           .isInstanceOf(GemPkiRuntimeException.class)
           .hasMessage("TSL signature verification failed.");
     }
@@ -209,7 +207,7 @@ class TslSignerTest {
   @Test
   void verifySignatureEccBytesValid() {
     final byte[] tslBytes = docToBytes(tslEcc);
-    assertThat(TslValidator.checkSignature(tslBytes, TRUST_ANCHOR_ECC)).isTrue();
+    assertThat(TslValidator.checkSignature(tslBytes, VALID_ISSUER_CERT_TSL_CA8)).isTrue();
   }
 
   @Test

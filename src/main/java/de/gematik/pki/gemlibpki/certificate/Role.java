@@ -62,7 +62,7 @@ public enum Role {
   OID_PODOLOGE_HPC("Podologe/Podologin", "1.2.276.0.76.4.276"),
   OID_ERNAEHRUNGSTHERAPEUT_HPC("Ernährungstherapeut/-in", "1.2.276.0.76.4.27"),
 
-  // GS-A_4443-06 - OID-Festlegung für Institutionen
+  // GS-A_4443-07 - OID-Festlegung für Institutionen
   OID_PRAXIS_ARZT("Betriebsstätte Arzt", "1.2.276.0.76.4.50"),
   OID_ZAHNARZTPRAXIS("Zahnarztpraxis", "1.2.276.0.76.4.51"),
   OID_PRAXIS_PSYCHOTHERAPEUT("Betriebsstätte Psychotherapeut", "1.2.276.0.76.4.52"),
@@ -134,6 +134,7 @@ public enum Role {
   OID_KIM_ANBIETER("KIM-Hersteller und -Anbieter", "1.2.276.0.76.4.286"),
   OID_DIGA("DiGA-Hersteller und -Anbieter", "1.2.276.0.76.4.282"),
   OID_TIM_ANBIETER("TIM-Hersteller und -Anbieter", "1.2.276.0.76.4.295"),
+  OID_NCPEH("NCPeH Fachdienst", "1.2.276.0.76.4.292"),
 
   // GS-A_4446-10 - OID-Festlegung für technische Rollen
   OID_VSDD("Versichertenstammdatendienst", "1.2.276.0.76.4.97"),

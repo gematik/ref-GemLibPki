@@ -16,26 +16,16 @@
 
 package de.gematik.pki.gemlibpki.utils;
 
-import java.io.Serial;
-import java.io.Serializable;
-import java.security.PrivateKey;
-import java.security.cert.X509Certificate;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NonNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
-/** Class representing a p12 handle. */
-@SuppressWarnings("ClassCanBeRecord")
-@Getter
-@AllArgsConstructor
-public class P12Container implements Serializable {
+import de.gematik.pki.gemlibpki.ocsp.OcspTestConstants;
+import org.junit.jupiter.api.Test;
 
-  @Serial private static final long serialVersionUID = 8263843224383604223L;
-  @NonNull private final X509Certificate certificate;
-  @NonNull private final PrivateKey privateKey;
+class P12ContainerTest {
 
-  @Override
-  public String toString() {
-    return certificate.getSubjectX500Principal().getName();
+  @Test
+  void testToString() {
+    assertThat(OcspTestConstants.getOcspSignerEcc())
+        .hasToString("CN=OCSP Signer 09 ecc TEST-ONLY,O=gematik TEST-ONLY - NOT-VALID,C=DE");
   }
 }

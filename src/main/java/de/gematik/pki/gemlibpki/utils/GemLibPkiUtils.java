@@ -98,7 +98,7 @@ public final class GemLibPkiUtils {
     try {
       return certificate.getEncoded();
     } catch (final CertificateEncodingException e) {
-      throw new GemPkiRuntimeException("Cannot convert certificate to bytes", e);
+      throw new GemPkiRuntimeException("Cannot convert certificate to bytes.", e);
     }
   }
 
