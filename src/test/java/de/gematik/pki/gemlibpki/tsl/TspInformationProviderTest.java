@@ -94,8 +94,7 @@ class TspInformationProviderTest {
             tspInformationProvider
                 .getIssuerTspServiceSubset(VALID_X509_EE_CERT_SMCB)
                 .getServiceSupplyPoint())
-        .isEqualTo(
-            "http://ocsp-sim01-test.gem.telematik-test:8080/ocsp/OCSPSimulator/TSL_default-seq1");
+        .isEqualTo("http://127.0.0.1:8083/ocsp/61");
   }
 
   @Test

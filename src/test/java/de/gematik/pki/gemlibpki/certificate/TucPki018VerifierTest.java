@@ -40,6 +40,7 @@ import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFI
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_CH_AUT_ECC;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_FD_OSIG;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_FD_SIG;
+import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_FD_TLS_C_ECC;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_FD_TLS_C_RSA;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_FD_TLS_S_RSA;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_HCI_AUT_ECC;
@@ -260,6 +261,17 @@ class TucPki018VerifierTest {
     assertNonNullParameter(
         () -> TucPki018Verifier.checkAllowedProfessionOids(admission, null),
         "allowedProfessionOids");
+  }
+
+  @Test
+  void verifyNistCertValid() {
+    final X509Certificate eeNistCert = readCert("GEM.KOMP-CA61/ee_komp_nist_test.pem");
+    final X509Certificate validNistIssuer = readCert("GEM.KOMP-CA61/GEM.KOMP-CA61-TEST-ONLY.pem");
+    ocspResponderMock.configureForOcspRequest(eeNistCert, validNistIssuer);
+    assertDoesNotThrow(
+        () ->
+            buildTucPki18Verifier(List.of(CERT_PROFILE_C_FD_TLS_C_ECC))
+                .performTucPki018Checks(eeNistCert));
   }
 
   @Test

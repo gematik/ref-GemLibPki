@@ -18,13 +18,13 @@ package de.gematik.pki.gemlibpki.tsl;
 
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
+import jakarta.xml.bind.JAXBElement;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Unmarshaller;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;

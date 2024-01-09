@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 gematik GmbH
+ * Copyright 2024 gematik GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,17 @@
 
 package de.gematik.pki.gemlibpki.tsl;
 
-import eu.europa.esig.trustedlist.jaxb.tsl.TSPServiceType;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import static org.assertj.core.api.Assertions.assertThat;
 
-/** Class to encapsulate package eu.europa.esig */
-@SuppressWarnings("ClassCanBeRecord")
-@RequiredArgsConstructor
-@Getter
-public class TspService {
+import de.gematik.pki.gemlibpki.utils.TestUtils;
+import org.junit.jupiter.api.Test;
 
-  private final TSPServiceType tspServiceType;
+class TspServiceTest {
 
-  @Override
-  public String toString() {
-    return tspServiceType.getServiceInformation().getServiceName().getName().get(0).getValue();
+  @Test
+  void testToString() {
+    final TspService tspService =
+        new TslInformationProvider(TestUtils.getDefaultTslUnsigned()).getTspServices().get(0);
+    assertThat(tspService.toString()).contains("TEST-ONLY");
   }
 }

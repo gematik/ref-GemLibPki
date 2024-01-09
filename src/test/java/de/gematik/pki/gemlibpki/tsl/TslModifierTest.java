@@ -107,7 +107,7 @@ class TslModifierTest {
   @Test
   void modifyAllSspsOfOneTsp() throws IOException {
     final Path destFilePath = Path.of("target/TSL-test_modifiedSsp.xml");
-    final int modifiedSspAmountExpected = 28;
+    final int modifiedSspAmountExpected = 29;
     final String newSsp = "http://my.new-service-supply-point:8080/ocsp";
     final String newSspElement = "<ServiceSupplyPoint>" + newSsp + "</ServiceSupplyPoint>";
 
@@ -553,7 +553,7 @@ class TslModifierTest {
     final String tslStr = new String(tslBytes, StandardCharsets.UTF_8);
 
     final String gematikTspName = "gematik GmbH - PKI TEST TSP";
-    final String gematikOldTspTradeName = "gematik Test-TSL: TSL_default";
+    final String gematikOldTspTradeName = "gematik Test-TSL: initialTslDownload";
     final String gematikNewTspTradeName = "gematik Test-TSL: DUMMY VALUE";
 
     final int countDefault = StringUtils.countMatches(tslStr, gematikOldTspTradeName);
