@@ -45,6 +45,7 @@ import de.gematik.pki.gemlibpki.utils.TestUtils;
 import eu.europa.esig.trustedlist.jaxb.tsl.TSPServiceType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TSPType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
+import jakarta.xml.bind.JAXBElement;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
@@ -52,11 +53,12 @@ import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
-import javax.xml.bind.JAXBElement;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.validation.Validator;
+import org.assertj.core.api.Assertions;
 import org.bouncycastle.cert.ocsp.CertificateStatus;
 import org.bouncycastle.cert.ocsp.OCSPReq;
 import org.bouncycastle.cert.ocsp.OCSPResp;
@@ -463,7 +465,8 @@ class TucPki001VerifierTest {
 
     final ZonedDateTime zdt = ZonedDateTime.of(2023, 4, 20, 14, 47, 40, 0, ZoneOffset.UTC);
     final X509Certificate taCert = TestUtils.readCert("GEM.TSL-CA9/GEM.TSL-CA9_TEST-ONLY.cer");
-    assertThat(trustAnchorUpdate.getStatusStartingTime()).isEqualToIgnoringNanos(zdt);
+    assertThat(trustAnchorUpdate.getStatusStartingTime())
+        .isCloseTo(zdt, Assertions.within(1, ChronoUnit.MILLIS));
     assertThat(trustAnchorUpdate.getFutureTrustAnchor()).isEqualTo(taCert);
   }
 

@@ -24,16 +24,16 @@ import eu.europa.esig.trustedlist.jaxb.tsl.MultiLangStringType;
 import eu.europa.esig.trustedlist.jaxb.tsl.OtherTSLPointerType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import eu.europa.esig.xmldsig.jaxb.X509DataType;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBElement;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Marshaller;
+import jakarta.xml.bind.Unmarshaller;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import javax.xml.XMLConstants;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -83,15 +83,7 @@ public final class TslUtils {
 
   static Marshaller createMarshaller() throws JAXBException {
     final JAXBContext jaxbContext = JAXBContext.newInstance(TrustStatusListType.class);
-    final Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
-    // remove xml header
-    jaxbMarshaller.setProperty("com.sun.xml.bind.xmlDeclaration", false);
-    // set own xml header (without "standalone")
-    jaxbMarshaller.setProperty(
-        "com.sun.xml.bind.xmlHeaders", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-    // no pretty print
-    jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, false);
-    return jaxbMarshaller;
+    return jaxbContext.createMarshaller();
   }
 
   static JAXBElement<TrustStatusListType> createJaxbElement(

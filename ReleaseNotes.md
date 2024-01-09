@@ -2,6 +2,13 @@
 
 # Release notes GemLibPki
 
+## Release 2.1.0
+
+- change the order of the elements in the subjectDN of the ocsp responder id
+- add test to verify NIST curve support
+- update DSS Lib and tidy up dependencies
+- update dependencies
+
 ## Release 2.0.3
 
 - update tsl signer

@@ -56,6 +56,7 @@ import org.bouncycastle.asn1.ocsp.OCSPResponseStatus;
 import org.bouncycastle.asn1.ocsp.ResponderID;
 import org.bouncycastle.asn1.oiw.OIWObjectIdentifiers;
 import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x500.style.RFC4519Style;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.Extensions;
@@ -229,7 +230,8 @@ public class OcspResponseGenerator {
 
     if (responderIdType == ResponderIdType.BY_NAME) {
       final X500Principal subjectDn = ocspResponseSignerCert.getSubjectX500Principal();
-      final ResponderID responderIdObj = new ResponderID(new X500Name(subjectDn.getName()));
+      final ResponderID responderIdObj =
+          new ResponderID(new X500Name(RFC4519Style.INSTANCE, subjectDn.getName()));
       basicOcspRespBuilder = new BasicOCSPRespBuilder(new RespID(responderIdObj));
     } else {
       // ResponderIdType.BY_KEY
