@@ -2,6 +2,10 @@
 
 # Release notes GemLibPki
 
+## Release 2.1.1
+
+- update dependencies
+
 ## Release 2.1.0
 
 - change the order of the elements in the subjectDN of the ocsp responder id
