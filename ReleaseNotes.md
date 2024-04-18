@@ -2,6 +2,11 @@
 
 # Release notes GemLibPki
 
+## Release 2.1.2
+
+- replace expired test certificates
+- update dependencies
+
 ## Release 2.1.1
 
 - update dependencies
