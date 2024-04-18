@@ -3,8 +3,6 @@
 **/target
 
 doc/dev/
-Pipeline.CI.Jenkinsfile
-Pipeline.DeployGitHub.Jenkinsfile
-Pipeline.InternalRelease.Jenkinsfile
-Pipeline.PublishToMavenCentral.Jenkinsfile
+*.Jenkinsfile
+checkCertValidity.sh
 
