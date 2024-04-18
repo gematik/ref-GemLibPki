@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 gematik GmbH
+ * Copyright 2024 gematik GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@
 package de.gematik.pki.gemlibpki.ocsp;
 
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB;
-import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB_CA24_RSA;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB_CA41_RSA;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB;
-import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB_CA24_RSA;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB_CA41_RSA;
 import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getFirstSingleResp;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -198,7 +198,7 @@ class OcspResponseGeneratorTest {
 
     final OCSPReq ocspReqRsa =
         OcspRequestGenerator.generateSingleOcspRequest(
-            VALID_X509_EE_CERT_SMCB_CA24_RSA, VALID_ISSUER_CERT_SMCB_CA24_RSA);
+            VALID_X509_EE_CERT_SMCB_CA41_RSA, VALID_ISSUER_CERT_SMCB_CA41_RSA);
 
     assertDoesNotThrow(
         () ->
@@ -208,8 +208,8 @@ class OcspResponseGeneratorTest {
                     .build()
                     .generate(
                         ocspReqRsa,
-                        VALID_X509_EE_CERT_SMCB_CA24_RSA,
-                        VALID_ISSUER_CERT_SMCB_CA24_RSA)));
+                        VALID_X509_EE_CERT_SMCB_CA41_RSA,
+                        VALID_ISSUER_CERT_SMCB_CA41_RSA)));
   }
 
   @Test
@@ -580,7 +580,7 @@ class OcspResponseGeneratorTest {
             .signer(OcspTestConstants.getOcspSignerRsa())
             .build()
             .generate(
-                ocspRequest, VALID_X509_EE_CERT_SMCB_CA24_RSA, VALID_ISSUER_CERT_SMCB_CA24_RSA);
+                ocspRequest, VALID_X509_EE_CERT_SMCB_CA41_RSA, VALID_ISSUER_CERT_SMCB_CA41_RSA);
 
     final BasicOCSPResp basicOcspResp = OcspUtils.getBasicOcspResp(ocspResponse);
 

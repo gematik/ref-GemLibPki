@@ -44,8 +44,8 @@ public class TestConstants {
   public static final X509Certificate VALID_ISSUER_CERT_SMCB_CA41_RSA =
       readCert("GEM.SMCB-CA41-RSA/GEM.SMCB-CA41.pem");
 
-  public static final X509Certificate VALID_X509_EE_CERT_SMCB_CA24_RSA =
-      TestUtils.readCert("GEM.SMCB-CA24-RSA/AschoffscheApotheke.pem");
+  public static final X509Certificate VALID_X509_EE_CERT_SMCB_CA41_RSA =
+      TestUtils.readCert("GEM.SMCB-CA41-RSA/Aschoffsche_Apotheke-AUT-RSA.pem");
   public static final X509Certificate VALID_ISSUER_CERT_HBA =
       readCert("GEM.HBA-CA13/GEM.HBA-CA13_brainpoolIP256r1.pem");
 
@@ -68,7 +68,7 @@ public class TestConstants {
       readCert("GEM.TSL-CA8/GEM.TSL-CA8_brainpoolIP256r1.pem");
 
   public static final X509Certificate VALID_ISSUER_CERT_EGK =
-      readCert("GEM.EGK-CA10/GEM.EGK-CA10-TEST-ONLY.pem");
+      readCert("GEM.EGK-CA51/GEM.EGK-CA51-TEST-ONLY.pem");
 
   public static final X509Certificate VALID_X509_EE_CERT_INVALID_KEY_USAGE =
       TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_invalid-keyusage.pem");

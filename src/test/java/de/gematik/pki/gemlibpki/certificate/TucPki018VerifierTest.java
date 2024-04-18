@@ -30,11 +30,10 @@ import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA50
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA51;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA54;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB;
-import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB_CA24_RSA;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB_CA41_RSA;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_INVALID_KEY_USAGE;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB;
-import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB_CA24_RSA;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB_CA41_RSA;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_ANY;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_AK_AUT_ECC;
 import static de.gematik.pki.gemlibpki.certificate.CertificateProfile.CERT_PROFILE_C_CH_AUT_ECC;
@@ -276,7 +275,7 @@ class TucPki018VerifierTest {
 
   @Test
   void verifyEgkAutEccCertValid() {
-    final X509Certificate eeCert = readCert("GEM.EGK-CA10/JunaFuchs.pem");
+    final X509Certificate eeCert = readCert("GEM.EGK-CA51/LetitiaBeutelsbacher.pem");
     ocspResponderMock.configureForOcspRequest(eeCert, VALID_ISSUER_CERT_EGK);
     assertDoesNotThrow(
         () ->
@@ -298,11 +297,11 @@ class TucPki018VerifierTest {
   void verifySmcbAutRsaCertValid() {
 
     ocspResponderMock.configureForOcspRequest(
-        VALID_X509_EE_CERT_SMCB_CA24_RSA, VALID_ISSUER_CERT_SMCB_CA24_RSA);
+        VALID_X509_EE_CERT_SMCB_CA41_RSA, VALID_ISSUER_CERT_SMCB_CA41_RSA);
     assertDoesNotThrow(
         () ->
             buildTucPki18Verifier(List.of(CERT_PROFILE_C_HCI_AUT_RSA))
-                .performTucPki018Checks(VALID_X509_EE_CERT_SMCB_CA24_RSA));
+                .performTucPki018Checks(VALID_X509_EE_CERT_SMCB_CA41_RSA));
   }
 
   @Test
@@ -381,9 +380,9 @@ class TucPki018VerifierTest {
   @Test
   void verifyNotEveryKeyUsagePresent() {
     ocspResponderMock.configureForOcspRequest(
-        VALID_X509_EE_CERT_SMCB_CA24_RSA, VALID_ISSUER_CERT_SMCB_CA24_RSA);
+        VALID_X509_EE_CERT_SMCB_CA41_RSA, VALID_ISSUER_CERT_SMCB_CA41_RSA);
     assertThatThrownBy(
-            () -> tucPki018Verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB_CA24_RSA))
+            () -> tucPki018Verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB_CA41_RSA))
         .isInstanceOf(GemPkiParsingException.class)
         .hasMessageContaining(ErrorCode.SE_1016_WRONG_KEYUSAGE.name());
   }

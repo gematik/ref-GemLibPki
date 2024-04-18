@@ -81,7 +81,7 @@ class CertificateTypeOidInIssuerTspServiceExtensionValidatorTest {
   @Test
   void multipleCertificateProfilesMultipleCertTypesInEe() {
     final X509Certificate eeMultipleCertTypes =
-        TestUtils.readCert("GEM.SMCB-CA9/Aschoffsche_Apotheke_twoCertTypes.pem");
+        TestUtils.readCert("GEM.SMCB-CA51/Aschoffsche_Apotheke-AUT-twoCertTypes-ECC.pem");
     assertDoesNotThrow(() -> doValidateCertificate(eeMultipleCertTypes));
   }
 
