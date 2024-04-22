@@ -51,10 +51,10 @@ public class TestConstants {
 
   public static final X509Certificate VALID_ISSUER_CERT_KOMP_CA10 =
       readCert("GEM.KOMP-CA10/GEM.KOMP-CA10_brainpoolIP256r1.pem");
-  public static final X509Certificate VALID_ISSUER_CERT_KOMP_CA24 =
-      readCert("GEM.KOMP-CA24/GEM.KOMP-CA24-TEST-ONLY.pem");
   public static final X509Certificate VALID_ISSUER_CERT_KOMP_CA40 =
       readCert("GEM.KOMP-CA40/GEM.KOMP-CA40-TEST-ONLY.pem");
+  public static final X509Certificate VALID_ISSUER_CERT_KOMP_CA41 =
+      readCert("GEM.KOMP-CA41/GEM.KOMP-CA41-TEST-ONLY.pem");
   public static final X509Certificate VALID_ISSUER_CERT_KOMP_CA50 =
       readCert("GEM.KOMP-CA50/GEM.KOMP-CA50-TEST-ONLY.pem");
   public static final X509Certificate VALID_ISSUER_CERT_KOMP_CA51 =
