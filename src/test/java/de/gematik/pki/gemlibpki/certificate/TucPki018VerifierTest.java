@@ -24,8 +24,8 @@ import static de.gematik.pki.gemlibpki.TestConstants.VALID_HBA_AUT_ECC;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_EGK;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_HBA;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA10;
-import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA24;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA40;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA41;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA50;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA51;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA54;
@@ -342,10 +342,9 @@ class TucPki018VerifierTest {
 
   @Test
   void verifyFdTlsSRsaCertValid() {
-    final X509Certificate eeCert =
-        readCert("GEM.KOMP-CA24/sgd-ref.d-trust.sgd2.telematik.test.crt");
+    final X509Certificate eeCert = readCert("GEM.KOMP-CA41/tp-fqdn-test-rsa.pem");
 
-    ocspResponderMock.configureForOcspRequest(eeCert, VALID_ISSUER_CERT_KOMP_CA24);
+    ocspResponderMock.configureForOcspRequest(eeCert, VALID_ISSUER_CERT_KOMP_CA41);
     assertDoesNotThrow(
         () ->
             buildTucPki18Verifier(List.of(CERT_PROFILE_C_FD_TLS_S_RSA))
