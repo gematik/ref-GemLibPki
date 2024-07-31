@@ -4,7 +4,7 @@
 
   <groupId>de.gematik.pki</groupId>
   <artifactId>gemLibPki</artifactId>
-  <version>2.1.4</version>
+  <version>2.1.5</version>
   <packaging>jar</packaging>
   <name>GemLibPki</name>
   <description>library for implementation and tests of the gematik pki specification</description>
@@ -44,41 +44,41 @@
   </issueManagement>
 
   <properties>
-    <project.build.outputTimestamp>1713785746</project.build.outputTimestamp>
+    <project.build.outputTimestamp>1722427771</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.encoding>${project.build.sourceEncoding}</maven.compiler.encoding>
     <version.java>17</version.java>
     <version.maven>3.6.3</version.maven>
 
     <!-- dependencies -->
-    <version.assertj>3.25.3</version.assertj>
+    <version.assertj>3.26.3</version.assertj>
     <version.awaitility>4.2.1</version.awaitility>
     <version.bouncycastle>1.78.1</version.bouncycastle>
-    <version.commons-lang3>3.14.0</version.commons-lang3>
+    <version.commons-lang3>3.15.0</version.commons-lang3>
     <version.dss-tsl-validation>6.0</version.dss-tsl-validation>
     <version.jakarta.xml.bind-api>4.0.2</version.jakarta.xml.bind-api>
-    <version.junit-jupiter>5.10.2</version.junit-jupiter>
+    <version.junit-jupiter>5.10.3</version.junit-jupiter>
     <version.log4j>2.23.1</version.log4j>
-    <version.lombok>1.18.32</version.lombok>
-    <version.mockito>5.11.0</version.mockito>
-    <version.unirest-java>3.14.5</version.unirest-java>
-    <version.wiremock>3.5.3</version.wiremock>
+    <version.lombok>1.18.34</version.lombok>
+    <version.mockito>5.12.0</version.mockito>
+    <version.unirest-java-core>4.4.4</version.unirest-java-core>
+    <version.wiremock>3.9.1</version.wiremock>
     <version.xades4j>2.2.2</version.xades4j>
-    <version.xmlunit>2.9.1</version.xmlunit>
+    <version.xmlunit>2.10.0</version.xmlunit>
 
     <!--  plugins -->
     <version.jacoco-maven-plugin>0.8.12</version.jacoco-maven-plugin>
-    <version.maven-clean-plugin>3.3.2</version.maven-clean-plugin>
+    <version.maven-clean-plugin>3.4.0</version.maven-clean-plugin>
     <version.maven-compiler-plugin>3.13.0</version.maven-compiler-plugin>
-    <maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
-    <version.maven-enforcer-plugin>3.4.1</version.maven-enforcer-plugin>
+    <maven-deploy-plugin.version>3.1.2</maven-deploy-plugin.version>
+    <version.maven-enforcer-plugin>3.5.0</version.maven-enforcer-plugin>
     <version.maven-gpg-plugin>3.2.4</version.maven-gpg-plugin>
-    <version.maven-jar-plugin>3.4.1</version.maven-jar-plugin>
-    <version.maven-javadoc-plugin>3.6.3</version.maven-javadoc-plugin>
+    <version.maven-jar-plugin>3.4.2</version.maven-jar-plugin>
+    <version.maven-javadoc-plugin>3.8.0</version.maven-javadoc-plugin>
     <version.maven-source-plugin>3.3.1</version.maven-source-plugin>
-    <version.maven-surefire-plugin>3.2.5</version.maven-surefire-plugin>
-    <version.nexus-staging-maven-plugin>1.6.13</version.nexus-staging-maven-plugin>
-    <version.sonar-maven-plugin>3.11.0.3922</version.sonar-maven-plugin>
+    <version.maven-surefire-plugin>3.3.1</version.maven-surefire-plugin>
+    <version.nexus-staging-maven-plugin>1.7.0</version.nexus-staging-maven-plugin>
+    <version.sonar-maven-plugin>4.0.0.4121</version.sonar-maven-plugin>
     <version.spotless.google-java-format>1.17.0</version.spotless.google-java-format>
     <version.spotless-maven-plugin>2.43.0</version.spotless-maven-plugin>
 
@@ -168,8 +168,13 @@
 
     <dependency>
       <groupId>com.konghq</groupId>
-      <artifactId>unirest-java</artifactId>
-      <version>${version.unirest-java}</version>
+      <artifactId>unirest-java-core</artifactId>
+      <version>${version.unirest-java-core}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpcore</artifactId>
+      <version>4.4.16</version>
     </dependency>
 
     <dependency>
@@ -189,6 +194,7 @@
       <groupId>org.xmlunit</groupId>
       <artifactId>xmlunit-jakarta-jaxb-impl</artifactId>
       <version>${version.xmlunit}</version>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
