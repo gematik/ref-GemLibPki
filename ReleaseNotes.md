@@ -2,6 +2,11 @@
 
 # Release notes GemLibPki
 
+## Release 2.1.6
+
+- add new certificate types
+- update dependencies
+
 ## Release 2.1.5
 
 - update dependencies
