@@ -18,17 +18,22 @@ package de.gematik.pki.gemlibpki.certificate;
 
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_ANY;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_EGK_AUT;
+import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_EGK_AUT_ALT;
+import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_EGK_SIG;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_FD_OSIG;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_FD_SIG;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_FD_TLS_C;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_FD_TLS_S;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_GSMCK_AK_AUT;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_HBA_AUT;
+import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_HBA_ENC;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_HSK_ENC;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_HSK_SIG;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_SMC_B_AUT;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_SMC_B_ENC;
 import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_SMC_B_OSIG;
+import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_VPNK_VPN;
+import static de.gematik.pki.gemlibpki.certificate.CertificateType.CERT_TYPE_VPNK_VPN_SIS;
 import static de.gematik.pki.gemlibpki.certificate.ExtendedKeyUsage.EXT_KEYUSAGE_ID_KP_CLIENTAUTH;
 import static de.gematik.pki.gemlibpki.certificate.ExtendedKeyUsage.EXT_KEYUSAGE_ID_KP_EMAILPROTECTION;
 import static de.gematik.pki.gemlibpki.certificate.ExtendedKeyUsage.EXT_KEYUSAGE_ID_KP_SERVERAUTH;
@@ -58,7 +63,6 @@ public enum CertificateProfile {
       List.of(KEYUSAGE_DIGITAL_SIGNATURE),
       List.of(EXT_KEYUSAGE_ID_KP_CLIENTAUTH, EXT_KEYUSAGE_ID_KP_SERVERAUTH),
       true),
-
   CERT_PROFILE_C_CH_AUT_RSA(
       CERT_TYPE_EGK_AUT,
       List.of(KEYUSAGE_DIGITAL_SIGNATURE, KEYUSAGE_KEY_ENCIPHERMENT),
@@ -69,7 +73,13 @@ public enum CertificateProfile {
       List.of(KEYUSAGE_DIGITAL_SIGNATURE),
       List.of(EXT_KEYUSAGE_ID_KP_CLIENTAUTH),
       false),
-
+  CERT_PROFILE_C_EGK_AUT_ALT_ECC(
+      CERT_TYPE_EGK_AUT_ALT,
+      List.of(KEYUSAGE_DIGITAL_SIGNATURE),
+      List.of(EXT_KEYUSAGE_ID_KP_CLIENTAUTH),
+      true),
+  CERT_PROFILE_C_EGK_SIG_ECC(CERT_TYPE_EGK_SIG, List.of(KEYUSAGE_NON_REPUDIATION), List.of(), true),
+  CERT_PROFILE_C_HBA_ENC_ECC(CERT_TYPE_HBA_ENC, List.of(KEYUSAGE_KEY_AGREEMENT), List.of(), true),
   CERT_PROFILE_C_HP_AUT_RSA(
       CERT_TYPE_HBA_AUT,
       List.of(KEYUSAGE_DIGITAL_SIGNATURE, KEYUSAGE_KEY_ENCIPHERMENT),
@@ -137,10 +147,19 @@ public enum CertificateProfile {
       List.of(KEYUSAGE_KEY_AGREEMENT),
       List.of(EXT_KEYUSAGE_ID_KP_SERVERAUTH, EXT_KEYUSAGE_ID_KP_CLIENTAUTH),
       true),
-
   CERT_PROFILE_C_HSK_SIG_ECC(
       CERT_TYPE_HSK_SIG,
       List.of(KEYUSAGE_NON_REPUDIATION),
+      List.of(EXT_KEYUSAGE_ID_KP_SERVERAUTH, EXT_KEYUSAGE_ID_KP_CLIENTAUTH),
+      true),
+  CERT_PROFILE_C_VPNK_VPN_ECC(
+      CERT_TYPE_VPNK_VPN,
+      List.of(KEYUSAGE_DIGITAL_SIGNATURE),
+      List.of(EXT_KEYUSAGE_ID_KP_SERVERAUTH, EXT_KEYUSAGE_ID_KP_CLIENTAUTH),
+      true),
+  CERT_PROFILE_C_VPNK_VPN_SIS_ECC(
+      CERT_TYPE_VPNK_VPN_SIS,
+      List.of(KEYUSAGE_DIGITAL_SIGNATURE),
       List.of(EXT_KEYUSAGE_ID_KP_SERVERAUTH, EXT_KEYUSAGE_ID_KP_CLIENTAUTH),
       true),
 
