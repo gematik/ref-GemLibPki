@@ -2,6 +2,11 @@
 
 # Release notes GemLibPki
 
+## Release 2.1.8
+
+- fix required Java version in pom.xml
+- update dependencies
+
 ## Release 2.1.7
 
 - update dependencies
