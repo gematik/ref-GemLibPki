@@ -16,11 +16,15 @@
 
 package de.gematik.pki.gemlibpki.certificate;
 
+import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_FUTURE_MILLISECONDS;
+import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_PAST_MILLISECONDS;
+
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.exception.GemPkiParsingException;
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.ocsp.OcspConstants;
 import de.gematik.pki.gemlibpki.ocsp.OcspRespCache;
+import de.gematik.pki.gemlibpki.ocsp.OcspTransceiver;
 import de.gematik.pki.gemlibpki.tsl.TspInformationProvider;
 import de.gematik.pki.gemlibpki.tsl.TspService;
 import de.gematik.pki.gemlibpki.tsl.TspServiceSubset;
@@ -61,9 +65,18 @@ public class TucPki018Verifier {
   @Builder.Default
   protected final int ocspTimeoutSeconds = OcspConstants.DEFAULT_OCSP_TIMEOUT_SECONDS;
 
+  @Builder.Default
+  private final int ocspTimeToleranceProducedAtFutureMilliseconds =
+      OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_FUTURE_MILLISECONDS;
+
+  @Builder.Default
+  private final int ocspTimeToleranceProducedAtPastMilliseconds =
+      OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_PAST_MILLISECONDS;
+
   @Builder.Default protected final boolean tolerateOcspFailure = false;
 
   @Builder.Default private OcspValidator ocspValidator = null;
+  @Builder.Default private OcspTransceiver ocspTransceiver = null;
 
   /**
    * Verify given end-entity certificate against TucPki18 (Technical Use Case 18 "Zertifikatsprüfung
@@ -117,6 +130,34 @@ public class TucPki018Verifier {
             .ocspResponse(ocspResponse)
             .ocspRespCache(ocspRespCache)
             .ocspTimeoutSeconds(ocspTimeoutSeconds)
+            .ocspTransceiver(ocspTransceiver)
+            .tolerateOcspFailure(tolerateOcspFailure)
+            .ocspTimeToleranceProducedAtFutureMilliseconds(
+                ocspTimeToleranceProducedAtFutureMilliseconds)
+            .ocspTimeToleranceProducedAtPastMilliseconds(
+                ocspTimeToleranceProducedAtPastMilliseconds)
+            .build();
+  }
+
+  private void initializeTransceiver(@NonNull final X509Certificate x509EeCert)
+      throws GemPkiException {
+
+    if (ocspTransceiver != null) {
+      return;
+    }
+
+    final TspServiceSubset tspServiceSubset =
+        new TspInformationProvider(tspServiceList, productType)
+            .getIssuerTspServiceSubset(x509EeCert);
+    final X509Certificate x509IssuerCert = tspServiceSubset.getX509IssuerCert();
+
+    ocspTransceiver =
+        OcspTransceiver.builder()
+            .productType(productType)
+            .x509EeCert(x509EeCert)
+            .x509IssuerCert(x509IssuerCert)
+            .ssp(tspServiceSubset.getServiceSupplyPoint())
+            .ocspTimeoutSeconds(ocspTimeoutSeconds)
             .tolerateOcspFailure(tolerateOcspFailure)
             .build();
   }
@@ -129,7 +170,9 @@ public class TucPki018Verifier {
   protected void doOcspIfConfigured(
       @NonNull final X509Certificate x509EeCert, @NonNull final ZonedDateTime referenceDate)
       throws GemPkiException {
+    initializeTransceiver(x509EeCert);
     initializeValidator();
+
     ocspValidator.validateCertificate(x509EeCert, referenceDate);
   }
 
@@ -234,9 +277,13 @@ public class TucPki018Verifier {
   public static boolean checkAllowedProfessionOids(
       final Admission admissionToCheck, @NonNull final Set<String> allowedProfessionOids) {
 
-    if (admissionToCheck == null) return false;
+    if (admissionToCheck == null) {
+      return false;
+    }
 
-    if (admissionToCheck.getProfessionOids().isEmpty()) return false;
+    if (admissionToCheck.getProfessionOids().isEmpty()) {
+      return false;
+    }
 
     return isPresent(admissionToCheck.getProfessionOids(), allowedProfessionOids);
   }

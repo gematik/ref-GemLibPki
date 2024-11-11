@@ -16,6 +16,8 @@
 
 package de.gematik.pki.gemlibpki.tsl;
 
+import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_FUTURE_MILLISECONDS;
+import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_PAST_MILLISECONDS;
 import static de.gematik.pki.gemlibpki.utils.ResourceReader.getUrlFromResources;
 import static javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI;
 
@@ -83,6 +85,14 @@ public class TucPki001Verifier {
   @Builder.Default
   protected final int ocspTimeoutSeconds = OcspConstants.DEFAULT_OCSP_TIMEOUT_SECONDS;
 
+  @Builder.Default
+  private final int ocspTimeToleranceProducedAtFutureMilliseconds =
+      OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_FUTURE_MILLISECONDS;
+
+  @Builder.Default
+  private final int ocspTimeToleranceProducedAtPastMilliseconds =
+      OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_PAST_MILLISECONDS;
+
   @Builder.Default protected final boolean tolerateOcspFailure = false;
 
   @Builder.Default private ValidityValidator validityValidator = null;
@@ -146,6 +156,10 @@ public class TucPki001Verifier {
             .tspServiceList(currentTrustedServices)
             .certificateProfiles(List.of(CertificateProfile.CERT_PROFILE_C_TSL_SIG))
             .withOcspCheck(withOcspCheck)
+            .ocspTimeToleranceProducedAtFutureMilliseconds(
+                ocspTimeToleranceProducedAtFutureMilliseconds)
+            .ocspTimeToleranceProducedAtPastMilliseconds(
+                ocspTimeToleranceProducedAtPastMilliseconds)
             .ocspTimeoutSeconds(ocspTimeoutSeconds)
             .tolerateOcspFailure(tolerateOcspFailure)
             .build();

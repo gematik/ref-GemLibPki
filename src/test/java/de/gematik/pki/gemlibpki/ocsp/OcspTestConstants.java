@@ -27,4 +27,6 @@ public class OcspTestConstants {
 
   @Getter
   private static final P12Container ocspSignerEcc = TestUtils.readP12("ocsp/eccOcspSigner.p12");
+
+  public static final int TIMEOUT_DELTA_MILLISECONDS = 1500;
 }

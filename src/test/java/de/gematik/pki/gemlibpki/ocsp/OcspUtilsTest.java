@@ -111,6 +111,6 @@ class OcspUtilsTest {
 
     assertThatThrownBy(() -> OcspUtils.getFirstSingleReq(ocspReqMock))
         .isInstanceOf(GemPkiRuntimeException.class)
-        .hasMessage("Mehr als eine OCSP Request erhalten: 2");
+        .hasMessage("Mehr als einen OCSP Request erhalten: 2");
   }
 }

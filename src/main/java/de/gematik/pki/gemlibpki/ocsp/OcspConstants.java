@@ -22,8 +22,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class OcspConstants {
 
-  public static final int OCSP_TIME_TOLERANCE_MILLISECONDS = 37_500;
-  public static final int TIMEOUT_DELTA_MILLISECONDS = 1500;
+  public static final int OCSP_TIME_TOLERANCE_THISNEXTUPDATE_MILLISECONDS = 37_500;
+  public static final int OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_FUTURE_MILLISECONDS = 37_500;
+  public static final int OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_PAST_MILLISECONDS = 37_500;
 
   public static final String MEDIA_TYPE_APPLICATION_OCSP_REQUEST = "application/ocsp-request";
   public static final String MEDIA_TYPE_APPLICATION_OCSP_RESPONSE = "application/ocsp-response";

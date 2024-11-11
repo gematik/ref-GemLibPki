@@ -33,19 +33,13 @@ import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.tsl.TspService;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
-import eu.europa.esig.dss.spi.x509.revocation.ocsp.OCSPRespStatus;
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.bouncycastle.cert.ocsp.CertificateStatus;
 import org.bouncycastle.cert.ocsp.OCSPReq;
 import org.bouncycastle.cert.ocsp.OCSPResp;
 import org.junit.jupiter.api.BeforeAll;
@@ -63,15 +57,7 @@ class OcspTransceiverTest {
   @BeforeAll
   public static void start() {
     ocspResponderMock = new OcspResponderMock(LOCAL_SSP_DIR, OCSP_HOST);
-
     tspServiceList = TestUtils.getDefaultTspServiceList();
-  }
-
-  @Test
-  void verifyOcspStatusExpectedGood() {
-    configureOcspResponderMockForOcspRequest();
-
-    assertDoesNotThrow(() -> getOcspTransceiver().verifyOcspResponse(null));
   }
 
   private static OcspTransceiver getOcspTransceiver() {
@@ -82,7 +68,6 @@ class OcspTransceiverTest {
       final String ssp, final boolean tolerateOcspFailure) {
     return OcspTransceiver.builder()
         .productType(PRODUCT_TYPE)
-        .tspServiceList(tspServiceList)
         .x509EeCert(VALID_X509_EE_CERT_SMCB)
         .x509IssuerCert(VALID_ISSUER_CERT_SMCB)
         .ssp(ssp)
@@ -92,159 +77,15 @@ class OcspTransceiverTest {
   }
 
   @Test
-  void verifyOcspStatusExpectedGoodFromCache() {
-
-    configureOcspResponderMockForOcspRequest();
-
-    final OCSPReq ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(
-            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
-    final OCSPResp ocspResp =
-        OcspResponseGenerator.builder()
-            .signer(OcspTestConstants.getOcspSignerEcc())
-            .build()
-            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
-    final OcspRespCache cache = new OcspRespCache(10);
-    cache.saveResponse(VALID_X509_EE_CERT_SMCB.getSerialNumber(), ocspResp);
-
-    assertDoesNotThrow(
-        () ->
-            OcspTransceiver.builder()
-                .productType(PRODUCT_TYPE)
-                .tspServiceList(tspServiceList)
-                .x509EeCert(VALID_X509_EE_CERT_SMCB)
-                .x509IssuerCert(VALID_ISSUER_CERT_SMCB)
-                .ssp("http://invalid.url") // to see, if cached response is used
-                .build()
-                .verifyOcspResponse(cache));
-  }
-
-  @Test
-  void verifyOcspStatusExpectedGoodAutoSavedToCache() throws GemPkiException {
-
-    configureOcspResponderMockForOcspRequest();
-
-    final OcspRespCache cache = new OcspRespCache(10);
-
-    getOcspTransceiver().verifyOcspResponse(cache);
-
-    assertDoesNotThrow(
-        () ->
-            OcspTransceiver.builder()
-                .productType(PRODUCT_TYPE)
-                .tspServiceList(tspServiceList)
-                .x509EeCert(VALID_X509_EE_CERT_SMCB)
-                .x509IssuerCert(VALID_ISSUER_CERT_SMCB)
-                .ssp("http://invalid.url") // to see, if cached response is used
-                .build()
-                .verifyOcspResponse(cache));
-  }
-
-  @Test
-  void verifyOcspStatusExpectedGoodNotSavedToCache() {
-
-    configureOcspResponderMockForOcspRequest();
-
-    final OcspRespCache cache = new OcspRespCache(10);
-
-    assertThatThrownBy(
-            () ->
-                OcspTransceiver.builder()
-                    .productType(PRODUCT_TYPE)
-                    .tspServiceList(tspServiceList)
-                    .x509EeCert(VALID_X509_EE_CERT_SMCB)
-                    .x509IssuerCert(VALID_ISSUER_CERT_SMCB)
-                    .ssp("http://invalid.url") // to see, if cached response is used
-                    .build()
-                    .verifyOcspResponse(cache))
-        .isInstanceOf(GemPkiException.class)
-        .hasMessage(ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
-  }
-
-  @Test
-  void verifyCachingForOcspRespStatusSuccessful() throws GemPkiException {
-    final OCSPReq ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(
-            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
-
-    final OCSPResp ocspResp =
-        OcspResponseGenerator.builder()
-            .signer(OcspTestConstants.getOcspSignerEcc())
-            .respStatus(OCSPRespStatus.SUCCESSFUL)
-            .build()
-            .generate(
-                ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB, CertificateStatus.GOOD);
-
-    ocspResponderMock.configureWireMockReceiveHttpPost(ocspResp, HttpURLConnection.HTTP_OK);
-
-    final OcspRespCache cache = new OcspRespCache(2);
-
-    getOcspTransceiver().verifyOcspResponse(cache);
-
-    assertThat(cache.getSize()).isEqualTo(1);
-    TestUtils.waitSeconds(cache.getOcspGracePeriodSeconds() + 1);
-    final Optional<OCSPResp> ocspRespOpt =
-        cache.getResponse(VALID_X509_EE_CERT_SMCB.getSerialNumber());
-    assertThat(ocspRespOpt).isEmpty();
-    assertThat(cache.getSize()).isZero();
-  }
-
-  @Test
-  void verifyCachingForOcspRespStatusBad() {
-    final OCSPReq ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(
-            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
-
-    final OCSPResp ocspResp =
-        OcspResponseGenerator.builder()
-            .signer(OcspTestConstants.getOcspSignerEcc())
-            .respStatus(OCSPRespStatus.UNKNOWN_STATUS)
-            .build()
-            .generate(
-                ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB, CertificateStatus.GOOD);
-
-    ocspResponderMock.configureWireMockReceiveHttpPost(ocspResp, HttpURLConnection.HTTP_OK);
-
-    final OcspRespCache cache = new OcspRespCache(2);
-
-    assertThatThrownBy(() -> getOcspTransceiver().verifyOcspResponse(cache))
-        .isInstanceOf(GemPkiException.class)
-        .hasMessage(ErrorCode.TE_1058_OCSP_STATUS_ERROR.getErrorMessage(PRODUCT_TYPE));
-    assertThat(cache.getSize()).isZero();
-  }
-
-  @Test
-  void verifyOcspRespStatusBadNoCache() {
-    final OCSPReq ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(
-            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
-
-    final OCSPResp ocspResp =
-        OcspResponseGenerator.builder()
-            .signer(OcspTestConstants.getOcspSignerEcc())
-            .respStatus(OCSPRespStatus.UNKNOWN_STATUS)
-            .build()
-            .generate(
-                ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB, CertificateStatus.GOOD);
-
-    ocspResponderMock.configureWireMockReceiveHttpPost(ocspResp, HttpURLConnection.HTTP_OK);
-
-    assertThatThrownBy(() -> getOcspTransceiver().verifyOcspResponse(null))
-        .isInstanceOf(GemPkiException.class)
-        .hasMessage(ErrorCode.TE_1058_OCSP_STATUS_ERROR.getErrorMessage(PRODUCT_TYPE));
-  }
-
-  @Test
   void verifySspUrlInvalidThrowsGemPkiExceptionOnly() {
     final OcspTransceiver builder =
         OcspTransceiver.builder()
             .productType(PRODUCT_TYPE)
-            .tspServiceList(tspServiceList)
             .x509EeCert(VALID_X509_EE_CERT_SMCB)
             .x509IssuerCert(VALID_ISSUER_CERT_SMCB)
             .ssp("https://no/wiremock/started")
             .build();
-    assertThatThrownBy(() -> builder.verifyOcspResponse(null))
+    assertThatThrownBy(builder::getOcspResponse)
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
   }
@@ -288,12 +129,9 @@ class OcspTransceiverTest {
   @Test
   void sendOcspRequestReceiveOcspResponseOptIsEmpty() {
 
-    final ZonedDateTime referenceDate = ZonedDateTime.now(ZoneOffset.UTC);
-
     final OcspTransceiver transceiver =
         OcspTransceiver.builder()
             .productType(PRODUCT_TYPE)
-            .tspServiceList(tspServiceList)
             .x509EeCert(VALID_X509_EE_CERT_SMCB)
             .x509IssuerCert(VALID_ISSUER_CERT_SMCB)
             .ssp("dummyUrl")
@@ -301,7 +139,7 @@ class OcspTransceiverTest {
             .ocspTimeoutSeconds(10000)
             .build();
 
-    assertDoesNotThrow(() -> transceiver.verifyOcspResponse(null, referenceDate));
+    assertDoesNotThrow(transceiver::getOcspResponse);
   }
 
   @Test
@@ -311,7 +149,6 @@ class OcspTransceiverTest {
     final OcspTransceiver ocspTransceiver =
         OcspTransceiver.builder()
             .productType(PRODUCT_TYPE)
-            .tspServiceList(tspServiceList)
             .x509EeCert(VALID_X509_EE_CERT_SMCB)
             .x509IssuerCert(VALID_ISSUER_CERT_SMCB)
             .ssp("http://127.0.0.1:4545/unreachable")
@@ -330,7 +167,6 @@ class OcspTransceiverTest {
     final OcspTransceiver ocspTransceiver =
         OcspTransceiver.builder()
             .productType(PRODUCT_TYPE)
-            .tspServiceList(tspServiceList)
             .x509EeCert(VALID_X509_EE_CERT_SMCB)
             .x509IssuerCert(VALID_ISSUER_CERT_SMCB)
             .ssp("http://127.0.0.1:4545/unreachable")
@@ -348,7 +184,6 @@ class OcspTransceiverTest {
     final OcspTransceiver ocspTransceiver =
         OcspTransceiver.builder()
             .productType(PRODUCT_TYPE)
-            .tspServiceList(tspServiceList)
             .x509EeCert(VALID_X509_EE_CERT_SMCB)
             .x509IssuerCert(VALID_ISSUER_CERT_SMCB)
             .ssp("http://127.0.0.1:4545/unreachable")
@@ -369,7 +204,6 @@ class OcspTransceiverTest {
     final OcspTransceiver ocspTransceiver =
         OcspTransceiver.builder()
             .productType(PRODUCT_TYPE)
-            .tspServiceList(tspServiceList)
             .x509EeCert(VALID_X509_EE_CERT_SMCB)
             .x509IssuerCert(VALID_ISSUER_CERT_SMCB)
             .ssp(ssp)
@@ -390,7 +224,6 @@ class OcspTransceiverTest {
     final OcspTransceiver ocspTransceiver =
         OcspTransceiver.builder()
             .productType(PRODUCT_TYPE)
-            .tspServiceList(tspServiceList)
             .x509EeCert(VALID_X509_EE_CERT_SMCB)
             .x509IssuerCert(VALID_ISSUER_CERT_SMCB)
             .ssp(ssp)
