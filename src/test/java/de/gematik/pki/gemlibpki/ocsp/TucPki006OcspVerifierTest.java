@@ -21,8 +21,10 @@ import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_RSA_DEFAULT;
 import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB;
-import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_MILLISECONDS;
-import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.TIMEOUT_DELTA_MILLISECONDS;
+import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_FUTURE_MILLISECONDS;
+import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_PAST_MILLISECONDS;
+import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_THISNEXTUPDATE_MILLISECONDS;
+import static de.gematik.pki.gemlibpki.ocsp.OcspTestConstants.TIMEOUT_DELTA_MILLISECONDS;
 import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getBasicOcspResp;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -495,7 +497,8 @@ class TucPki006OcspVerifierTest {
   void verifyOcspResponseThisUpdateWithinToleranceFuture() {
 
     final ZonedDateTime thisUpdate =
-        ZonedDateTime.now().plus(OCSP_TIME_TOLERANCE_MILLISECONDS, ChronoUnit.MILLIS);
+        ZonedDateTime.now()
+            .plus(OCSP_TIME_TOLERANCE_THISNEXTUPDATE_MILLISECONDS, ChronoUnit.MILLIS);
 
     final OCSPResp ocspResp =
         OcspResponseGenerator.builder()
@@ -543,7 +546,9 @@ class TucPki006OcspVerifierTest {
 
     final ZonedDateTime thisUpdate =
         ZonedDateTime.now()
-            .plus(OCSP_TIME_TOLERANCE_MILLISECONDS + TIMEOUT_DELTA_MILLISECONDS, ChronoUnit.MILLIS);
+            .plus(
+                OCSP_TIME_TOLERANCE_THISNEXTUPDATE_MILLISECONDS + TIMEOUT_DELTA_MILLISECONDS,
+                ChronoUnit.MILLIS);
 
     final OCSPResp ocspResp =
         OcspResponseGenerator.builder()
@@ -567,10 +572,35 @@ class TucPki006OcspVerifierTest {
   }
 
   @Test
-  void verifyOcspResponseProducedAtWithinToleranceFuture() {
+  void verifyOcspResponseProducedAtWithinToleranceFuture_DefaultTolerance() {
 
     final ZonedDateTime producedAt =
-        ZonedDateTime.now().plus(OCSP_TIME_TOLERANCE_MILLISECONDS, ChronoUnit.MILLIS);
+        ZonedDateTime.now()
+            .plus(OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_FUTURE_MILLISECONDS, ChronoUnit.MILLIS);
+
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .producedAt(producedAt)
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    // Instantiation of TucPki006OcspVerifier with default value of OCSP time tolerance
+    final TucPki006OcspVerifier verifier =
+        TucPki006OcspVerifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tspServiceList(tspServiceList)
+            .eeCert(VALID_ISSUER_CERT_SMCB)
+            .ocspResponse(ocspResp)
+            .build();
+
+    assertDoesNotThrow(() -> verifier.verifyProducedAt(GemLibPkiUtils.now()));
+  }
+
+  @Test
+  void verifyOcspResponseProducedAtWithinToleranceFuture_CustomTolerance() {
+    final int SECONDS_10 = 10000;
+    final ZonedDateTime producedAt = ZonedDateTime.now().plus(SECONDS_10, ChronoUnit.MILLIS);
 
     final OCSPResp ocspResp =
         OcspResponseGenerator.builder()
@@ -585,18 +615,21 @@ class TucPki006OcspVerifierTest {
             .tspServiceList(tspServiceList)
             .eeCert(VALID_ISSUER_CERT_SMCB)
             .ocspResponse(ocspResp)
+            .ocspTimeToleranceProducedAtFutureMilliseconds(SECONDS_10)
             .build();
 
     assertDoesNotThrow(() -> verifier.verifyProducedAt(GemLibPkiUtils.now()));
   }
 
   @Test
-  void verifyOcspResponseProducedAtOutOfTolerancePast() {
+  void verifyOcspResponseProducedAtOutOfToleranceFuture_DefaultTolerance() {
 
     final ZonedDateTime producedAt =
         ZonedDateTime.now()
-            .minus(
-                OCSP_TIME_TOLERANCE_MILLISECONDS + TIMEOUT_DELTA_MILLISECONDS, ChronoUnit.MILLIS);
+            .plus(
+                OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_FUTURE_MILLISECONDS
+                    + TIMEOUT_DELTA_MILLISECONDS,
+                ChronoUnit.MILLIS);
 
     final OCSPResp ocspResp =
         OcspResponseGenerator.builder()
@@ -605,6 +638,7 @@ class TucPki006OcspVerifierTest {
             .build()
             .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
+    // Instantiation of TucPki006OcspVerifier with default value of OCSP time tolerance
     final TucPki006OcspVerifier verifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
@@ -620,12 +654,10 @@ class TucPki006OcspVerifierTest {
   }
 
   @Test
-  void verifyOcspResponseProducedAtWithinTolerancePast() {
-
+  void verifyOcspResponseProducedAtOutOfToleranceFuture_CustomTolerance() {
+    final int SECONDS_10 = 10000;
     final ZonedDateTime producedAt =
-        ZonedDateTime.now()
-            .minus(
-                OCSP_TIME_TOLERANCE_MILLISECONDS - TIMEOUT_DELTA_MILLISECONDS, ChronoUnit.MILLIS);
+        ZonedDateTime.now().plus(SECONDS_10 + TIMEOUT_DELTA_MILLISECONDS, ChronoUnit.MILLIS);
 
     final OCSPResp ocspResp =
         OcspResponseGenerator.builder()
@@ -634,6 +666,39 @@ class TucPki006OcspVerifierTest {
             .build()
             .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
 
+    final TucPki006OcspVerifier verifier =
+        TucPki006OcspVerifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tspServiceList(tspServiceList)
+            .eeCert(VALID_ISSUER_CERT_SMCB)
+            .ocspResponse(ocspResp)
+            .ocspTimeToleranceProducedAtFutureMilliseconds(SECONDS_10)
+            .build();
+
+    final ZonedDateTime now = GemLibPkiUtils.now();
+    assertThatThrownBy(() -> verifier.verifyProducedAt(now))
+        .isInstanceOf(GemPkiException.class)
+        .hasMessage(ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
+  }
+
+  @Test
+  void verifyOcspResponseProducedAtWithinTolerancePast_DefaultTolerance() {
+
+    final ZonedDateTime producedAt =
+        ZonedDateTime.now()
+            .minus(
+                OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_PAST_MILLISECONDS
+                    - TIMEOUT_DELTA_MILLISECONDS,
+                ChronoUnit.MILLIS);
+
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .producedAt(producedAt)
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    // Instantiation of TucPki006OcspVerifier with default value of OCSP time tolerance
     final TucPki006OcspVerifier verifier =
         TucPki006OcspVerifier.builder()
             .productType(PRODUCT_TYPE)
@@ -646,11 +711,10 @@ class TucPki006OcspVerifierTest {
   }
 
   @Test
-  void verifyOcspResponseProducedAtOutOfToleranceFuture() {
-
+  void verifyOcspResponseProducedAtWithinTolerancePast_CustomTolerance() {
+    final int SECONDS_10 = 10000;
     final ZonedDateTime producedAt =
-        ZonedDateTime.now()
-            .plus(OCSP_TIME_TOLERANCE_MILLISECONDS + TIMEOUT_DELTA_MILLISECONDS, ChronoUnit.MILLIS);
+        ZonedDateTime.now().minus(SECONDS_10 - TIMEOUT_DELTA_MILLISECONDS, ChronoUnit.MILLIS);
 
     final OCSPResp ocspResp =
         OcspResponseGenerator.builder()
@@ -665,6 +729,64 @@ class TucPki006OcspVerifierTest {
             .tspServiceList(tspServiceList)
             .eeCert(VALID_ISSUER_CERT_SMCB)
             .ocspResponse(ocspResp)
+            .ocspTimeToleranceProducedAtPastMilliseconds(SECONDS_10)
+            .build();
+
+    assertDoesNotThrow(() -> verifier.verifyProducedAt(GemLibPkiUtils.now()));
+  }
+
+  @Test
+  void verifyOcspResponseProducedAtOutOfTolerancePast_DefaultTolerance() {
+
+    final ZonedDateTime producedAt =
+        ZonedDateTime.now()
+            .minus(
+                OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_PAST_MILLISECONDS
+                    + TIMEOUT_DELTA_MILLISECONDS,
+                ChronoUnit.MILLIS);
+
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .producedAt(producedAt)
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    // Instantiation of TucPki006OcspVerifier with default value of OCSP time tolerance
+    final TucPki006OcspVerifier verifier =
+        TucPki006OcspVerifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tspServiceList(tspServiceList)
+            .eeCert(VALID_ISSUER_CERT_SMCB)
+            .ocspResponse(ocspResp)
+            .build();
+
+    final ZonedDateTime now = GemLibPkiUtils.now();
+    assertThatThrownBy(() -> verifier.verifyProducedAt(now))
+        .isInstanceOf(GemPkiException.class)
+        .hasMessage(ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
+  }
+
+  @Test
+  void verifyOcspResponseProducedAtOutOfTolerancePast_CustomTolerance() {
+    final int SECONDS_10 = 10000;
+    final ZonedDateTime producedAt =
+        ZonedDateTime.now().minus(SECONDS_10 + TIMEOUT_DELTA_MILLISECONDS, ChronoUnit.MILLIS);
+
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .producedAt(producedAt)
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    final TucPki006OcspVerifier verifier =
+        TucPki006OcspVerifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tspServiceList(tspServiceList)
+            .eeCert(VALID_ISSUER_CERT_SMCB)
+            .ocspResponse(ocspResp)
+            .ocspTimeToleranceProducedAtPastMilliseconds(SECONDS_10)
             .build();
 
     final ZonedDateTime now = GemLibPkiUtils.now();
@@ -679,7 +801,8 @@ class TucPki006OcspVerifierTest {
     final ZonedDateTime nextUpdate =
         ZonedDateTime.now()
             .minus(
-                OCSP_TIME_TOLERANCE_MILLISECONDS + TIMEOUT_DELTA_MILLISECONDS, ChronoUnit.MILLIS);
+                OCSP_TIME_TOLERANCE_THISNEXTUPDATE_MILLISECONDS + TIMEOUT_DELTA_MILLISECONDS,
+                ChronoUnit.MILLIS);
 
     final OCSPResp ocspResp =
         OcspResponseGenerator.builder()
@@ -708,7 +831,8 @@ class TucPki006OcspVerifierTest {
     final ZonedDateTime nextUpdate =
         ZonedDateTime.now()
             .minus(
-                OCSP_TIME_TOLERANCE_MILLISECONDS - TIMEOUT_DELTA_MILLISECONDS, ChronoUnit.MILLIS);
+                OCSP_TIME_TOLERANCE_THISNEXTUPDATE_MILLISECONDS - TIMEOUT_DELTA_MILLISECONDS,
+                ChronoUnit.MILLIS);
 
     final OCSPResp ocspResp =
         OcspResponseGenerator.builder()

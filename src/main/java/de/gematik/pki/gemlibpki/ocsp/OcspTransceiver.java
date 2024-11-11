@@ -19,13 +19,9 @@ package de.gematik.pki.gemlibpki.ocsp;
 import de.gematik.pki.gemlibpki.error.ErrorCode;
 import de.gematik.pki.gemlibpki.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.exception.GemPkiRuntimeException;
-import de.gematik.pki.gemlibpki.tsl.TspService;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.security.cert.X509Certificate;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -55,7 +51,6 @@ public final class OcspTransceiver {
 
   public static final String OCSP_SEND_RECEIVE_FAILED = "OCSP senden/empfangen fehlgeschlagen.";
   @NonNull private final String productType;
-  @NonNull private final List<TspService> tspServiceList;
   @NonNull private final X509Certificate x509EeCert;
   @NonNull private final X509Certificate x509IssuerCert;
   @NonNull private final String ssp;
@@ -65,72 +60,10 @@ public final class OcspTransceiver {
 
   @Builder.Default private final boolean tolerateOcspFailure = false;
 
-  public TucPki006OcspVerifier getTucPki006Verifier(final OCSPResp ocspResp) {
-
-    return TucPki006OcspVerifier.builder()
-        .productType(productType)
-        .tspServiceList(tspServiceList)
-        .eeCert(x509EeCert)
-        .ocspResponse(ocspResp)
-        .build();
-  }
-
-  /**
-   * Verifies OCSP status of end-entity certificate. Sends OCSP request if OCSP response is not
-   * cached.
-   *
-   * @param ocspRespCache Cache for OCSP Responses
-   * @param referenceDate date at which the ocsp response shall be valid at
-   * @throws GemPkiException during ocsp checks
-   */
-  public void verifyOcspResponse(
-      final OcspRespCache ocspRespCache, final ZonedDateTime referenceDate) throws GemPkiException {
-
+  public Optional<OCSPResp> getOcspResponse() throws GemPkiException {
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(x509EeCert, x509IssuerCert);
-
-    if (ocspRespCache == null) {
-      log.debug("Send Ocsp req because no cache.");
-      final Optional<OCSPResp> ocspRespOpt = sendOcspRequest(ocspReq);
-      if (ocspRespOpt.isEmpty()) {
-        return;
-      }
-      log.debug("Ocsp resp from server, because no cache.");
-      getTucPki006Verifier(ocspRespOpt.get()).performTucPki006Checks(referenceDate);
-      return;
-    }
-
-    final Optional<OCSPResp> ocspRespCachedOpt =
-        ocspRespCache.getResponse(x509EeCert.getSerialNumber());
-
-    if (ocspRespCachedOpt.isPresent()) {
-      log.debug("Ocsp resp from cache: verification is not performed");
-      return;
-    }
-
-    log.debug("Send Ocsp req, because not in cache.");
-    final Optional<OCSPResp> ocspRespOpt = sendOcspRequest(ocspReq);
-
-    if (ocspRespOpt.isEmpty()) {
-      log.debug("No Ocsp resp received.");
-      return;
-    }
-
-    getTucPki006Verifier(ocspRespOpt.get()).performTucPki006Checks(referenceDate);
-
-    ocspRespCache.saveResponse(x509EeCert.getSerialNumber(), ocspRespOpt.get());
-    log.debug("Ocsp resp from server saved to cache.");
-  }
-
-  /**
-   * Verifies OCSP status of end-entity certificate for the current date time. Sends OCSP request if
-   * OCSP response is not cached.
-   *
-   * @param ocspRespCache Cache for OCSP Responses
-   * @throws GemPkiException during ocsp checks
-   */
-  public void verifyOcspResponse(final OcspRespCache ocspRespCache) throws GemPkiException {
-    verifyOcspResponse(ocspRespCache, ZonedDateTime.now(ZoneOffset.UTC));
+    return sendOcspRequest(ocspReq);
   }
 
   private void handleWithTolerateOcspFailure() throws GemPkiException {

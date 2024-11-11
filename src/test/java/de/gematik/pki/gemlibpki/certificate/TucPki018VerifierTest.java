@@ -99,12 +99,13 @@ import org.mockito.MockedConstruction;
 import org.mockito.Mockito;
 
 class TucPki018VerifierTest {
+
   private static final List<CertificateProfile> certificateProfiles =
       List.of(CERT_PROFILE_C_HCI_AUT_ECC);
   private static final OcspResponderMock ocspResponderMock =
       new OcspResponderMock(LOCAL_SSP_DIR, OCSP_HOST);
   private static final int ocspTimeoutSeconds = OcspConstants.DEFAULT_OCSP_TIMEOUT_SECONDS;
-  private static final int OCSP_GRACE_PERIOD_SECONDS = 30;
+  private static final int OCSP_GRACE_PERIOD_30_SECONDS = 30;
 
   private TucPki018Verifier tucPki018Verifier;
   private OcspRespCache ocspRespCache;
@@ -113,7 +114,7 @@ class TucPki018VerifierTest {
 
   @BeforeEach
   void init() {
-    ocspRespCache = new OcspRespCache(OCSP_GRACE_PERIOD_SECONDS);
+    ocspRespCache = new OcspRespCache(OCSP_GRACE_PERIOD_30_SECONDS);
 
     tolerateOcspFailure = false;
     tucPki018Verifier = buildTucPki18Verifier(certificateProfiles);
@@ -131,6 +132,7 @@ class TucPki018VerifierTest {
         .tspServiceList(tspServiceList)
         .certificateProfiles(certificateProfiles)
         .ocspRespCache(ocspRespCache)
+        .ocspTimeToleranceProducedAtPastMilliseconds(OCSP_GRACE_PERIOD_30_SECONDS * 1000)
         .ocspTimeoutSeconds(ocspTimeoutSeconds)
         .tolerateOcspFailure(tolerateOcspFailure)
         .build();
@@ -525,6 +527,7 @@ class TucPki018VerifierTest {
             .tspServiceList(tspServiceList)
             .certificateProfiles(certificateProfiles)
             .ocspRespCache(ocspRespCache)
+            .ocspTimeToleranceProducedAtPastMilliseconds(OCSP_GRACE_PERIOD_30_SECONDS * 1000)
             .ocspTimeoutSeconds(0)
             .tolerateOcspFailure(false)
             .build();
@@ -532,6 +535,36 @@ class TucPki018VerifierTest {
     assertThatThrownBy(() -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB))
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.TE_1032_OCSP_NOT_AVAILABLE.getErrorMessage(PRODUCT_TYPE));
+  }
+
+  @Test
+  void verifyPerformTucPki18ChecksOcspProducedAtOutOfTolerancePast() {
+    final int ocspGracePeriod10Seconds = 10;
+    final int ocspTimeToleranceProducedAtPastMilliseconds = ocspGracePeriod10Seconds * 1000;
+
+    ocspResponderMock.configureForOcspRequestProducedAt(
+        VALID_X509_EE_CERT_SMCB,
+        VALID_ISSUER_CERT_SMCB,
+        -(ocspTimeToleranceProducedAtPastMilliseconds + 1));
+
+    final List<TspService> tspServiceList = TestUtils.getDefaultTspServiceList();
+
+    overwriteSspUrls(tspServiceList, ocspResponderMock.getSspUrl());
+
+    final TucPki018Verifier verifier =
+        TucPki018Verifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tspServiceList(tspServiceList)
+            .certificateProfiles(certificateProfiles)
+            .ocspRespCache(new OcspRespCache(ocspGracePeriod10Seconds))
+            .ocspTimeToleranceProducedAtPastMilliseconds(
+                ocspTimeToleranceProducedAtPastMilliseconds)
+            .tolerateOcspFailure(false)
+            .build();
+
+    assertThatThrownBy(() -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB))
+        .isInstanceOf(GemPkiException.class)
+        .hasMessage(ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
   }
 
   @Test
@@ -564,6 +597,303 @@ class TucPki018VerifierTest {
 
     assertDoesNotThrow(
         () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate));
+  }
+
+  @Test
+  void verifyPerformTucPki18ChecksWithGivenOcspResponseValid_CustomTolerance() {
+    final int SECONDS_10_AS_MILLISECS = 10000;
+    final ZonedDateTime referenceDate = ZonedDateTime.parse("2022-06-20T15:00:00Z");
+
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .producedAt(referenceDate)
+            .nextUpdate(referenceDate)
+            .thisUpdate(referenceDate)
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    final List<TspService> tspServiceList = TestUtils.getDefaultTspServiceList();
+
+    final TucPki018Verifier verifier =
+        TucPki018Verifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tspServiceList(tspServiceList)
+            .certificateProfiles(certificateProfiles)
+            .ocspResponse(ocspResp)
+            .ocspTimeToleranceProducedAtPastMilliseconds(SECONDS_10_AS_MILLISECS)
+            .build();
+
+    assertDoesNotThrow(
+        () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate));
+  }
+
+  @Test
+  void verifyPerformTucPki18ChecksWithGivenOcspResponseValid_CustomTolerance40sec() {
+    final int SECONDS_40_AS_MILLISECS = 40000;
+    final ZonedDateTime referenceDate = ZonedDateTime.parse("2022-06-20T15:00:00Z");
+
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .producedAt(referenceDate.minusSeconds(39))
+            .nextUpdate(referenceDate)
+            .thisUpdate(referenceDate)
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    final List<TspService> tspServiceList = TestUtils.getDefaultTspServiceList();
+
+    final TucPki018Verifier verifier =
+        TucPki018Verifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tspServiceList(tspServiceList)
+            .certificateProfiles(certificateProfiles)
+            .ocspResponse(ocspResp)
+            .ocspTimeToleranceProducedAtPastMilliseconds(SECONDS_40_AS_MILLISECS)
+            .build();
+
+    assertDoesNotThrow(
+        () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate));
+  }
+
+  @Test
+  void verifyPerformTucPki18ChecksWithGivenOcspResponseValid_CustomTolerance50sec() {
+    final int SECONDS_50_AS_MILLISECS = 50000;
+    final ZonedDateTime referenceDate = ZonedDateTime.parse("2022-06-20T15:00:00Z");
+
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .producedAt(referenceDate.minusSeconds(49))
+            .nextUpdate(referenceDate)
+            .thisUpdate(referenceDate)
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    final List<TspService> tspServiceList = TestUtils.getDefaultTspServiceList();
+
+    final TucPki018Verifier verifier =
+        TucPki018Verifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tspServiceList(tspServiceList)
+            .certificateProfiles(certificateProfiles)
+            .ocspResponse(ocspResp)
+            .ocspTimeToleranceProducedAtPastMilliseconds(SECONDS_50_AS_MILLISECS)
+            .build();
+
+    assertDoesNotThrow(
+        () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate));
+  }
+
+  @Test
+  void verifyPerformTucPki18ChecksWithGivenOcspResponseValid_CustomTolerance3000sec() {
+    final int SECONDS_300_AS_MILLISECS = 300_000;
+    final ZonedDateTime referenceDate = ZonedDateTime.now();
+
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .producedAt(referenceDate.minusSeconds(295))
+            .nextUpdate(referenceDate)
+            .thisUpdate(referenceDate)
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    final List<TspService> tspServiceList = TestUtils.getDefaultTspServiceList();
+
+    final TucPki018Verifier verifier =
+        TucPki018Verifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tspServiceList(tspServiceList)
+            .certificateProfiles(certificateProfiles)
+            .ocspResponse(ocspResp)
+            .ocspTimeToleranceProducedAtPastMilliseconds(SECONDS_300_AS_MILLISECS)
+            .build();
+
+    assertDoesNotThrow(
+        () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate));
+  }
+
+  @Test
+  void verifyPerformTucPki18ChecksWithGivenOcspResponseValid_DefaultTolerance() {
+    final ZonedDateTime referenceDate = ZonedDateTime.now();
+
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .producedAt(referenceDate.minusSeconds(35))
+            .nextUpdate(referenceDate)
+            .thisUpdate(referenceDate)
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    final List<TspService> tspServiceList = TestUtils.getDefaultTspServiceList();
+
+    final TucPki018Verifier verifier =
+        TucPki018Verifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tspServiceList(tspServiceList)
+            .certificateProfiles(certificateProfiles)
+            .ocspResponse(ocspResp)
+            .build();
+
+    assertDoesNotThrow(
+        () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate));
+  }
+
+  @Test
+  void verifyPerformTucPki18ChecksWithGivenOcspResponseProducedAtExpired_DefaultTolerance() {
+    final ZonedDateTime referenceDate = ZonedDateTime.now();
+
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .producedAt(referenceDate.minusSeconds(3601))
+            .nextUpdate(referenceDate)
+            .thisUpdate(referenceDate)
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    final List<TspService> tspServiceList = TestUtils.getDefaultTspServiceList();
+
+    final TucPki018Verifier verifier =
+        TucPki018Verifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tspServiceList(tspServiceList)
+            .certificateProfiles(certificateProfiles)
+            .ocspResponse(ocspResp)
+            .build();
+
+    assertThatThrownBy(
+            () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate))
+        .isInstanceOf(GemPkiException.class);
+  }
+
+  @Test
+  void verifyPerformTucPki18ChecksWithGivenOcspResponseExpired_CustomTolerance10secs() {
+    final int SECONDS_10_AS_MILLISECS = 10000;
+    final ZonedDateTime referenceDate = ZonedDateTime.parse("2022-06-20T15:00:00Z");
+
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    // producedAt is 12 seconds in the past, tolerance is 10 seconds
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .producedAt(referenceDate.minusSeconds(12))
+            .nextUpdate(referenceDate)
+            .thisUpdate(referenceDate)
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    final List<TspService> tspServiceList = TestUtils.getDefaultTspServiceList();
+
+    final TucPki018Verifier verifier =
+        TucPki018Verifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tspServiceList(tspServiceList)
+            .certificateProfiles(certificateProfiles)
+            .ocspResponse(ocspResp)
+            .ocspTimeToleranceProducedAtPastMilliseconds(SECONDS_10_AS_MILLISECS)
+            .build();
+
+    assertThatThrownBy(
+            () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate))
+        .isInstanceOf(GemPkiException.class);
+  }
+
+  @Test
+  void verifyPerformTucPki18ChecksWithGivenOcspResponseExpired_CustomTolerance5secs() {
+    final int SECONDS_5_AS_MILLISECS = 5000;
+    final ZonedDateTime referenceDate = ZonedDateTime.parse("2022-06-20T15:00:00Z");
+
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    // producedAt is 12 seconds in the past, tolerance is 10 seconds
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .producedAt(referenceDate.minusSeconds(6))
+            .nextUpdate(referenceDate)
+            .thisUpdate(referenceDate)
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    final List<TspService> tspServiceList = TestUtils.getDefaultTspServiceList();
+
+    final TucPki018Verifier verifier =
+        TucPki018Verifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tspServiceList(tspServiceList)
+            .certificateProfiles(certificateProfiles)
+            .ocspResponse(ocspResp)
+            .ocspTimeToleranceProducedAtPastMilliseconds(SECONDS_5_AS_MILLISECS)
+            .build();
+
+    assertThatThrownBy(
+            () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate))
+        .isInstanceOf(GemPkiException.class);
+  }
+
+  @Test
+  void verifyPerformTucPki18ChecksWithGivenOcspResponseNextUpdateExpired() {
+
+    final ZonedDateTime referenceDate = GemLibPkiUtils.now().minusSeconds(40);
+
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    final OCSPResp ocspResp =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .producedAt(referenceDate)
+            .nextUpdate(referenceDate)
+            .thisUpdate(referenceDate)
+            .build()
+            .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+
+    final List<TspService> tspServiceList = TestUtils.getDefaultTspServiceList();
+
+    final TucPki018Verifier verifier =
+        TucPki018Verifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tspServiceList(tspServiceList)
+            .certificateProfiles(certificateProfiles)
+            .ocspResponse(ocspResp)
+            .build();
+
+    assertThatThrownBy(() -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB))
+        .isInstanceOf(GemPkiException.class);
   }
 
   @Test

@@ -28,6 +28,8 @@ import de.gematik.pki.gemlibpki.ocsp.OcspResponseGenerator;
 import de.gematik.pki.gemlibpki.ocsp.OcspTestConstants;
 import java.net.HttpURLConnection;
 import java.security.cert.X509Certificate;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import lombok.SneakyThrows;
 import org.apache.http.HttpHeaders;
 import org.bouncycastle.cert.ocsp.OCSPReq;
@@ -76,6 +78,21 @@ public class OcspResponderMock {
 
     final OCSPReq ocspReq = OcspRequestGenerator.generateSingleOcspRequest(eeCert, issuerCert);
     configureForOcspRequest(ocspReq, eeCert, issuerCert);
+  }
+
+  public void configureForOcspRequestProducedAt(
+      final X509Certificate eeCert,
+      final X509Certificate issuerCert,
+      final int producedAtDeltaMilliseconds) {
+
+    final OCSPReq ocspReq = OcspRequestGenerator.generateSingleOcspRequest(eeCert, issuerCert);
+    final OCSPResp ocspRespToSent =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .producedAt(ZonedDateTime.now().plus(producedAtDeltaMilliseconds, ChronoUnit.MILLIS))
+            .build()
+            .generate(ocspReq, eeCert, issuerCert);
+    configureWireMockReceiveHttpPost(ocspRespToSent, HttpURLConnection.HTTP_OK);
   }
 
   public String getSspUrl() {

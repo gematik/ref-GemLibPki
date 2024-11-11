@@ -297,6 +297,66 @@ class TucPki001VerifierTest {
   }
 
   @Test
+  void verifyPerformTucPki001Checks_OcspResponseProducedAt_valid() {
+    final OcspResponderMock ocspResponderMock = new OcspResponderMock(LOCAL_SSP_DIR, OCSP_HOST);
+    final X509Certificate tslSigner =
+        TestUtils.readP12(TslSignerTest.SIGNER_PATH_ECC).getCertificate();
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA8);
+    final OCSPResp ocspRespLocal =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .producedAt(ZonedDateTime.now().minusSeconds(3))
+            .build()
+            .generate(ocspReq, tslSigner, VALID_ISSUER_CERT_TSL_CA8, CertificateStatus.GOOD);
+    ocspResponderMock.configureWireMockReceiveHttpPost(ocspRespLocal, HttpURLConnection.HTTP_OK);
+    overwriteSspUrls(tspServicesInTruststore, ocspResponderMock.getSspUrl());
+
+    final TucPki001Verifier tucPki001Verifier =
+        TucPki001Verifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tslToCheck(tslToCheck)
+            .currentTrustedServices(tspServicesInTruststore)
+            .currentTslId("dummyTslId")
+            .currentTslSeqNr(BigInteger.ZERO)
+            .ocspTimeToleranceProducedAtPastMilliseconds(5000)
+            .build();
+
+    assertDoesNotThrow(tucPki001Verifier::performTucPki001Checks);
+  }
+
+  @Test
+  void verifyPerformTucPki001Checks_OcspResponseProducedAt_expired() {
+    final OcspResponderMock ocspResponderMock = new OcspResponderMock(LOCAL_SSP_DIR, OCSP_HOST);
+    final X509Certificate tslSigner =
+        TestUtils.readP12(TslSignerTest.SIGNER_PATH_ECC).getCertificate();
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA8);
+    final OCSPResp ocspRespLocal =
+        OcspResponseGenerator.builder()
+            .signer(OcspTestConstants.getOcspSignerEcc())
+            .producedAt(ZonedDateTime.now().minusSeconds(7))
+            .build()
+            .generate(ocspReq, tslSigner, VALID_ISSUER_CERT_TSL_CA8, CertificateStatus.GOOD);
+    ocspResponderMock.configureWireMockReceiveHttpPost(ocspRespLocal, HttpURLConnection.HTTP_OK);
+    overwriteSspUrls(tspServicesInTruststore, ocspResponderMock.getSspUrl());
+
+    final TucPki001Verifier tucPki001Verifier =
+        TucPki001Verifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tslToCheck(tslToCheck)
+            .currentTrustedServices(tspServicesInTruststore)
+            .currentTslId("dummyTslId")
+            .currentTslSeqNr(BigInteger.ZERO)
+            .ocspTimeToleranceProducedAtPastMilliseconds(5000)
+            .build();
+
+    assertThatThrownBy(tucPki001Verifier::performTucPki001Checks)
+        .isInstanceOf(GemPkiException.class)
+        .hasMessage(ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
+  }
+
+  @Test
   void verifyNullChecks() {
     final TucPki001VerifierBuilder builder = TucPki001Verifier.builder();
 

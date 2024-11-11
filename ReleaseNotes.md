@@ -2,6 +2,14 @@
 
 # Release notes GemLibPki
 
+## Release 3.0.0
+
+- implements Afo A_23225 (OCSP Caching)
+- tolerances of producedAt in OCSP responses can be configured
+- API change of TucPki001Verifier: see TucPki001VerifierTest for usage
+- API change of TucPki018Verifier: see TucPki018VerifierTest for usage
+- refactor OcspTransceiver and OcspValidator to reduce coupling and responsibilities
+
 ## Release 2.1.8
 
 - fix required Java version in pom.xml

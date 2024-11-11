@@ -56,7 +56,8 @@ public final class OcspUtils {
     final Req[] singleReqs = ocspReq.getRequestList();
 
     if (singleReqs.length != 1) {
-      throw new GemPkiRuntimeException("Mehr als eine OCSP Request erhalten: " + singleReqs.length);
+      throw new GemPkiRuntimeException(
+          "Mehr als einen OCSP Request erhalten: " + singleReqs.length);
     }
 
     return singleReqs[0];

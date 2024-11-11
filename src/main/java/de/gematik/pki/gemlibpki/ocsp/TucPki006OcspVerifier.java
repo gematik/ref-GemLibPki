@@ -16,7 +16,9 @@
 
 package de.gematik.pki.gemlibpki.ocsp;
 
-import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_MILLISECONDS;
+import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_FUTURE_MILLISECONDS;
+import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_PAST_MILLISECONDS;
+import static de.gematik.pki.gemlibpki.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_THISNEXTUPDATE_MILLISECONDS;
 import static de.gematik.pki.gemlibpki.ocsp.OcspResponseGenerator.verifyHashAlgoSupported;
 import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getBasicOcspResp;
 import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getFirstSingleResp;
@@ -45,11 +47,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.isismtt.ocsp.CertHash;
@@ -74,7 +75,7 @@ import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder;
  * TucPki006. This class works with parameterized variables (defined by builder pattern) and with
  * given variables provided during runtime (method parameters).
  */
-@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
 @Slf4j
 public class TucPki006OcspVerifier {
@@ -83,7 +84,16 @@ public class TucPki006OcspVerifier {
   @NonNull protected final List<TspService> tspServiceList;
   @NonNull protected final X509Certificate eeCert;
   @NonNull protected final OCSPResp ocspResponse;
+
   @Builder.Default protected final boolean enforceCertHashCheck = true;
+
+  @Builder.Default
+  private int ocspTimeToleranceProducedAtPastMilliseconds =
+      OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_PAST_MILLISECONDS;
+
+  @Builder.Default
+  private int ocspTimeToleranceProducedAtFutureMilliseconds =
+      OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_FUTURE_MILLISECONDS;
 
   /**
    * Performs TUC_PKI_006 checks (OCSP verification) against current date time.
@@ -109,13 +119,16 @@ public class TucPki006OcspVerifier {
     verifyStatus(referenceDate);
     verifyCertHash();
 
+    log.info("verify thisUpdate");
     verifyThisUpdate(referenceDate);
+    log.info("verify producedAt");
     verifyProducedAt(referenceDate);
+    log.info("verify nextUpdate");
     verifyNextUpdate(referenceDate);
 
     verifyOcspResponseCertId();
 
-    log.info("OCSP validation successfully finished.");
+    log.info("OCSP validation (TUC-PKI-006) successfully finished.");
   }
 
   /**
@@ -163,7 +176,8 @@ public class TucPki006OcspVerifier {
 
   /**
    * Verify that thisUpdate of the OCSP response is within its tolerance of {@link
-   * OcspConstants#OCSP_TIME_TOLERANCE_MILLISECONDS} in the future. Throws an exception if not.
+   * OcspConstants#OCSP_TIME_TOLERANCE_THISNEXTUPDATE_MILLISECONDS} in the future. Throws an
+   * exception if not.
    *
    * @param referenceDate a reference date to check thisUpdate against
    * @throws GemPkiException thrown if ocsp thisUpdate is in future out of tolerance
@@ -175,12 +189,14 @@ public class TucPki006OcspVerifier {
     final Instant thisUpdateInstant = singleResp.getThisUpdate().toInstant();
     final ZonedDateTime thisUpdate = ZonedDateTime.ofInstant(thisUpdateInstant, ZoneOffset.UTC);
 
-    verifyToleranceForFuture(thisUpdate, referenceDate, "thisUpdate");
+    verifyToleranceForFuture(
+        thisUpdate, referenceDate, OCSP_TIME_TOLERANCE_THISNEXTUPDATE_MILLISECONDS, "thisUpdate");
   }
 
   /**
    * Verify that thisProducedAt of the OCSP response is within its tolerance of {@link
-   * OcspConstants#OCSP_TIME_TOLERANCE_MILLISECONDS} in pas and future. Throws an exception if not.
+   * OcspConstants#OCSP_TIME_TOLERANCE_THISNEXTUPDATE_MILLISECONDS} in pas and future. Throws an
+   * exception if not.
    *
    * @param referenceDate a reference date to check producedAt against
    * @throws GemPkiException thrown if ocsp producedAt is out of tolerance
@@ -192,14 +208,16 @@ public class TucPki006OcspVerifier {
     final Instant producedAtInstant = basicOcspResponse.getProducedAt().toInstant();
     final ZonedDateTime producedAt = ZonedDateTime.ofInstant(producedAtInstant, ZoneOffset.UTC);
 
-    verifyToleranceForPast(producedAt, referenceDate, "producedAt");
-    verifyToleranceForFuture(producedAt, referenceDate, "producedAt");
+    verifyToleranceForPast(
+        producedAt, referenceDate, ocspTimeToleranceProducedAtPastMilliseconds, "producedAt");
+    verifyToleranceForFuture(
+        producedAt, referenceDate, ocspTimeToleranceProducedAtFutureMilliseconds, "producedAt");
   }
 
   /**
    * Verify that nextUpdate of the OCSP response is within its tolerance of {@link
-   * OcspConstants#OCSP_TIME_TOLERANCE_MILLISECONDS} in the past. Throws an exception if not. The
-   * verification is not performed, if nextUpdate is not available.
+   * OcspConstants#OCSP_TIME_TOLERANCE_THISNEXTUPDATE_MILLISECONDS} in the past. Throws an exception
+   * if not. The verification is not performed, if nextUpdate is not available.
    *
    * @param referenceDate a reference date to check nextUpdate against
    * @throws GemPkiException thrown if ocsp nextUpdate is in past out of tolerance
@@ -216,43 +234,51 @@ public class TucPki006OcspVerifier {
     final Instant nextUpdateInstant = singleResp.getNextUpdate().toInstant();
     final ZonedDateTime nextUpdate = ZonedDateTime.ofInstant(nextUpdateInstant, ZoneOffset.UTC);
 
-    verifyToleranceForPast(nextUpdate, referenceDate, "nextUpdate");
+    verifyToleranceForPast(
+        nextUpdate, referenceDate, OCSP_TIME_TOLERANCE_THISNEXTUPDATE_MILLISECONDS, "nextUpdate");
   }
 
   private void verifyToleranceForFuture(
-      final ZonedDateTime dateToVerify, final ZonedDateTime referenceDate, final String dateName)
+      final ZonedDateTime dateToVerify,
+      final ZonedDateTime referenceDate,
+      final int toleranceMilliSeconds,
+      final String dateName)
       throws GemPkiException {
 
     final ZonedDateTime futureTolerance =
-        referenceDate.plus(OCSP_TIME_TOLERANCE_MILLISECONDS, ChronoUnit.MILLIS);
+        referenceDate.plus(toleranceMilliSeconds, ChronoUnit.MILLIS);
 
     if (dateToVerify.isAfter(futureTolerance)) {
 
       log.error(
-          "The interval for {} of the OCSP response {} is outside of the allowed {} seconds in the"
-              + " future {}.",
+          "The interval for {} of the OCSP response {} is outside of the allowed {} milliseconds in"
+              + " the future {}.",
           dateName,
           dateToVerify,
-          TimeUnit.MILLISECONDS.toSeconds(OCSP_TIME_TOLERANCE_MILLISECONDS),
+          toleranceMilliSeconds,
           referenceDate);
       throw new GemPkiException(productType, ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR);
     }
   }
 
   private void verifyToleranceForPast(
-      final ZonedDateTime dateToVerify, final ZonedDateTime referenceDate, final String dateName)
+      final ZonedDateTime dateToVerify,
+      final ZonedDateTime referenceDate,
+      final int toleranceMilliSeconds,
+      final String dateName)
       throws GemPkiException {
 
     final ZonedDateTime pastTolerance =
-        referenceDate.minus(OCSP_TIME_TOLERANCE_MILLISECONDS, ChronoUnit.MILLIS);
-
+        referenceDate.minus(toleranceMilliSeconds, ChronoUnit.MILLIS);
+    log.info("toleranceMilliSeconds: {}", toleranceMilliSeconds);
+    log.info("pastTolerance: {}", pastTolerance);
     if (dateToVerify.isBefore(pastTolerance)) {
       log.error(
-          "The interval for {} of the OCSP response {} is outside of the allowed {} seconds in the"
-              + " past {}.",
+          "The interval for {} of the OCSP response {} is outside of the allowed {} milliseconds in"
+              + " the past {}.",
           dateName,
           dateToVerify,
-          TimeUnit.MILLISECONDS.toSeconds(OCSP_TIME_TOLERANCE_MILLISECONDS),
+          toleranceMilliSeconds,
           referenceDate);
       throw new GemPkiException(productType, ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR);
     }
