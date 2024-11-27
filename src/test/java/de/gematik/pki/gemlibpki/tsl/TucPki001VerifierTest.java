@@ -19,7 +19,7 @@ package de.gematik.pki.gemlibpki.tsl;
 import static de.gematik.pki.gemlibpki.TestConstants.LOCAL_SSP_DIR;
 import static de.gematik.pki.gemlibpki.TestConstants.OCSP_HOST;
 import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
-import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_TSL_CA8;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_TSL_CA51;
 import static de.gematik.pki.gemlibpki.tsl.TslConverter.ERROR_READING_TSL;
 import static de.gematik.pki.gemlibpki.tsl.TslUtils.getFirstTslSignerCertificate;
 import static de.gematik.pki.gemlibpki.utils.ResourceReader.getFileFromResourceAsBytes;
@@ -92,7 +92,7 @@ class TucPki001VerifierTest {
     final OcspResponderMock ocspResponderMock = new OcspResponderMock(LOCAL_SSP_DIR, OCSP_HOST);
     final X509Certificate tslSigner = getFirstTslSignerCertificate(tslToCheckTslUnsigned);
 
-    ocspResponderMock.configureForOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA8);
+    ocspResponderMock.configureForOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA51);
     overwriteSspUrls(tspServicesInTruststore, ocspResponderMock.getSspUrl());
 
     final TucPki001Verifier tucPki001Verifier =
@@ -113,7 +113,7 @@ class TucPki001VerifierTest {
     final X509Certificate tslSigner = getFirstTslSignerCertificate(tslToCheckTslUnsigned);
 
     final OcspResponderMock ocspResponderMock = new OcspResponderMock(LOCAL_SSP_DIR, OCSP_HOST);
-    ocspResponderMock.configureForOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA8);
+    ocspResponderMock.configureForOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA51);
     overwriteSspUrls(tspServicesInTruststore, ocspResponderMock.getSspUrl());
 
     final TucPki001Verifier tucPki001Verifier =
@@ -272,13 +272,13 @@ class TucPki001VerifierTest {
     final X509Certificate tslSigner =
         TestUtils.readP12(TslSignerTest.SIGNER_PATH_ECC).getCertificate();
     final OCSPReq ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA8);
+        OcspRequestGenerator.generateSingleOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA51);
     final CertificateStatus unknownStatus = new UnknownStatus();
     final OCSPResp ocspRespLocal =
         OcspResponseGenerator.builder()
             .signer(OcspTestConstants.getOcspSignerEcc())
             .build()
-            .generate(ocspReq, tslSigner, VALID_ISSUER_CERT_TSL_CA8, unknownStatus);
+            .generate(ocspReq, tslSigner, VALID_ISSUER_CERT_TSL_CA51, unknownStatus);
     ocspResponderMock.configureWireMockReceiveHttpPost(ocspRespLocal, HttpURLConnection.HTTP_OK);
     overwriteSspUrls(tspServicesInTruststore, ocspResponderMock.getSspUrl());
 
@@ -302,13 +302,13 @@ class TucPki001VerifierTest {
     final X509Certificate tslSigner =
         TestUtils.readP12(TslSignerTest.SIGNER_PATH_ECC).getCertificate();
     final OCSPReq ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA8);
+        OcspRequestGenerator.generateSingleOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA51);
     final OCSPResp ocspRespLocal =
         OcspResponseGenerator.builder()
             .signer(OcspTestConstants.getOcspSignerEcc())
             .producedAt(ZonedDateTime.now().minusSeconds(3))
             .build()
-            .generate(ocspReq, tslSigner, VALID_ISSUER_CERT_TSL_CA8, CertificateStatus.GOOD);
+            .generate(ocspReq, tslSigner, VALID_ISSUER_CERT_TSL_CA51, CertificateStatus.GOOD);
     ocspResponderMock.configureWireMockReceiveHttpPost(ocspRespLocal, HttpURLConnection.HTTP_OK);
     overwriteSspUrls(tspServicesInTruststore, ocspResponderMock.getSspUrl());
 
@@ -331,13 +331,13 @@ class TucPki001VerifierTest {
     final X509Certificate tslSigner =
         TestUtils.readP12(TslSignerTest.SIGNER_PATH_ECC).getCertificate();
     final OCSPReq ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA8);
+        OcspRequestGenerator.generateSingleOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA51);
     final OCSPResp ocspRespLocal =
         OcspResponseGenerator.builder()
             .signer(OcspTestConstants.getOcspSignerEcc())
             .producedAt(ZonedDateTime.now().minusSeconds(7))
             .build()
-            .generate(ocspReq, tslSigner, VALID_ISSUER_CERT_TSL_CA8, CertificateStatus.GOOD);
+            .generate(ocspReq, tslSigner, VALID_ISSUER_CERT_TSL_CA51, CertificateStatus.GOOD);
     ocspResponderMock.configureWireMockReceiveHttpPost(ocspRespLocal, HttpURLConnection.HTTP_OK);
     overwriteSspUrls(tspServicesInTruststore, ocspResponderMock.getSspUrl());
 
@@ -370,7 +370,7 @@ class TucPki001VerifierTest {
   private void verifyPerformTucPki001ChecksTslIdAndTslSeqNr_init() {
     final OcspResponderMock ocspResponderMock = new OcspResponderMock(LOCAL_SSP_DIR, OCSP_HOST);
     final X509Certificate tslSigner = getFirstTslSignerCertificate(tslToCheckTslUnsigned);
-    ocspResponderMock.configureForOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA8);
+    ocspResponderMock.configureForOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA51);
     overwriteSspUrls(tspServicesInTruststore, ocspResponderMock.getSspUrl());
   }
 
@@ -482,7 +482,7 @@ class TucPki001VerifierTest {
 
   @Test
   void verifyTslTrustAnchorUpdate() {
-    final X509Certificate taCert = TestUtils.readCert("GEM.TSL-CA9/GEM.TSL-CA9_TEST-ONLY.cer");
+    final X509Certificate taCert = TestUtils.readCert("GEM.TSL-CA52/GEM.TSL-CA52_TEST-ONLY.cer");
 
     final ZonedDateTime statusStartingTime = GemLibPkiUtils.now().minusSeconds(2);
     final TrustAnchorUpdate trustAnchorUpdate = new TrustAnchorUpdate(taCert, statusStartingTime);
@@ -524,7 +524,7 @@ class TucPki001VerifierTest {
         tucPki001Verifier.getVerifiedAnnouncedTrustAnchorUpdate().orElseThrow();
 
     final ZonedDateTime zdt = ZonedDateTime.of(2023, 4, 20, 14, 47, 40, 0, ZoneOffset.UTC);
-    final X509Certificate taCert = TestUtils.readCert("GEM.TSL-CA9/GEM.TSL-CA9_TEST-ONLY.cer");
+    final X509Certificate taCert = TestUtils.readCert("GEM.TSL-CA52/GEM.TSL-CA52_TEST-ONLY.cer");
     assertThat(trustAnchorUpdate.getStatusStartingTime())
         .isCloseTo(zdt, Assertions.within(1, ChronoUnit.MILLIS));
     assertThat(trustAnchorUpdate.getFutureTrustAnchor()).isEqualTo(taCert);

@@ -26,6 +26,6 @@ class P12ContainerTest {
   @Test
   void testToString() {
     assertThat(OcspTestConstants.getOcspSignerEcc())
-        .hasToString("CN=OCSP Signer 09 ecc TEST-ONLY,O=gematik TEST-ONLY - NOT-VALID,C=DE");
+        .hasToString("CN=pkits OCSP Signer 57 ecc TEST-ONLY,O=gematik NOT-VALID,C=DE");
   }
 }

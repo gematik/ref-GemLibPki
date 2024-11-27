@@ -64,8 +64,8 @@ public class TestConstants {
   public static final X509Certificate VALID_X509_EE_CERT_ALT_CA =
       readCert("GEM.SMCB-CA33/DrMedGuntherKZV.pem");
 
-  public static final X509Certificate VALID_ISSUER_CERT_TSL_CA8 =
-      readCert("GEM.TSL-CA8/GEM.TSL-CA8_brainpoolIP256r1.pem");
+  public static final X509Certificate VALID_ISSUER_CERT_TSL_CA51 =
+      readCert("GEM.TSL-CA51/GEM.TSL-CA51-TEST-ONLY.pem");
 
   public static final X509Certificate VALID_ISSUER_CERT_EGK =
       readCert("GEM.EGK-CA51/GEM.EGK-CA51-TEST-ONLY.pem");

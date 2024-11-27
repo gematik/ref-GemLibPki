@@ -40,7 +40,7 @@ class TslInformationProviderTest {
     assertThat(
             tslInformationProvider.getFilteredTspServices(
                 Collections.singletonList(TslConstants.STI_PKC)))
-        .hasSize(138);
+        .hasSize(157);
   }
 
   @Test
@@ -48,7 +48,7 @@ class TslInformationProviderTest {
     assertThat(
             tslInformationProvider.getFilteredTspServices(
                 Collections.singletonList(TslConstants.STI_UNSPECIFIED)))
-        .hasSize(26);
+        .hasSize(22);
   }
 
   @Test
@@ -64,12 +64,12 @@ class TslInformationProviderTest {
     assertThat(
             tslInformationProvider.getFilteredTspServices(
                 Collections.singletonList(TslConstants.STI_CRL)))
-        .hasSize(3);
+        .hasSize(2);
   }
 
   @Test
   void readAllTspServices_ServicesSizeShouldBeCorrect() {
-    assertThat(tslInformationProvider.getTspServices()).hasSize(283);
+    assertThat(tslInformationProvider.getTspServices()).hasSize(313);
   }
 
   @Test

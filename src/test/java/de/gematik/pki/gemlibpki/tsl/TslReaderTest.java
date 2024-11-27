@@ -50,7 +50,7 @@ class TslReaderTest {
 
   @Test
   void getSequenceNumber() {
-    assertThat(TslReader.getTslSeqNr(tslUnsigned)).isEqualTo(61);
+    assertThat(TslReader.getTslSeqNr(tslUnsigned)).isEqualTo(60);
   }
 
   @Test
@@ -74,13 +74,13 @@ class TslReaderTest {
   @Test
   void getTslDownloadUrlPrimary() {
     assertThat(TslReader.getTslDownloadUrlPrimary(tslUnsigned))
-        .isEqualTo("http://127.0.0.1:8084/tsl/tsl.xml?activeTslSeqNr=61");
+        .isEqualTo("http://127.0.0.1:8084/tsl/tsl.xml?activeTslSeqNr=60");
   }
 
   @Test
   void getTslDownloadUrlBackup() {
     assertThat(TslReader.getTslDownloadUrlBackup(tslUnsigned))
-        .isEqualTo("http://127.0.0.1:8084/tsl-backup/tsl.xml?activeTslSeqNr=61");
+        .isEqualTo("http://127.0.0.1:8084/tsl-backup/tsl.xml?activeTslSeqNr=60");
   }
 
   @Test

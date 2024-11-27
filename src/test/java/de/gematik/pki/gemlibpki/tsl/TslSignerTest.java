@@ -19,7 +19,7 @@ package de.gematik.pki.gemlibpki.tsl;
 import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_RSA_ALT_TA;
 import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_RSA_DEFAULT;
 import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_RSA_NOSIG;
-import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_TSL_CA8;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_TSL_CA51;
 import static de.gematik.pki.gemlibpki.tsl.TslConverter.docToBytes;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.readP12;
@@ -62,7 +62,7 @@ class TslSignerTest {
 
   private static final String SIGNER_PATH_RSA = "GEM.TSL-CA40/TSL-Signer40.p12";
 
-  public static final String SIGNER_PATH_ECC = "GEM.TSL-CA8/TSL-Signing-Unit-8-TEST-ONLY.p12";
+  public static final String SIGNER_PATH_ECC = "GEM.TSL-CA51/TSL-Signing-Unit-51-TEST-ONLY.p12";
 
   private static Document tslRsa;
   private static Document tslRsaNoSig;
@@ -95,7 +95,7 @@ class TslSignerTest {
   void verifyCheckKeyUsageDisabled() {
     final Document tslEcc = TestUtils.getDefaultTslAsDoc();
     final P12Container invalidKeyUsageSigner =
-        readP12("GEM.TSL-CA8/TSL-Signing-Unit-8_invalid-keyusage.p12");
+        readP12("GEM.TSL-CA51/TSL-Signing-Unit-51_invalid-keyusage.p12");
     final TslSigner tslSignerInvalid =
         tslSignerBuilder
             .tslToSign(tslEcc)
@@ -118,10 +118,11 @@ class TslSignerTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"TSL-Signing-Unit-8_expired.p12", "TSL-Signing-Unit-8_not-yet-valid.p12"})
+  @ValueSource(
+      strings = {"TSL-Signing-Unit-51_expired.p12", "TSL-Signing-Unit-51_not-yet-valid.p12"})
   void verifyCheckValidityDisabled(final String certName) {
     final Document tslEcc = TestUtils.getDefaultTslAsDoc();
-    final P12Container invalidValiditySigner = readP12("GEM.TSL-CA8/" + certName);
+    final P12Container invalidValiditySigner = readP12("GEM.TSL-CA51/" + certName);
     final TslSigner tslSignerInvalid =
         tslSignerBuilder.tslToSign(tslEcc).tslSignerP12(invalidValiditySigner).build();
 
@@ -183,7 +184,7 @@ class TslSignerTest {
 
   @Test
   void verifySignatureEccValid() {
-    assertThat(TslValidator.checkSignature(tslEcc, VALID_ISSUER_CERT_TSL_CA8)).isTrue();
+    assertThat(TslValidator.checkSignature(tslEcc, VALID_ISSUER_CERT_TSL_CA51)).isTrue();
   }
 
   @Test
@@ -198,7 +199,7 @@ class TslSignerTest {
     try (final MockedStatic<KeyStore> keyStoreStatic = Mockito.mockStatic(KeyStore.class)) {
       keyStoreStatic.when(() -> KeyStore.getInstance(any())).thenReturn(trustAnchorStoreMock);
 
-      assertThatThrownBy(() -> TslValidator.checkSignature(tslEcc, VALID_ISSUER_CERT_TSL_CA8))
+      assertThatThrownBy(() -> TslValidator.checkSignature(tslEcc, VALID_ISSUER_CERT_TSL_CA51))
           .isInstanceOf(GemPkiRuntimeException.class)
           .hasMessage("TSL signature verification failed.");
     }
@@ -207,7 +208,7 @@ class TslSignerTest {
   @Test
   void verifySignatureEccBytesValid() {
     final byte[] tslBytes = docToBytes(tslEcc);
-    assertThat(TslValidator.checkSignature(tslBytes, VALID_ISSUER_CERT_TSL_CA8)).isTrue();
+    assertThat(TslValidator.checkSignature(tslBytes, VALID_ISSUER_CERT_TSL_CA51)).isTrue();
   }
 
   @Test
