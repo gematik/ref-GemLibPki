@@ -2,6 +2,11 @@
 
 # Release notes GemLibPki
 
+## Release 3.0.1
+
+- update expired test data (tsl trust anchor files, ee-certs, ocsp signer)
+- update dependencies
+
 ## Release 3.0.0
 
 - implements Afo A_23225 (OCSP Caching)

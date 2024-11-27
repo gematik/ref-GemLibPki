@@ -90,7 +90,7 @@ class CertReaderTest {
             CertReader.getX509FromP12(p12Path, TestConstants.P12_PASSWORD)
                 .getSubjectX500Principal()
                 .getName())
-        .contains("OCSP Signer 09 ecc TEST-ONLY");
+        .contains("pkits OCSP Signer 57 ecc TEST-ONLY");
   }
 
   @Test

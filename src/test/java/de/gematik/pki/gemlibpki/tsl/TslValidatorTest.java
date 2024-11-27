@@ -16,9 +16,12 @@
 
 package de.gematik.pki.gemlibpki.tsl;
 
-import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_TSL_CA8;
+import static de.gematik.pki.gemlibpki.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_TSL_CA51;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import de.gematik.pki.gemlibpki.utils.ResourceReader;
 import de.gematik.pki.gemlibpki.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
@@ -29,15 +32,38 @@ class TslValidatorTest {
   void nonNullCheck() {
     final Document nullTslDoc = null;
     assertNonNullParameter(
-        () -> TslValidator.checkSignature(nullTslDoc, VALID_ISSUER_CERT_TSL_CA8), "tsl");
+        () -> TslValidator.checkSignature(nullTslDoc, VALID_ISSUER_CERT_TSL_CA51), "tsl");
 
     final byte[] nullTslBytes = null;
     assertNonNullParameter(
-        () -> TslValidator.checkSignature(nullTslBytes, VALID_ISSUER_CERT_TSL_CA8), "tsl");
+        () -> TslValidator.checkSignature(nullTslBytes, VALID_ISSUER_CERT_TSL_CA51), "tsl");
 
     assertNonNullParameter(() -> TslValidator.checkSignature(new byte[] {0}, null), "trustAnchor");
 
     final Document tslAsDoc = TestUtils.getDefaultTslAsDoc();
     assertNonNullParameter(() -> TslValidator.checkSignature(tslAsDoc, null), "trustAnchor");
+  }
+
+  @Test
+  void checkSignature_valid() {
+    final Document tslEcc =
+        TslReader.getTslAsDoc(
+            ResourceReader.getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, TestUtils.class));
+    assertThat(TslValidator.checkSignature(tslEcc, VALID_ISSUER_CERT_TSL_CA51)).isTrue();
+  }
+
+  /**
+   * fileTsleccDefault_signatureBroken is a copy of FILE_NAME_TSL_ECC_DEFAULT with modified
+   * <ds:SignatureValue> element
+   */
+  @Test
+  void checkSignature_broken() {
+    final String file_tslEccDefault_signatureBroken =
+        "tsls/ecc/invalid/TSL_invalid_Signature_broken.xml";
+    final Document tslEcc =
+        TslReader.getTslAsDoc(
+            ResourceReader.getFilePathFromResources(
+                file_tslEccDefault_signatureBroken, TestUtils.class));
+    assertThat(TslValidator.checkSignature(tslEcc, VALID_ISSUER_CERT_TSL_CA51)).isFalse();
   }
 }

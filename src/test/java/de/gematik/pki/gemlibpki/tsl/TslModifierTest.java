@@ -107,7 +107,7 @@ class TslModifierTest {
   @Test
   void modifyAllSspsOfOneTsp() throws IOException {
     final Path destFilePath = Path.of("target/TSL-test_modifiedSsp.xml");
-    final int modifiedSspAmountExpected = 29;
+    final int modifiedSspAmountExpected = 32;
     final String newSsp = "http://my.new-service-supply-point:8080/ocsp";
     final String newSspElement = "<ServiceSupplyPoint>" + newSsp + "</ServiceSupplyPoint>";
 
