@@ -78,7 +78,7 @@ public class ExtendedKeyUsageValidator implements CertificateProfileValidator {
       eeExtendedKeyUsagesOid = x509EeCert.getExtendedKeyUsage();
     } catch (final CertificateParsingException e) {
       throw new GemPkiRuntimeException(
-          "Fehler beim Lesen der ExtendedKeyUsages des Zertifikats: "
+          "Fehler beim Lesen der ExtendedKeyUsage des Zertifikats: "
               + x509EeCert.getSubjectX500Principal().getName(),
           e);
     }
