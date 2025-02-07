@@ -2,6 +2,11 @@
 
 # Release notes GemLibPki
 
+## Release 3.1.0
+
+- add support for OCSP responses with multiple certificates
+- update dependencies
+
 ## Release 3.0.1
 
 - update expired test data (tsl trust anchor files, ee-certs, ocsp signer)

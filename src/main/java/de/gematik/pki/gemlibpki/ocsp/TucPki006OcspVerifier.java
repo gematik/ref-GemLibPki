@@ -354,7 +354,7 @@ public class TucPki006OcspVerifier {
     try {
       derX509EeCert = GemLibPkiUtils.calculateSha256(x509EeCert.getEncoded());
     } catch (final CertificateEncodingException e) {
-      throw new GemPkiRuntimeException("Fehler beim lesen des OCSP Signers aus der Response.", e);
+      throw new GemPkiRuntimeException("Fehler beim Lesen des OCSP Signers aus der Response.", e);
     }
 
     final Optional<TspService> matchedTspService =
@@ -372,21 +372,31 @@ public class TucPki006OcspVerifier {
             .getTspServiceType());
   }
 
-  private X509Certificate getSignerFromOcspResponse() {
+  private X509Certificate getSignerFromOcspResponse() throws GemPkiException {
     final BasicOCSPResp basicOcspResp = getBasicOcspResp(ocspResponse);
+    final X509CertificateHolder[] certs = basicOcspResp.getCerts();
 
-    if (basicOcspResp.getCerts().length != 1) {
-      throw new GemPkiRuntimeException("Nicht genau 1 Zertifikat in OCSP-Response gefunden.");
+    if (certs.length == 0) {
+      throw new GemPkiRuntimeException("Keine Zertifikate in der OCSP-Response gefunden.");
     }
-
-    final X509CertificateHolder x509CertificateHolder = basicOcspResp.getCerts()[0];
 
     try {
-      return new JcaX509CertificateConverter().getCertificate(x509CertificateHolder);
-    } catch (final CertificateException e) {
+      // Check every certificate in the response
+      for (final X509CertificateHolder certHolder : certs) {
+        final X509Certificate cert = new JcaX509CertificateConverter().getCertificate(certHolder);
+
+        if (basicOcspResp.isSignatureValid(
+            new JcaContentVerifierProviderBuilder().build(cert.getPublicKey()))) {
+          // Found a valid signer certificate
+          return cert;
+        }
+      }
+    } catch (final CertificateException | OperatorCreationException | OCSPException e) {
       throw new GemPkiRuntimeException(
-          "Fehler beim lesen der OCSP Signer Zertifikates aus der OCSP Response.", e);
+          "Fehler beim Lesen des OCSP Signer Zertifikates aus der OCSP Response.", e);
     }
+
+    throw new GemPkiException(productType, ErrorCode.SE_1031_OCSP_SIGNATURE_ERROR);
   }
 
   /**

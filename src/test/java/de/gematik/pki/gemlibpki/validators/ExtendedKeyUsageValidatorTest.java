@@ -125,7 +125,7 @@ class ExtendedKeyUsageValidatorTest {
     assertThatThrownBy(() -> tested.validateCertificate(cert, CERTIFICATE_PROFILE))
         .isInstanceOf(GemPkiRuntimeException.class)
         .hasMessage(
-            "Fehler beim Lesen der ExtendedKeyUsages des Zertifikats: CN=Zahnarztpraxis Dr."
+            "Fehler beim Lesen der ExtendedKeyUsage des Zertifikats: CN=Zahnarztpraxis Dr."
                 + " med.Gunther KZV"
                 + " TEST-ONLY,2.5.4.5=#131731372e3830323736383833313139313130303033333237,O=2-2.30.1.16.TestOnly"
                 + " NOT-VALID,C=DE");

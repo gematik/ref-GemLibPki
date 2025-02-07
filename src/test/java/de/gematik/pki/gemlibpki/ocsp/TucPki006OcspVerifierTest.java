@@ -217,6 +217,14 @@ class TucPki006OcspVerifierTest {
         .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
   }
 
+  private static OCSPResp genOcspRespWithIssuerCert() {
+    return OcspResponseGenerator.builder()
+        .signer(OcspTestConstants.getOcspSignerEcc())
+        .build()
+        .generate(
+            ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB, CertificateStatus.GOOD, true);
+  }
+
   private TucPki006OcspVerifier genDefaultOcspVerifier() {
     return TucPki006OcspVerifier.builder()
         .productType(PRODUCT_TYPE)
@@ -239,6 +247,20 @@ class TucPki006OcspVerifierTest {
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .ocspResponse(ocspRespLocal)
+            .eeCert(VALID_X509_EE_CERT_SMCB)
+            .build();
+
+    assertDoesNotThrow(tucPki006OcspVerifier::verifyOcspResponseSignature);
+  }
+
+  @Test
+  void verifyOcspSignatureValidWithIssuerCert() {
+
+    final TucPki006OcspVerifier tucPki006OcspVerifier =
+        TucPki006OcspVerifier.builder()
+            .productType(PRODUCT_TYPE)
+            .tspServiceList(tspServiceList)
+            .ocspResponse(genOcspRespWithIssuerCert())
             .eeCert(VALID_X509_EE_CERT_SMCB)
             .build();
 
@@ -1028,7 +1050,7 @@ class TucPki006OcspVerifierTest {
       ocspUtils.when(() -> OcspUtils.getBasicOcspResp(Mockito.any())).thenReturn(basicOcspRespSpy);
       assertThatThrownBy(verifier::verifyOcspResponseSignature)
           .isInstanceOf(GemPkiRuntimeException.class)
-          .hasMessage("Interner Fehler beim verifizieren der Ocsp Response Signatur.");
+          .hasMessage("Fehler beim Lesen des OCSP Signer Zertifikates aus der OCSP Response.");
     }
   }
 
@@ -1048,7 +1070,7 @@ class TucPki006OcspVerifierTest {
       ocspUtils.when(() -> OcspUtils.getBasicOcspResp(Mockito.any())).thenReturn(basicOcspRespSpy);
       assertThatThrownBy(verifier::verifyOcspResponseSignature)
           .isInstanceOf(GemPkiRuntimeException.class)
-          .hasMessage("Nicht genau 1 Zertifikat in OCSP-Response gefunden.");
+          .hasMessage("Keine Zertifikate in der OCSP-Response gefunden.");
     }
   }
 
@@ -1067,7 +1089,7 @@ class TucPki006OcspVerifierTest {
                     .thenThrow(new CertificateException()))) {
       assertThatThrownBy(verifier::verifyOcspResponseSignature)
           .isInstanceOf(GemPkiRuntimeException.class)
-          .hasMessage("Fehler beim lesen der OCSP Signer Zertifikates aus der OCSP Response.");
+          .hasMessage("Fehler beim Lesen des OCSP Signer Zertifikates aus der OCSP Response.");
     }
   }
 
@@ -1088,8 +1110,8 @@ class TucPki006OcspVerifierTest {
             (mock, context) ->
                 Mockito.when(mock.getCertificate(Mockito.any())).thenReturn(x509CertSpy))) {
       assertThatThrownBy(verifier::verifyOcspResponseSignature)
-          .isInstanceOf(GemPkiRuntimeException.class)
-          .hasMessage("Fehler beim lesen des OCSP Signers aus der Response.");
+          .isInstanceOf(GemPkiException.class)
+          .hasMessage(ErrorCode.SE_1031_OCSP_SIGNATURE_ERROR.getErrorMessage(PRODUCT_TYPE));
     }
   }
 

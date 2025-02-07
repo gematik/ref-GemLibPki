@@ -224,6 +224,22 @@ class OcspResponseGeneratorTest {
   }
 
   @Test
+  void writeOcspRespWithIssuerCert() {
+    assertDoesNotThrow(
+        () ->
+            writeOcspRespToFile(
+                OcspResponseGenerator.builder()
+                    .signer(OcspTestConstants.getOcspSignerEcc())
+                    .build()
+                    .generate(
+                        ocspReq,
+                        VALID_X509_EE_CERT_SMCB,
+                        VALID_ISSUER_CERT_SMCB,
+                        CertificateStatus.GOOD,
+                        true)));
+  }
+
+  @Test
   void bouncyCastleProviderIsSet() {
     final OcspResponseGenerator generator =
         OcspResponseGenerator.builder().signer(OcspTestConstants.getOcspSignerEcc()).build();
