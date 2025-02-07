@@ -22,6 +22,7 @@ import de.gematik.pki.gemlibpki.utils.TestUtils;
 import java.security.cert.X509Certificate;
 
 public class TestConstants {
+
   public static final String P12_PASSWORD = "00";
   public static final String PRODUCT_TYPE = "Unittest";
   public static final String FILE_NAME_TSL_ECC_DEFAULT = "tsls/ecc/valid/TSL_default.xml";
@@ -39,8 +40,6 @@ public class TestConstants {
   public static final X509Certificate VALID_X509_EE_CERT_SMCB =
       readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
 
-  public static final X509Certificate VALID_ISSUER_CERT_SMCB_CA24_RSA =
-      readCert("GEM.SMCB-CA24-RSA/GEM.SMCB-CA24.pem");
   public static final X509Certificate VALID_ISSUER_CERT_SMCB_CA41_RSA =
       readCert("GEM.SMCB-CA41-RSA/GEM.SMCB-CA41.pem");
 

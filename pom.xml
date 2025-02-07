@@ -4,7 +4,7 @@
 
   <groupId>de.gematik.pki</groupId>
   <artifactId>gemLibPki</artifactId>
-  <version>3.0.1</version>
+  <version>3.1.1</version>
   <packaging>jar</packaging>
   <name>GemLibPki</name>
   <description>library for implementation and tests of the gematik pki specification</description>
@@ -44,26 +44,26 @@
   </issueManagement>
 
   <properties>
-    <project.build.outputTimestamp>1732705371</project.build.outputTimestamp>
+    <project.build.outputTimestamp>1738923164</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.encoding>${project.build.sourceEncoding}</maven.compiler.encoding>
     <java.version>17</java.version>
     <version.maven>3.6.3</version.maven>
 
     <!-- dependencies -->
-    <version.assertj>3.26.3</version.assertj>
+    <version.assertj>3.27.3</version.assertj>
     <version.awaitility>4.2.2</version.awaitility>
-    <version.bouncycastle>1.79</version.bouncycastle>
+    <version.bouncycastle>1.80</version.bouncycastle>
     <version.commons-lang3>3.17.0</version.commons-lang3>
     <version.dss-tsl-validation>6.1</version.dss-tsl-validation>
-    <version.httpcore5>5.3.1</version.httpcore5>
+    <version.httpcore5>5.3.3</version.httpcore5>
     <version.jakarta.xml.bind-api>4.0.2</version.jakarta.xml.bind-api>
-    <version.junit-jupiter>5.11.3</version.junit-jupiter>
-    <version.log4j>2.24.2</version.log4j>
+    <version.junit-jupiter>5.11.4</version.junit-jupiter>
+    <version.log4j>2.24.3</version.log4j>
     <version.lombok>1.18.36</version.lombok>
-    <version.mockito>5.14.2</version.mockito>
+    <version.mockito>5.15.2</version.mockito>
     <version.unirest-java-core>4.4.5</version.unirest-java-core>
-    <version.wiremock>3.9.2</version.wiremock>
+    <version.wiremock>3.11.0</version.wiremock>
     <version.xades4j>2.4.0</version.xades4j>
     <version.xmlunit>2.10.0</version.xmlunit>
 
@@ -75,13 +75,13 @@
     <version.maven-enforcer-plugin>3.5.0</version.maven-enforcer-plugin>
     <version.maven-gpg-plugin>3.2.7</version.maven-gpg-plugin>
     <version.maven-jar-plugin>3.4.2</version.maven-jar-plugin>
-    <version.maven-javadoc-plugin>3.11.1</version.maven-javadoc-plugin>
+    <version.maven-javadoc-plugin>3.11.2</version.maven-javadoc-plugin>
     <version.maven-source-plugin>3.3.1</version.maven-source-plugin>
     <version.maven-surefire-plugin>3.5.2</version.maven-surefire-plugin>
     <version.nexus-staging-maven-plugin>1.7.0</version.nexus-staging-maven-plugin>
     <version.sonar-maven-plugin>5.0.0.4389</version.sonar-maven-plugin>
     <version.spotless.google-java-format>1.17.0</version.spotless.google-java-format>
-    <version.spotless-maven-plugin>2.43.0</version.spotless-maven-plugin>
+    <version.spotless-maven-plugin>2.44.2</version.spotless-maven-plugin>
     <!-- settings for upload to sonar server -->
     <sonar.coverage.jacoco.xmlReportPaths>${project.reporting.outputDirectory}/jacoco/index.xml</sonar.coverage.jacoco.xmlReportPaths>
     <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
@@ -359,7 +359,7 @@
               <reflowLongStrings>true</reflowLongStrings>
             </googleJavaFormat>
             <licenseHeader>
-              <file>LICENSE_PLACEHOLDER</file>
+              <file>LICENSE_PLACEHOLDER_FILE</file>
             </licenseHeader>
           </java>
           <groovy>
@@ -384,7 +384,18 @@
         <artifactId>maven-deploy-plugin</artifactId>
         <version>${maven-deploy-plugin.version}</version>
       </plugin>
-
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <version>2.5.0</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>aggregate-third-party-report</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 

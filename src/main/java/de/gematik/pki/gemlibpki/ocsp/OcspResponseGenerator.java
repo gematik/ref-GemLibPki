@@ -188,7 +188,37 @@ public class OcspResponseGenerator {
       final CertificateStatus certificateStatus) {
 
     try {
-      return generate(ocspReq, eeCert, issuerCert, signer.getCertificate(), certificateStatus);
+      return generate(
+          ocspReq, eeCert, issuerCert, signer.getCertificate(), certificateStatus, false);
+    } catch (final OperatorCreationException | IOException | OCSPException e) {
+      throw new GemPkiRuntimeException("Generieren der OCSP Response fehlgeschlagen.", e);
+    }
+  }
+
+  /**
+   * Create OCSP response from given OCSP request. producedAt is now (UTC).
+   *
+   * @param ocspReq OCSP request
+   * @param eeCert end-entity certificate
+   * @param issuerCert issuer certificate
+   * @param certificateStatus can be null, CertificateStatus.GOOD
+   * @param attachIssuerCert attach issuer certificate to response or not
+   * @return
+   */
+  public OCSPResp generate(
+      @NonNull final OCSPReq ocspReq,
+      @NonNull final X509Certificate eeCert,
+      @NonNull final X509Certificate issuerCert,
+      final CertificateStatus certificateStatus,
+      final boolean attachIssuerCert) {
+    try {
+      return generate(
+          ocspReq,
+          eeCert,
+          issuerCert,
+          signer.getCertificate(),
+          certificateStatus,
+          attachIssuerCert);
     } catch (final OperatorCreationException | IOException | OCSPException e) {
       throw new GemPkiRuntimeException("Generieren der OCSP Response fehlgeschlagen.", e);
     }
@@ -215,15 +245,23 @@ public class OcspResponseGenerator {
    * Create OCSP response from given OCSP request. producedAt is now (UTC).
    *
    * @param ocspReq OCSP request
+   * @param eeCert end-entity certificate
+   * @param issuerCert issuer certificate
    * @param ocspResponseSignerCert certificate in OCSP response signature
-   * @return OCSP response
+   * @param certificateStatus can be null, CertificateStatus.GOOD
+   * @param issuerCertInResponse attach issuer certificate to response or not
+   * @return OCSP response as byte array
+   * @throws OperatorCreationException if operator creation fails
+   * @throws IOException if IO operation fails
+   * @throws OCSPException if OCSP operation fails
    */
   private OCSPResp generate(
       final OCSPReq ocspReq,
       final X509Certificate eeCert,
       final X509Certificate issuerCert,
       final X509Certificate ocspResponseSignerCert,
-      final CertificateStatus certificateStatus)
+      final CertificateStatus certificateStatus,
+      final boolean issuerCertInResponse)
       throws OperatorCreationException, IOException, OCSPException {
 
     final BasicOCSPRespBuilder basicOcspRespBuilder;
@@ -271,9 +309,11 @@ public class OcspResponseGenerator {
           responseExtensions);
     }
 
-    final X509CertificateHolder[] chain = {
-      new X509CertificateHolder(GemLibPkiUtils.certToBytes(ocspResponseSignerCert))
-    };
+    final X509CertificateHolder[] chain =
+        buildCertificateChain(
+            new X509CertificateHolder(GemLibPkiUtils.certToBytes(ocspResponseSignerCert)),
+            new X509CertificateHolder(GemLibPkiUtils.certToBytes(issuerCert)),
+            issuerCertInResponse);
 
     final String sigAlgo =
         switch (signer.getPrivateKey().getAlgorithm()) {
@@ -303,6 +343,20 @@ public class OcspResponseGenerator {
     }
 
     return createOcspResp(respStatus, basicOcspResp);
+  }
+
+  private X509CertificateHolder[] buildCertificateChain(
+      final X509CertificateHolder ocspResponseSignerCert,
+      final X509CertificateHolder issuerCert,
+      final boolean issuerCertInResponse) {
+    final List<X509CertificateHolder> chain = new ArrayList<>();
+    chain.add(ocspResponseSignerCert);
+
+    if (issuerCertInResponse) {
+      chain.add(issuerCert);
+    }
+
+    return chain.toArray(new X509CertificateHolder[0]); // Konvertiere die Liste in ein Array
   }
 
   private void addNonceExtensionIfNecessary(
