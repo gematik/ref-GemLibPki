@@ -2,21 +2,21 @@
 
 <Configuration>
 
-    <Properties>
-        <Property name="l4j.level">DEBUG</Property>
-        <Property name="l4j.additivity">false</Property>
-    </Properties>
+  <Properties>
+    <Property name="l4j.level">DEBUG</Property>
+    <Property name="l4j.additivity">false</Property>
+  </Properties>
 
-    <Appenders>
-        <Console name="CONSOLE" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
-        </Console>
-    </Appenders>
+  <Appenders>
+    <Console name="CONSOLE" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+    </Console>
+  </Appenders>
 
-    <Loggers>
-        <logger name="de.gematik.pki.gemlibpki" level="${l4j.level}" additivity="{l4j.additivity}">
-            <AppenderRef ref="CONSOLE"/>
-        </logger>
-    </Loggers>
+  <Loggers>
+    <logger name="de.gematik.pki.gemlibpki" level="${l4j.level}" additivity="${l4j.additivity}">
+      <AppenderRef ref="CONSOLE"/>
+    </logger>
+  </Loggers>
 
 </Configuration>

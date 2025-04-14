@@ -2,6 +2,12 @@
 
 # Release notes GemLibPki
 
+## Release 3.1.2
+
+- update dependencies
+- update license information
+- fix refs in log4j2.xml
+
 ## Release 3.1.1
 
 - add support for OCSP responses with multiple certificates
