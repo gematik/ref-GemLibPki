@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, gematik GmbH
+ * Copyright (Date see Readme), gematik GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * ******
+ * *******
  *
  * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
  */
@@ -74,7 +74,7 @@ class SignatureValidatorTest {
   @Test
   void verifySignatureNotValid() {
     final X509Certificate invalidX509EeCert =
-        TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_invalid-signature.pem");
+        TestUtils.readCert("GEM.SMCB-CA57/invalid/BabetteBeyer-invalid-signature.pem");
 
     assertThatThrownBy(() -> tested.validateCertificate(invalidX509EeCert))
         .isInstanceOf(GemPkiException.class)

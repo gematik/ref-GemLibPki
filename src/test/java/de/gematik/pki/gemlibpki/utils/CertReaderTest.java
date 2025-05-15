@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, gematik GmbH
+ * Copyright (Date see Readme), gematik GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * ******
+ * *******
  *
  * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
  */
@@ -38,9 +38,9 @@ class CertReaderTest {
   void readExistingX509DerCert() {
     final byte[] file =
         GemLibPkiUtils.readContent(
-            Path.of(TestConstants.CERT_DIR, "GEM.SMCB-CA10/valid/DrMedGunther.der"));
+            Path.of(TestConstants.CERT_DIR, "GEM.SMCB-CA57/valid/PraxisBabetteBeyer.der"));
     assertThat(CertReader.readX509(file).getSubjectX500Principal().getName())
-        .contains("Zahnarztpraxis Dr. med.Gunther");
+        .contains("Psychotherapeutische Praxis Babette Beyer");
   }
 
   @Test
@@ -53,19 +53,21 @@ class CertReaderTest {
   void readX509() {
     assertThat(
             CertReader.readX509(
-                    Path.of(TestConstants.CERT_DIR, "GEM.SMCB-CA10/valid/DrMedGunther.der"))
+                    Path.of(TestConstants.CERT_DIR, "GEM.SMCB-CA57/valid/PraxisBabetteBeyer.der"))
                 .getSubjectX500Principal()
                 .getName())
-        .contains("Zahnarztpraxis Dr. med.Gunther");
+        .contains("Psychotherapeutische Praxis Babette Beyer");
   }
 
   @SneakyThrows
   @Test
   void readExistingX509PemCert() {
-    final Path certPath = Path.of(TestConstants.CERT_DIR, "GEM.SMCB-CA10/valid/DrMedGunther.pem");
+    final Path certPath =
+        Path.of(TestConstants.CERT_DIR, "GEM.SMCB-CA57/valid/PraxisBabetteBeyer.pem");
     final byte[] certBytes = GemLibPkiUtils.readContent(certPath);
     final X509Certificate cert = CertReader.readX509(certBytes);
-    assertThat(cert.getSubjectX500Principal().getName()).contains("Zahnarztpraxis Dr. med.Gunther");
+    assertThat(cert.getSubjectX500Principal().getName())
+        .contains("Psychotherapeutische Praxis Babette Beyer");
   }
 
   @SneakyThrows

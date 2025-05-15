@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, gematik GmbH
+ * Copyright (Date see Readme), gematik GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * ******
+ * *******
  *
  * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
  */
@@ -42,7 +42,7 @@ class KeyUsageValidatorTest {
 
   private static final CertificateProfile CERTIFICATE_PROFILE = CERT_PROFILE_C_HCI_AUT_ECC;
   private static final X509Certificate VALID_X_509_EE_CERT =
-      TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
+      TestUtils.readCert("GEM.SMCB-CA57/valid/PraxisBabetteBeyer.pem");
   private KeyUsageValidator tested;
 
   @BeforeEach
@@ -77,7 +77,7 @@ class KeyUsageValidatorTest {
   @Test
   void verifyKeyUsageMissingInCertificate() {
     final X509Certificate missingKeyUsages509EeCert =
-        TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_missing-keyusage.pem");
+        TestUtils.readCert("GEM.SMCB-CA57/invalid/BabetteBeyer-missing-keyUsage.pem");
 
     assertThatThrownBy(
             () -> tested.validateCertificate(missingKeyUsages509EeCert, CERTIFICATE_PROFILE))

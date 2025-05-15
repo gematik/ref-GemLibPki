@@ -2,6 +2,11 @@
 
 # Release notes GemLibPki
 
+## Release 3.1.3
+
+- update dependencies
+- update expired unit test data
+
 ## Release 3.1.2
 
 - update dependencies

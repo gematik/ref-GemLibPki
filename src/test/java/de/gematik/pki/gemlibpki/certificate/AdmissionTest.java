@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, gematik GmbH
+ * Copyright (Date see Readme), gematik GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * ******
+ * *******
  *
  * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
  */
@@ -21,7 +21,8 @@
 package de.gematik.pki.gemlibpki.certificate;
 
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB;
-import static de.gematik.pki.gemlibpki.certificate.Role.OID_ZAHNARZTPRAXIS;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB_KZBV;
+import static de.gematik.pki.gemlibpki.certificate.Role.OID_PRAXIS_PSYCHOTHERAPEUT;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -46,7 +47,7 @@ final class AdmissionTest {
 
   @Test
   void getAdmissionAuthority() throws IOException {
-    assertThat(new Admission(VALID_X509_EE_CERT_SMCB).getAdmissionAuthority())
+    assertThat(new Admission(VALID_X509_EE_CERT_SMCB_KZBV).getAdmissionAuthority())
         .isEqualTo("C=DE,O=KZV Berlin");
   }
 
@@ -69,25 +70,25 @@ final class AdmissionTest {
   @Test
   void getProfessionItems() throws IOException {
     assertThat(new Admission(VALID_X509_EE_CERT_SMCB).getProfessionItems())
-        .contains(OID_ZAHNARZTPRAXIS.getProfessionItem());
+        .contains(OID_PRAXIS_PSYCHOTHERAPEUT.getProfessionItem());
   }
 
   @Test
   void getProfessionOids() throws IOException {
     assertThat(new Admission(VALID_X509_EE_CERT_SMCB).getProfessionOids())
-        .contains(OID_ZAHNARZTPRAXIS.getProfessionOid());
+        .contains(OID_PRAXIS_PSYCHOTHERAPEUT.getProfessionOid());
   }
 
   @Test
   void getRegistrationNumber() throws IOException {
     assertThat(new Admission(VALID_X509_EE_CERT_SMCB).getRegistrationNumber())
-        .isEqualTo("2-2.30.1.16.TestOnly");
+        .isEqualTo("1-2-Psycho-BabetteBeyer01");
   }
 
   @Test
   void verifyMissingProfOid() throws IOException {
     final X509Certificate missingProfOid =
-        TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther_missing-prof-oid.pem");
+        TestUtils.readCert("GEM.SMCB-CA57/valid/BabetteBeyer-missing-prof-oid.pem");
     assertDoesNotThrow(() -> new Admission(missingProfOid));
     assertThat(new Admission(missingProfOid).getProfessionOids()).isEmpty();
   }
@@ -95,7 +96,7 @@ final class AdmissionTest {
   @Test
   void verifyMissingAdmission() throws IOException {
     final X509Certificate missingAdmission =
-        TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther_missing-admission.pem");
+        TestUtils.readCert("GEM.SMCB-CA57/valid/BabetteBeyer-missing-admission.pem");
     assertDoesNotThrow(() -> new Admission(missingAdmission));
     assertThat(new Admission(missingAdmission).getProfessionOids()).isEmpty();
   }

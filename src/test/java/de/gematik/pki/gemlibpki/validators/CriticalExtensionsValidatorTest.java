@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, gematik GmbH
+ * Copyright (Date see Readme), gematik GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * ******
+ * *******
  *
  * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
  */
@@ -54,7 +54,7 @@ class CriticalExtensionsValidatorTest {
   @Test
   void verifyCriticalExtensions() {
     final X509Certificate certInvalidCriticalExtension =
-        TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_invalid-extension-crit.pem");
+        TestUtils.readCert("GEM.SMCB-CA57/invalid/BabetteBeyer-invalid-extension-crit.pem");
 
     final CriticalExtensionsValidator tested = new CriticalExtensionsValidator(PRODUCT_TYPE);
 

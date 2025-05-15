@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, gematik GmbH
+ * Copyright (Date see Readme), gematik GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * ******
+ * *******
  *
  * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
  */
@@ -240,8 +240,8 @@ class TucPki018VerifierTest {
   @Test
   void checkAllowedProfessionOidsNoProfessionOid() throws IOException {
     final X509Certificate missingProfOid =
-        TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther_missing-prof-oid.pem");
-    final Set<String> allowdProfOids = Set.of(OID_ZAHNARZTPRAXIS.getProfessionOid());
+        TestUtils.readCert("GEM.SMCB-CA57/valid/BabetteBeyer-missing-prof-oid.pem");
+    final Set<String> allowdProfOids = Set.of(OID_PRAXIS_PSYCHOTHERAPEUT.getProfessionOid());
     final Admission admission = new Admission(missingProfOid);
 
     assertFalse(() -> TucPki018Verifier.checkAllowedProfessionOids(admission, allowdProfOids));
@@ -250,8 +250,8 @@ class TucPki018VerifierTest {
   @Test
   void checkAllowedProfessionOidsNoAdmission() throws IOException {
     final X509Certificate missingAdmission =
-        TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther_missing-admission.pem");
-    final Set<String> allowedProfOids = Set.of(OID_ZAHNARZTPRAXIS.getProfessionOid());
+        TestUtils.readCert("GEM.SMCB-CA57/valid/BabetteBeyer-missing-admission.pem");
+    final Set<String> allowedProfOids = Set.of(OID_PRAXIS_PSYCHOTHERAPEUT.getProfessionOid());
     final Admission admission = new Admission(missingAdmission);
 
     assertFalse(() -> TucPki018Verifier.checkAllowedProfessionOids(admission, allowedProfOids));
@@ -259,7 +259,7 @@ class TucPki018VerifierTest {
 
   @Test
   void checkAllowedProfessionOidsNull() throws IOException {
-    final Set<String> allowedProfOids = Set.of(OID_ZAHNARZTPRAXIS.getProfessionOid());
+    final Set<String> allowedProfOids = Set.of(OID_PRAXIS_PSYCHOTHERAPEUT.getProfessionOid());
     final Admission admission = new Admission(VALID_X509_EE_CERT_SMCB);
 
     assertFalse(() -> TucPki018Verifier.checkAllowedProfessionOids(null, allowedProfOids));
@@ -574,7 +574,7 @@ class TucPki018VerifierTest {
   @Test
   void verifyPerformTucPki18ChecksWithGivenOcspResponseValid() {
 
-    final ZonedDateTime referenceDate = ZonedDateTime.parse("2022-06-20T15:00:00Z");
+    final ZonedDateTime referenceDate = ZonedDateTime.parse("2025-05-13T15:00:00Z");
 
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(
@@ -606,7 +606,7 @@ class TucPki018VerifierTest {
   @Test
   void verifyPerformTucPki18ChecksWithGivenOcspResponseValid_CustomTolerance() {
     final int SECONDS_10_AS_MILLISECS = 10000;
-    final ZonedDateTime referenceDate = ZonedDateTime.parse("2022-06-20T15:00:00Z");
+    final ZonedDateTime referenceDate = ZonedDateTime.parse("2025-03-20T15:00:00Z");
 
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(
@@ -639,7 +639,7 @@ class TucPki018VerifierTest {
   @Test
   void verifyPerformTucPki18ChecksWithGivenOcspResponseValid_CustomTolerance40sec() {
     final int SECONDS_40_AS_MILLISECS = 40000;
-    final ZonedDateTime referenceDate = ZonedDateTime.parse("2022-06-20T15:00:00Z");
+    final ZonedDateTime referenceDate = ZonedDateTime.parse("2025-03-20T15:00:00Z");
 
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(
@@ -672,7 +672,7 @@ class TucPki018VerifierTest {
   @Test
   void verifyPerformTucPki18ChecksWithGivenOcspResponseValid_CustomTolerance50sec() {
     final int SECONDS_50_AS_MILLISECS = 50000;
-    final ZonedDateTime referenceDate = ZonedDateTime.parse("2022-06-20T15:00:00Z");
+    final ZonedDateTime referenceDate = ZonedDateTime.parse("2025-03-20T15:00:00Z");
 
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(
@@ -801,7 +801,7 @@ class TucPki018VerifierTest {
   @Test
   void verifyPerformTucPki18ChecksWithGivenOcspResponseExpired_CustomTolerance10secs() {
     final int SECONDS_10_AS_MILLISECS = 10000;
-    final ZonedDateTime referenceDate = ZonedDateTime.parse("2022-06-20T15:00:00Z");
+    final ZonedDateTime referenceDate = ZonedDateTime.parse("2025-03-20T15:00:00Z");
 
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(
@@ -836,7 +836,7 @@ class TucPki018VerifierTest {
   @Test
   void verifyPerformTucPki18ChecksWithGivenOcspResponseExpired_CustomTolerance5secs() {
     final int SECONDS_5_AS_MILLISECS = 5000;
-    final ZonedDateTime referenceDate = ZonedDateTime.parse("2022-06-20T15:00:00Z");
+    final ZonedDateTime referenceDate = ZonedDateTime.parse("2025-03-20T15:00:00Z");
 
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(
