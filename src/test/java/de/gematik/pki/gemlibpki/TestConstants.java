@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, gematik GmbH
+ * Copyright (Date see Readme), gematik GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * ******
+ * *******
  *
  * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
  */
@@ -39,10 +39,13 @@ public class TestConstants {
 
   public static final String CERT_DIR = "src/test/resources/certificates/";
   public static final X509Certificate VALID_ISSUER_CERT_SMCB =
-      readCert("GEM.SMCB-CA10/GEM.SMCB-CA10_TEST-ONLY.pem");
+      readCert("GEM.SMCB-CA57/GEM.SMCB-CA57-TEST-ONLY.pem");
 
   public static final X509Certificate VALID_X509_EE_CERT_SMCB =
-      readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
+      readCert("GEM.SMCB-CA57/valid/PraxisBabetteBeyer.pem");
+
+  public static final X509Certificate VALID_X509_EE_CERT_SMCB_KZBV =
+      readCert("GEM.SMCB-CA58/Beyer-Zahnarzt.pem");
 
   public static final X509Certificate VALID_ISSUER_CERT_SMCB_CA41_RSA =
       readCert("GEM.SMCB-CA41-RSA/GEM.SMCB-CA41.pem");
@@ -50,7 +53,7 @@ public class TestConstants {
   public static final X509Certificate VALID_X509_EE_CERT_SMCB_CA41_RSA =
       TestUtils.readCert("GEM.SMCB-CA41-RSA/Aschoffsche_Apotheke-AUT-RSA.pem");
   public static final X509Certificate VALID_ISSUER_CERT_HBA =
-      readCert("GEM.HBA-CA13/GEM.HBA-CA13_brainpoolIP256r1.pem");
+      readCert("GEM.HBA-CA57/GEM.HBA-CA57-TEST-ONLY.pem");
 
   public static final X509Certificate VALID_ISSUER_CERT_KOMP_CA10 =
       readCert("GEM.KOMP-CA10/GEM.KOMP-CA10_brainpoolIP256r1.pem");
@@ -65,7 +68,7 @@ public class TestConstants {
   public static final X509Certificate VALID_ISSUER_CERT_KOMP_CA54 =
       readCert("GEM.KOMP-CA54/GEM.KOMP-CA54.pem");
   public static final X509Certificate VALID_X509_EE_CERT_ALT_CA =
-      readCert("GEM.SMCB-CA33/DrMedGuntherKZV.pem");
+      readCert("GEM.SMCB-CA58/Beyer-Zahnarzt.pem");
 
   public static final X509Certificate VALID_ISSUER_CERT_TSL_CA51 =
       readCert("GEM.TSL-CA51/GEM.TSL-CA51-TEST-ONLY.pem");
@@ -74,24 +77,24 @@ public class TestConstants {
       readCert("GEM.EGK-CA51/GEM.EGK-CA51-TEST-ONLY.pem");
 
   public static final X509Certificate VALID_X509_EE_CERT_INVALID_KEY_USAGE =
-      TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_invalid-keyusage.pem");
+      TestUtils.readCert("GEM.SMCB-CA57/invalid/BabetteBeyer-invalid-keyusage.pem");
 
-  public static final X509Certificate VALID_HBA_AUT_ECC = readCert("GEM.HBA-CA13/GüntherOtís.pem");
+  public static final X509Certificate VALID_HBA_AUT_ECC = readCert("GEM.HBA-CA57/BabetteBeyer.pem");
 
   public static final X509Certificate INVALID_CERT_TYPE =
-      TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_invalid-certificate-type.pem");
+      TestUtils.readCert("GEM.SMCB-CA57/invalid/BabetteBeyer-invalid-certificate-type.pem");
 
   public static final X509Certificate MISSING_CERT_TYPE =
-      TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_missing-certificate-type.pem");
+      TestUtils.readCert("GEM.SMCB-CA57/invalid/BabetteBeyer-missing-certificate-type.pem");
 
   public static final X509Certificate MISSING_EXT_KEY_USAGE_EE_CERT =
-      TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_missing-extKeyUsage.pem");
+      TestUtils.readCert("GEM.SMCB-CA57/invalid/BabetteBeyer-missing-extKeyUsage.pem");
 
   public static final X509Certificate MISSING_POLICY_ID_CERT =
-      TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_missing-policyId.pem");
+      TestUtils.readCert("GEM.SMCB-CA57/invalid/BabetteBeyer-missing-policyId.pem");
 
   public static final X509Certificate INVALID_EXTENSION_NOT_CRIT_CERT =
-      TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther_invalid-extension-not-crit.pem");
+      TestUtils.readCert("GEM.SMCB-CA57/valid/BabetteBeyer-invalid-extension-not-crit.pem");
 
   public static final String GEMATIK_TEST_TSP_NAME =
       "gematik Gesellschaft für Telematikanwendungen der Gesundheitskarte mbH";

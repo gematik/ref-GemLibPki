@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, gematik GmbH
+ * Copyright (Date see Readme), gematik GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * ******
+ * *******
  *
  * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
  */
@@ -295,7 +295,7 @@ class OcspResponseGeneratorTest {
             getFirstSingleResp(ocspResp).getExtension(id_isismtt_at_certHash).getParsedValue());
 
     // sha256 hash over der encoded end-entity certificate file
-    final String expectedHash = "6cda0ef261c36bc05cc66e809ea1621e1dafa794a8c8a04e114e9114689d2ff7";
+    final String expectedHash = "ecfc79df98e695af6c439dd7660ac8ac6ac5dfbbd7b8c856e1347f744e016b29";
 
     assertThat(new String(Hex.encode(asn1CertHash.getCertificateHash()), StandardCharsets.UTF_8))
         .isEqualTo(expectedHash);

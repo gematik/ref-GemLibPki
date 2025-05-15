@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, gematik GmbH
+ * Copyright (Date see Readme), gematik GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * ******
+ * *******
  *
  * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
  */
@@ -43,7 +43,7 @@ import org.junit.jupiter.params.support.AnnotationConsumer;
 public class CertificateProvider implements ArgumentsProvider, AnnotationConsumer<VariableSource> {
 
   private String certPathSwitch;
-  private static final String CERTIFICATE_SUBDIR = "/certificates/GEM.SMCB-CA10/";
+  private static final String CERTIFICATE_SUBDIR = "/certificates/GEM.SMCB-CA57/";
 
   @Override
   public Stream<? extends Arguments> provideArguments(final ExtensionContext extensionContext)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, gematik GmbH
+ * Copyright (Date see Readme), gematik GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * ******
+ * *******
  *
  * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
  */
@@ -86,7 +86,7 @@ class TspInformationProviderTest {
   @Test
   void generateTspServiceSubsetMissingAki() {
     final X509Certificate invalidx509EeCert =
-        TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_missing-authorityKeyId.pem");
+        TestUtils.readCert("GEM.SMCB-CA57/invalid/BabetteBeyer-missing-authorityKeyId.pem");
     assertThatThrownBy(() -> tspInformationProvider.getIssuerTspServiceSubset(invalidx509EeCert))
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.SE_1023_AUTHORITYKEYID_DIFFERENT.getErrorMessage(productType));
@@ -98,7 +98,7 @@ class TspInformationProviderTest {
             tspInformationProvider
                 .getIssuerTspServiceSubset(VALID_X509_EE_CERT_SMCB)
                 .getServiceSupplyPoint())
-        .isEqualTo("http://127.0.0.1:8083/ocsp/60");
+        .isEqualTo("http://ehca-testref.komp-ca.telematik-test:8080/status/ecc-ocsp");
   }
 
   @Test

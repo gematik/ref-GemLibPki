@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, gematik GmbH
+ * Copyright (Date see Readme), gematik GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * ******
+ * *******
  *
  * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
  */
@@ -112,7 +112,7 @@ class ExtendedKeyUsageValidatorTest {
   @Test
   void verifyExtendedKeyUsageInvalidInCertificate() {
     final X509Certificate invalidExtendedKeyUsageEeCert =
-        TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_invalid-ext-keyusage.pem");
+        TestUtils.readCert("GEM.SMCB-CA57/invalid/BabetteBeyer-invalid-ext-keyusage.pem");
 
     assertThatThrownBy(
             () -> tested.validateCertificate(invalidExtendedKeyUsageEeCert, CERTIFICATE_PROFILE))
@@ -129,9 +129,9 @@ class ExtendedKeyUsageValidatorTest {
     assertThatThrownBy(() -> tested.validateCertificate(cert, CERTIFICATE_PROFILE))
         .isInstanceOf(GemPkiRuntimeException.class)
         .hasMessage(
-            "Fehler beim Lesen der ExtendedKeyUsage des Zertifikats: CN=Zahnarztpraxis Dr."
-                + " med.Gunther KZV"
-                + " TEST-ONLY,2.5.4.5=#131731372e3830323736383833313139313130303033333237,O=2-2.30.1.16.TestOnly"
+            "Fehler beim Lesen der ExtendedKeyUsage des Zertifikats: CN=Psychotherapeutische Praxis"
+                + " Babette Beyer"
+                + " TEST-ONLY,2.5.4.42=#0c0742616265747465,2.5.4.4=#0c054265796572,O=300421119"
                 + " NOT-VALID,C=DE");
   }
 }

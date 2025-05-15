@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, gematik GmbH
+ * Copyright (Date see Readme), gematik GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * ******
+ * *******
  *
  * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
  */
@@ -36,8 +36,8 @@ import org.junit.jupiter.api.Test;
 class ValidityValidatorTest {
 
   private static final X509Certificate VALID_X509_EE_CERT =
-      TestUtils.readCert("GEM.SMCB-CA10/valid/DrMedGunther.pem");
-  private static final ZonedDateTime ZONED_DATE_TIME = ZonedDateTime.parse("2020-11-20T15:00:00Z");
+      TestUtils.readCert("GEM.SMCB-CA57/valid/PraxisBabetteBeyer.pem");
+  private static final ZonedDateTime ZONED_DATE_TIME = ZonedDateTime.parse("2025-03-28T15:00:00Z");
   private ValidityValidator tested;
 
   @BeforeEach
@@ -66,7 +66,7 @@ class ValidityValidatorTest {
   @Test
   void verifyValidityCertificateExpired() {
     final X509Certificate expiredEeCert =
-        TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_expired.pem");
+        TestUtils.readCert("GEM.SMCB-CA57/invalid/BabetteBeyer-expired.pem");
 
     assertThatThrownBy(() -> tested.validateCertificate(expiredEeCert, ZONED_DATE_TIME))
         .isInstanceOf(GemPkiException.class)
@@ -76,7 +76,7 @@ class ValidityValidatorTest {
   @Test
   void verifyValidityCertificateNotYetValid() {
     final X509Certificate notYetValidEeCert =
-        TestUtils.readCert("GEM.SMCB-CA10/invalid/DrMedGunther_not-yet-valid.pem");
+        TestUtils.readCert("GEM.SMCB-CA57/invalid/BabetteBeyer-not-yet-valid.pem");
 
     assertThatThrownBy(() -> tested.validateCertificate(notYetValidEeCert, ZONED_DATE_TIME))
         .isInstanceOf(GemPkiException.class)

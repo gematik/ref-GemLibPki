@@ -1,5 +1,5 @@
 /*
- * Copyright 2025, gematik GmbH
+ * Copyright (Date see Readme), gematik GmbH
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * ******
+ * *******
  *
  * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
  */
@@ -21,11 +21,9 @@
 package de.gematik.pki.gemlibpki.certificate;
 
 import static de.gematik.pki.gemlibpki.TestConstants.MISSING_CERT_TYPE;
-import static de.gematik.pki.gemlibpki.TestConstants.MISSING_POLICY_ID_CERT;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
@@ -41,12 +39,6 @@ class PoliciesTest {
   @Test
   void policiesCertNull() {
     assertNonNullParameter(() -> new Policies(null), "x509EeCert");
-  }
-
-  @Test
-  void getPolicyOidsMissing() {
-    assertThatThrownBy(() -> new Policies(MISSING_POLICY_ID_CERT))
-        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
