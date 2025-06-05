@@ -2,6 +2,10 @@
 
 # Release notes GemLibPki
 
+## Release 3.1.4
+
+- update dependencies
+
 ## Release 3.1.3
 
 - update dependencies
