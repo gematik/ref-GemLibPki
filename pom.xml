@@ -4,7 +4,7 @@
 
   <groupId>de.gematik.pki</groupId>
   <artifactId>gemLibPki</artifactId>
-  <version>3.1.4</version>
+  <version>3.1.5</version>
   <packaging>jar</packaging>
   <name>GemLibPki</name>
   <description>library for implementation and tests of the gematik pki specification</description>
@@ -44,7 +44,7 @@
   </issueManagement>
 
   <properties>
-    <project.build.outputTimestamp>1749110055</project.build.outputTimestamp>
+    <project.build.outputTimestamp>1752062541</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.encoding>${project.build.sourceEncoding}</maven.compiler.encoding>
     <java.version>17</java.version>
@@ -58,27 +58,27 @@
     <version.dss-tsl-validation>6.2</version.dss-tsl-validation>
     <version.httpcore5>5.3.4</version.httpcore5>
     <version.jakarta.xml.bind-api>4.0.2</version.jakarta.xml.bind-api>
-    <version.junit-jupiter>5.13.0</version.junit-jupiter>
-    <version.log4j>2.24.3</version.log4j>
+    <version.junit-jupiter>5.13.3</version.junit-jupiter>
+    <version.log4j>2.25.0</version.log4j>
     <version.lombok>1.18.38</version.lombok>
     <version.mockito>5.18.0</version.mockito>
     <version.unirest-java-core>4.4.7</version.unirest-java-core>
-    <version.wiremock>3.13.0</version.wiremock>
+    <version.wiremock>3.13.1</version.wiremock>
     <version.xades4j>2.4.0</version.xades4j>
-    <version.xmlunit>2.10.2</version.xmlunit>
+    <version.xmlunit>2.10.3</version.xmlunit>
 
     <!--  plugins -->
     <version.jacoco-maven-plugin>0.8.13</version.jacoco-maven-plugin>
     <version.maven-clean-plugin>3.5.0</version.maven-clean-plugin>
     <version.maven-compiler-plugin>3.14.0</version.maven-compiler-plugin>
     <maven-deploy-plugin.version>3.1.4</maven-deploy-plugin.version>
-    <version.maven-enforcer-plugin>3.5.0</version.maven-enforcer-plugin>
-    <version.maven-gpg-plugin>3.2.7</version.maven-gpg-plugin>
+    <version.maven-enforcer-plugin>3.6.0</version.maven-enforcer-plugin>
+    <version.maven-gpg-plugin>3.2.8</version.maven-gpg-plugin>
     <version.maven-jar-plugin>3.4.2</version.maven-jar-plugin>
     <version.maven-javadoc-plugin>3.11.2</version.maven-javadoc-plugin>
     <version.maven-source-plugin>3.3.1</version.maven-source-plugin>
     <version.maven-surefire-plugin>3.5.3</version.maven-surefire-plugin>
-    <version.nexus-staging-maven-plugin>1.7.0</version.nexus-staging-maven-plugin>
+    <version.central-publishing-maven-plugin>0.8.0</version.central-publishing-maven-plugin>
     <version.sonar-maven-plugin>5.1.0.4751</version.sonar-maven-plugin>
     <version.spotless.google-java-format>1.17.0</version.spotless.google-java-format>
     <version.spotless-maven-plugin>2.44.5</version.spotless-maven-plugin>
@@ -387,7 +387,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>license-maven-plugin</artifactId>
-        <version>2.5.0</version>
+        <version>2.6.0</version>
         <executions>
           <execution>
             <goals>
@@ -425,15 +425,13 @@
             </executions>
           </plugin>
           <plugin>
-            <groupId>org.sonatype.plugins</groupId>
-            <artifactId>nexus-staging-maven-plugin</artifactId>
-            <version>${version.nexus-staging-maven-plugin}</version>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>${version.central-publishing-maven-plugin}</version>
             <extensions>true</extensions>
             <configuration>
-              <serverId>ossrh</serverId>
-              <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-              <autoReleaseAfterClose>true</autoReleaseAfterClose>
-              <stagingProgressTimeoutMinutes>20</stagingProgressTimeoutMinutes>
+              <publishingServerId>central</publishingServerId>
+              <autoPublish>true</autoPublish>
             </configuration>
           </plugin>
         </plugins>
