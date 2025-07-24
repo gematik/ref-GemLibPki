@@ -44,7 +44,7 @@ class TslInformationProviderTest {
     assertThat(
             tslInformationProvider.getFilteredTspServices(
                 Collections.singletonList(TslConstants.STI_PKC)))
-        .hasSize(157);
+        .hasSize(160);
   }
 
   @Test
@@ -73,7 +73,7 @@ class TslInformationProviderTest {
 
   @Test
   void readAllTspServices_ServicesSizeShouldBeCorrect() {
-    assertThat(tslInformationProvider.getTspServices()).hasSize(313);
+    assertThat(tslInformationProvider.getTspServices()).hasSize(316);
   }
 
   @Test

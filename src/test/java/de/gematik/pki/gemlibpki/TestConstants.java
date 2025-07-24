@@ -45,7 +45,7 @@ public class TestConstants {
       readCert("GEM.SMCB-CA57/valid/PraxisBabetteBeyer.pem");
 
   public static final X509Certificate VALID_X509_EE_CERT_SMCB_KZBV =
-      readCert("GEM.SMCB-CA58/Beyer-Zahnarzt.pem");
+      readCert("GEM.SMCB-CA57/valid/Beyer-Zahnarzt.crt");
 
   public static final X509Certificate VALID_ISSUER_CERT_SMCB_CA41_RSA =
       readCert("GEM.SMCB-CA41-RSA/GEM.SMCB-CA41.pem");
@@ -55,8 +55,8 @@ public class TestConstants {
   public static final X509Certificate VALID_ISSUER_CERT_HBA =
       readCert("GEM.HBA-CA57/GEM.HBA-CA57-TEST-ONLY.pem");
 
-  public static final X509Certificate VALID_ISSUER_CERT_KOMP_CA10 =
-      readCert("GEM.KOMP-CA10/GEM.KOMP-CA10_brainpoolIP256r1.pem");
+  public static final X509Certificate VALID_ISSUER_CERT_KOMP_CA57 =
+      readCert("GEM.KOMP-CA57/GEM.KOMP-CA57-TEST-ONLY.pem");
   public static final X509Certificate VALID_ISSUER_CERT_KOMP_CA40 =
       readCert("GEM.KOMP-CA40/GEM.KOMP-CA40-TEST-ONLY.pem");
   public static final X509Certificate VALID_ISSUER_CERT_KOMP_CA41 =
@@ -68,7 +68,7 @@ public class TestConstants {
   public static final X509Certificate VALID_ISSUER_CERT_KOMP_CA54 =
       readCert("GEM.KOMP-CA54/GEM.KOMP-CA54.pem");
   public static final X509Certificate VALID_X509_EE_CERT_ALT_CA =
-      readCert("GEM.SMCB-CA58/Beyer-Zahnarzt.pem");
+      readCert("GEM.SMCB-CA59/80276001011699802021-Beyer-Zahnarzt-SMCB59.crt");
 
   public static final X509Certificate VALID_ISSUER_CERT_TSL_CA51 =
       readCert("GEM.TSL-CA51/GEM.TSL-CA51-TEST-ONLY.pem");

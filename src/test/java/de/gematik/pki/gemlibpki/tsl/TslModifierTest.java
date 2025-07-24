@@ -111,7 +111,7 @@ class TslModifierTest {
   @Test
   void modifyAllSspsOfOneTsp() throws IOException {
     final Path destFilePath = Path.of("target/TSL-test_modifiedSsp.xml");
-    final int modifiedSspAmountExpected = 32;
+    final int modifiedSspAmountExpected = 33;
     final String newSsp = "http://my.new-service-supply-point:8080/ocsp";
     final String newSspElement = "<ServiceSupplyPoint>" + newSsp + "</ServiceSupplyPoint>";
 
@@ -587,7 +587,7 @@ class TslModifierTest {
     final String serviceStatusToSelect = null;
 
     final XMLGregorianCalendar oldStartingStatusTimeGreg =
-        DatatypeFactory.newInstance().newXMLGregorianCalendar("2023-04-20T14:47:40Z");
+        DatatypeFactory.newInstance().newXMLGregorianCalendar("2025-07-23T11:51:04Z");
 
     final ZonedDateTime newStartingStatusTime = GemLibPkiUtils.now();
     final XMLGregorianCalendar newStartingStatusTimeGreg =
