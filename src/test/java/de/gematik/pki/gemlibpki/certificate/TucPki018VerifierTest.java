@@ -27,12 +27,12 @@ import static de.gematik.pki.gemlibpki.TestConstants.PRODUCT_TYPE;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_HBA_AUT_ECC;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_EGK;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_HBA;
-import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA10;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA40;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA41;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA50;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA51;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA54;
+import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_KOMP_CA57;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB_CA41_RSA;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_INVALID_KEY_USAGE;
@@ -202,8 +202,8 @@ class TucPki018VerifierTest {
 
   @Test
   void verifyAkAutEccCertValid() {
-    final X509Certificate eeCert = readCert("GEM.KOMP-CA10/80276883110000000001-20221012_ecc.crt");
-    ocspResponderMock.configureForOcspRequest(eeCert, VALID_ISSUER_CERT_KOMP_CA10);
+    final X509Certificate eeCert = readCert("GEM.KOMP-CA57/80276883110000000001-20250721_ecc.crt");
+    ocspResponderMock.configureForOcspRequest(eeCert, VALID_ISSUER_CERT_KOMP_CA57);
     assertDoesNotThrow(
         () ->
             buildTucPki18Verifier(List.of(CERT_PROFILE_C_AK_AUT_ECC))

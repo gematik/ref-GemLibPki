@@ -2,6 +2,11 @@
 
 # Release notes GemLibPki
 
+## Release 3.2.0
+
+- update TSLs and certificates
+- update dependencies
+
 ## Release 3.1.5
 
 - update file headers

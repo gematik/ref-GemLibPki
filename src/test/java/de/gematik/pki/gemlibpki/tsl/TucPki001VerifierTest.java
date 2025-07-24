@@ -527,7 +527,7 @@ class TucPki001VerifierTest {
     final TrustAnchorUpdate trustAnchorUpdate =
         tucPki001Verifier.getVerifiedAnnouncedTrustAnchorUpdate().orElseThrow();
 
-    final ZonedDateTime zdt = ZonedDateTime.of(2023, 4, 20, 14, 47, 40, 0, ZoneOffset.UTC);
+    final ZonedDateTime zdt = ZonedDateTime.of(2025, 7, 23, 11, 51, 4, 0, ZoneOffset.UTC);
     final X509Certificate taCert = TestUtils.readCert("GEM.TSL-CA52/GEM.TSL-CA52_TEST-ONLY.cer");
     assertThat(trustAnchorUpdate.getStatusStartingTime())
         .isCloseTo(zdt, Assertions.within(1, ChronoUnit.MILLIS));
