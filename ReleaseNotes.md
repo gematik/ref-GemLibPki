@@ -2,6 +2,11 @@
 
 # Release notes GemLibPki
 
+## Release 3.3.1
+
+- SignerCa certificate of OcspResponse signer will be part of OcspResponse when OcspResponseGenerator is optionally initialized with signerCaCert
+- update dependencies
+
 ## Release 3.2.0
 
 - update TSLs and certificates

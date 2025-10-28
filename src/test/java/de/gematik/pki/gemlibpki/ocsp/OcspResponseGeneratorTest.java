@@ -24,6 +24,7 @@ import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_ISSUER_CERT_SMCB_CA41_RSA;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.TestConstants.VALID_X509_EE_CERT_SMCB_CA41_RSA;
+import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getBasicOcspResp;
 import static de.gematik.pki.gemlibpki.ocsp.OcspUtils.getFirstSingleResp;
 import static de.gematik.pki.gemlibpki.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -229,18 +230,35 @@ class OcspResponseGeneratorTest {
 
   @Test
   void writeOcspRespWithIssuerCert() {
-    assertDoesNotThrow(
-        () ->
-            writeOcspRespToFile(
-                OcspResponseGenerator.builder()
-                    .signer(OcspTestConstants.getOcspSignerEcc())
-                    .build()
-                    .generate(
-                        ocspReq,
-                        VALID_X509_EE_CERT_SMCB,
-                        VALID_ISSUER_CERT_SMCB,
-                        CertificateStatus.GOOD,
-                        true)));
+    // without issuer cert
+    assertThat(
+            getBasicOcspResp(
+                    OcspResponseGenerator.builder()
+                        .signer(OcspTestConstants.getOcspSignerEcc())
+                        .build()
+                        .generate(
+                            ocspReq,
+                            VALID_X509_EE_CERT_SMCB,
+                            VALID_ISSUER_CERT_SMCB,
+                            CertificateStatus.GOOD))
+                .getCerts()
+                .length)
+        .isEqualTo(1);
+    // with issuer cert
+    assertThat(
+            getBasicOcspResp(
+                    OcspResponseGenerator.builder()
+                        .signer(OcspTestConstants.getOcspSignerEcc())
+                        .signerCaCert(OcspTestConstants.getOcspSignerCaEcc())
+                        .build()
+                        .generate(
+                            ocspReq,
+                            VALID_X509_EE_CERT_SMCB,
+                            VALID_ISSUER_CERT_SMCB,
+                            CertificateStatus.GOOD))
+                .getCerts()
+                .length)
+        .isEqualTo(2);
   }
 
   @Test

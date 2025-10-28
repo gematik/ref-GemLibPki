@@ -41,6 +41,8 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Stream;
 import javax.security.auth.x500.X500Principal;
 import lombok.Builder;
 import lombok.NonNull;
@@ -94,6 +96,8 @@ public class OcspResponseGenerator {
   }
 
   @NonNull private final P12Container signer;
+  // if not null, the signer certificate chain of the OCSP response will contain this CA certificate
+  @Builder.Default private final X509Certificate signerCaCert = null;
   @Builder.Default private final boolean withCertHash = true;
   @Builder.Default private final boolean validCertHash = true;
   @Builder.Default private final boolean validSignature = true;
@@ -192,37 +196,7 @@ public class OcspResponseGenerator {
       final CertificateStatus certificateStatus) {
 
     try {
-      return generate(
-          ocspReq, eeCert, issuerCert, signer.getCertificate(), certificateStatus, false);
-    } catch (final OperatorCreationException | IOException | OCSPException e) {
-      throw new GemPkiRuntimeException("Generieren der OCSP Response fehlgeschlagen.", e);
-    }
-  }
-
-  /**
-   * Create OCSP response from given OCSP request. producedAt is now (UTC).
-   *
-   * @param ocspReq OCSP request
-   * @param eeCert end-entity certificate
-   * @param issuerCert issuer certificate
-   * @param certificateStatus can be null, CertificateStatus.GOOD
-   * @param attachIssuerCert attach issuer certificate to response or not
-   * @return
-   */
-  public OCSPResp generate(
-      @NonNull final OCSPReq ocspReq,
-      @NonNull final X509Certificate eeCert,
-      @NonNull final X509Certificate issuerCert,
-      final CertificateStatus certificateStatus,
-      final boolean attachIssuerCert) {
-    try {
-      return generate(
-          ocspReq,
-          eeCert,
-          issuerCert,
-          signer.getCertificate(),
-          certificateStatus,
-          attachIssuerCert);
+      return generateResp(ocspReq, eeCert, issuerCert, certificateStatus);
     } catch (final OperatorCreationException | IOException | OCSPException e) {
       throw new GemPkiRuntimeException("Generieren der OCSP Response fehlgeschlagen.", e);
     }
@@ -251,24 +225,21 @@ public class OcspResponseGenerator {
    * @param ocspReq OCSP request
    * @param eeCert end-entity certificate
    * @param issuerCert issuer certificate
-   * @param ocspResponseSignerCert certificate in OCSP response signature
    * @param certificateStatus can be null, CertificateStatus.GOOD
-   * @param issuerCertInResponse attach issuer certificate to response or not
    * @return OCSP response as byte array
    * @throws OperatorCreationException if operator creation fails
    * @throws IOException if IO operation fails
    * @throws OCSPException if OCSP operation fails
    */
-  private OCSPResp generate(
+  private OCSPResp generateResp(
       final OCSPReq ocspReq,
       final X509Certificate eeCert,
       final X509Certificate issuerCert,
-      final X509Certificate ocspResponseSignerCert,
-      final CertificateStatus certificateStatus,
-      final boolean issuerCertInResponse)
+      final CertificateStatus certificateStatus)
       throws OperatorCreationException, IOException, OCSPException {
 
     final BasicOCSPRespBuilder basicOcspRespBuilder;
+    final X509Certificate ocspResponseSignerCert = signer.getCertificate();
 
     if (responderIdType == ResponderIdType.BY_NAME) {
       final X500Principal subjectDn = ocspResponseSignerCert.getSubjectX500Principal();
@@ -313,11 +284,7 @@ public class OcspResponseGenerator {
           responseExtensions);
     }
 
-    final X509CertificateHolder[] chain =
-        buildCertificateChain(
-            new X509CertificateHolder(GemLibPkiUtils.certToBytes(ocspResponseSignerCert)),
-            new X509CertificateHolder(GemLibPkiUtils.certToBytes(issuerCert)),
-            issuerCertInResponse);
+    final X509CertificateHolder[] chain = buildCertificateChain(ocspResponseSignerCert);
 
     final String sigAlgo =
         switch (signer.getPrivateKey().getAlgorithm()) {
@@ -350,17 +317,20 @@ public class OcspResponseGenerator {
   }
 
   private X509CertificateHolder[] buildCertificateChain(
-      final X509CertificateHolder ocspResponseSignerCert,
-      final X509CertificateHolder issuerCert,
-      final boolean issuerCertInResponse) {
-    final List<X509CertificateHolder> chain = new ArrayList<>();
-    chain.add(ocspResponseSignerCert);
+      final X509Certificate ocspResponseSignerCert) throws IOException {
 
-    if (issuerCertInResponse) {
-      chain.add(issuerCert);
-    }
-
-    return chain.toArray(new X509CertificateHolder[0]); // Konvertiere die Liste in ein Array
+    return Stream.of(ocspResponseSignerCert, signerCaCert)
+        .filter(Objects::nonNull)
+        .map(
+            cert -> {
+              try {
+                return new X509CertificateHolder(GemLibPkiUtils.certToBytes(cert));
+              } catch (final IOException e) {
+                throw new GemPkiRuntimeException(
+                    "Conversion of X509Certificate to X509CertificateHolder failed.", e);
+              }
+            })
+        .toArray(X509CertificateHolder[]::new);
   }
 
   private void addNonceExtensionIfNecessary(
