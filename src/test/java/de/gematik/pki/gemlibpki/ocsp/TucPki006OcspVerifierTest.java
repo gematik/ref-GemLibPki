@@ -225,8 +225,7 @@ class TucPki006OcspVerifierTest {
     return OcspResponseGenerator.builder()
         .signer(OcspTestConstants.getOcspSignerEcc())
         .build()
-        .generate(
-            ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB, CertificateStatus.GOOD, true);
+        .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB, CertificateStatus.GOOD);
   }
 
   private TucPki006OcspVerifier genDefaultOcspVerifier() {
