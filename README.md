@@ -97,10 +97,6 @@ suite: [TslProcurer](https://github.com/gematik/app-PkiTestsuite/blob/1.1.3/pkit
 
 ### Build
 
-The lib is developed and tested
-with [Eclipse Adoptium Temurin JDK 17](https://github.com/adoptium/temurin17-binaries) and [Apache
-Maven 3.9.3](https://maven.apache.org/index.html)
-
 Build with:
 
 ```bash

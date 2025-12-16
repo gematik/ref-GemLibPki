@@ -4,7 +4,7 @@
 
   <groupId>de.gematik.pki</groupId>
   <artifactId>gemLibPki</artifactId>
-  <version>3.3.1</version>
+  <version>3.4.0</version>
   <packaging>jar</packaging>
   <name>GemLibPki</name>
   <description>library for implementation and tests of the gematik pki specification</description>
@@ -44,26 +44,26 @@
   </issueManagement>
 
   <properties>
-    <project.build.outputTimestamp>1761663620</project.build.outputTimestamp>
+    <project.build.outputTimestamp>1765868112</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.encoding>${project.build.sourceEncoding}</maven.compiler.encoding>
-    <java.version>17</java.version>
+    <java.version>21</java.version>
     <version.maven>3.6.3</version.maven>
 
     <!-- dependencies -->
     <version.assertj>3.27.6</version.assertj>
     <version.awaitility>4.3.0</version.awaitility>
-    <version.bouncycastle>1.82</version.bouncycastle>
-    <version.commons-lang3>3.19.0</version.commons-lang3>
+    <version.bouncycastle>1.83</version.bouncycastle>
+    <version.commons-lang3>3.20.0</version.commons-lang3>
     <version.dss-tsl-validation>6.3</version.dss-tsl-validation>
-    <version.httpcore5>5.3.6</version.httpcore5>
+    <version.httpcore5>5.4</version.httpcore5>
     <version.jakarta.xml.bind-api>4.0.4</version.jakarta.xml.bind-api>
-    <version.junit-jupiter>6.0.0</version.junit-jupiter>
+    <version.junit-jupiter>6.0.1</version.junit-jupiter>
     <version.log4j>2.25.2</version.log4j>
     <version.lombok>1.18.42</version.lombok>
-    <version.mockito>5.20.0</version.mockito>
-    <version.unirest-java-core>4.5.1</version.unirest-java-core>
-    <version.wiremock>3.13.1</version.wiremock>
+    <version.mockito>5.21.0</version.mockito>
+    <version.unirest-java-core>4.7.0</version.unirest-java-core>
+    <version.wiremock>3.13.2</version.wiremock>
     <version.xades4j>2.4.0</version.xades4j>
     <version.xmlunit>2.11.0</version.xmlunit>
 
@@ -74,14 +74,14 @@
     <maven-deploy-plugin.version>3.1.4</maven-deploy-plugin.version>
     <version.maven-enforcer-plugin>3.6.2</version.maven-enforcer-plugin>
     <version.maven-gpg-plugin>3.2.8</version.maven-gpg-plugin>
-    <version.maven-jar-plugin>3.4.2</version.maven-jar-plugin>
+    <version.maven-jar-plugin>3.5.0</version.maven-jar-plugin>
     <version.maven-javadoc-plugin>3.12.0</version.maven-javadoc-plugin>
-    <version.maven-source-plugin>3.3.1</version.maven-source-plugin>
+    <version.maven-source-plugin>3.4.0</version.maven-source-plugin>
     <version.maven-surefire-plugin>3.5.4</version.maven-surefire-plugin>
     <version.central-publishing-maven-plugin>0.9.0</version.central-publishing-maven-plugin>
-    <version.sonar-maven-plugin>5.2.0.4988</version.sonar-maven-plugin>
+    <version.sonar-maven-plugin>5.5.0.6356</version.sonar-maven-plugin>
     <version.spotless.google-java-format>1.17.0</version.spotless.google-java-format>
-    <version.spotless-maven-plugin>3.0.0</version.spotless-maven-plugin>
+    <version.spotless-maven-plugin>3.1.0</version.spotless-maven-plugin>
     <!-- settings for upload to sonar server -->
     <sonar.coverage.jacoco.xmlReportPaths>${project.reporting.outputDirectory}/jacoco/index.xml</sonar.coverage.jacoco.xmlReportPaths>
     <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
@@ -263,7 +263,7 @@
                   <version>${version.maven}</version>
                 </requireMavenVersion>
                 <requireJavaVersion>
-                  <version>[${java.version},17.99.99]</version>
+                  <version>[${java.version},21.99.99]</version>
                 </requireJavaVersion>
               </rules>
               <fail>true</fail>
