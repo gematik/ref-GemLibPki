@@ -234,7 +234,6 @@
 	<complexType name="KeyValueType" mixed="true">
 		<choice>
 			<element ref="ds:DSAKeyValue" />
-			<element ref="ds:RSAKeyValue" />
 			<any namespace="##other" processContents="lax" />
 		</choice>
 	</complexType>
@@ -364,14 +363,6 @@
 				<element name="Seed" type="ds:CryptoBinary" />
 				<element name="PgenCounter" type="ds:CryptoBinary" />
 			</sequence>
-		</sequence>
-	</complexType>
-
-	<element name="RSAKeyValue" type="ds:RSAKeyValueType" />
-	<complexType name="RSAKeyValueType">
-		<sequence>
-			<element name="Modulus" type="ds:CryptoBinary" />
-			<element name="Exponent" type="ds:CryptoBinary" />
 		</sequence>
 	</complexType>
 
