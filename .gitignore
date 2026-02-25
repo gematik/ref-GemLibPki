@@ -1,6 +1,7 @@
 .idea/
 *.iml
 **/target
+tmp/
 
 doc/dev/
 *.Jenkinsfile
