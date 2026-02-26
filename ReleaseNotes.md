@@ -2,6 +2,12 @@
 
 # Release notes GemLibPki
 
+## Release 4.0.2
+
+- API change for distinction of code for TI 1.0 and TI 2.0: introduce packages commons and ti20, restructure everything
+- Introduce OcspTransceiverFactory as an optional parameter for TucPki001Verifier and TucPki018Verifier (see [README.md](README.md))
+- TucPki018Verifier as optional parameter for TucPki001Verifier
+
 ## Release 3.4.0
 
 - switch from OpenJDK 17 to OpenJDK 21

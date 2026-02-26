@@ -1,0 +1,108 @@
+/*
+ * Copyright (Change Date see Readme), gematik GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * *******
+ *
+ * For additional notes and disclaimer from gematik and in case of changes by gematik find details in the "Readme" file.
+ */
+
+package de.gematik.pki.gemlibpki.commons.utils;
+
+import de.gematik.pki.gemlibpki.commons.exception.GemPkiRuntimeException;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
+import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.ArgumentsProvider;
+import org.junit.jupiter.params.support.AnnotationConsumer;
+import org.junit.jupiter.params.support.ParameterDeclarations;
+
+@Slf4j
+public class CertificateProvider implements ArgumentsProvider, AnnotationConsumer<VariableSource> {
+
+  private String certPathSwitch;
+  private static final String CERTIFICATE_SUBDIR = "/certificates/GEM.SMCB-CA57/";
+
+  @NonNull
+  @Override
+  public Stream<? extends Arguments> provideArguments(
+      @NonNull final ParameterDeclarations parameterDeclarations,
+      final @NonNull ExtensionContext extensionContext)
+      throws URISyntaxException {
+
+    return listFilesUsingFileWalkAndVisitor(
+            Path.of(getClass().getProtectionDomain().getCodeSource().getLocation().toURI())
+                + CERTIFICATE_SUBDIR
+                + (checkCertificateFilter() ? certPathSwitch : "unknown"))
+        .map(Arguments::of);
+  }
+
+  public Stream<X509Certificate> listFilesUsingFileWalkAndVisitor(final String resourcesFolder) {
+    final List<X509Certificate> fileList = new ArrayList<>();
+    try {
+      Files.walkFileTree(
+          Path.of(resourcesFolder).normalize(),
+          new SimpleFileVisitor<>() {
+            @NonNull
+            @Override
+            public FileVisitResult visitFile(
+                final @NonNull Path path, final @NonNull BasicFileAttributes attrs) {
+
+              if (!Files.isDirectory(path) && checkCertificateFilter()) {
+                log.info("add: {}", path.toAbsolutePath());
+                fileList.add(getX509Certificate(path.toAbsolutePath()));
+              }
+              return FileVisitResult.CONTINUE;
+            }
+          });
+    } catch (final IOException io) {
+      throw new GemPkiRuntimeException(
+          "Bei der Ermittlung der Testzertifikate ist ein Fehler aufgetreten.", io);
+    }
+    return fileList.stream();
+  }
+
+  public static X509Certificate getX509Certificate(final Path path) {
+    return CertReader.readX509(GemLibPkiUtils.readContent(path));
+  }
+
+  public static X509Certificate getX509Certificate(final String path) {
+    return getX509Certificate(Path.of(path));
+  }
+
+  @Override
+  public void accept(final VariableSource variableSource) {
+    certPathSwitch = variableSource.value();
+  }
+
+  private boolean checkCertificateFilter() {
+    return Optional.ofNullable(certPathSwitch)
+        .map(String::trim)
+        .map(string -> !certPathSwitch.isEmpty())
+        .orElse(false);
+  }
+}

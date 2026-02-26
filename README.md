@@ -1,4 +1,4 @@
-<img align="right" width="250" height="47" src="doc/images/Gematik_Logo_Flag_With_Background.png"/> <br/>
+<img align="right" width="250" height="47" src="https://raw.githubusercontent.com/gematik/gematik.github.io/master/Gematik_Logo_Flag_With_Background.png"/> <br/> 
 
 # GemLibPki
 
@@ -34,18 +34,18 @@ willingly.
 
 For certificate checks the library offers interfaces:
 
-- [CertificateValidator.java](src%2Fmain%2Fjava%2Fde%2Fgematik%2Fpki%2Fgemlibpki%2Fvalidators%2FCertificateValidator.java)
-- [CertificateProfileValidator.java](src%2Fmain%2Fjava%2Fde%2Fgematik%2Fpki%2Fgemlibpki%2Fvalidators%2FCertificateProfileValidator.java)
+- [CertificateValidator.java](src/main/java/de/gematik/pki/gemlibpki/commons/validators/CertificateValidator.java)
+- [CertificateProfileValidator.java](src/main/java/de/gematik/pki/gemlibpki/commons/validators/CertificateProfileValidator.java)
 
 as well as a couple of implementations for different checks alongside
-(see [validators](src%2Fmain%2Fjava%2Fde%2Fgematik%2Fpki%2Fgemlibpki%2Fvalidators)). You can build a
+(see [validators](src/main/java/de/gematik/pki/gemlibpki/commons/validators)). You can build a
 chain of different checks or extend the library for your own requirements.
 
 ###### TUC_PKI_018 - Zertifikatsprüfung in der TI
 
 A complete implementation of the TUC_PKI_018 „Zertifikatsprüfung in der TI“ of the gematik
 document "Übergreifende Spezifikation PKI" (gemSpec_PKI)can be found
-in [TucPki018Verifier](src/main/java/de/gematik/pki/gemlibpki/certificate/TucPki018Verifier.java)
+in [TucPki018Verifier](src/main/java/de/gematik/pki/gemlibpki/commons/certificate/TucPki018Verifier.java)
 Here we check against nonQES certificate profiles specified by gematik, not against usages and
 contexts (a special certificate profile for allowing any profile, i.e., disable profile checks is
 available as well)
@@ -55,7 +55,7 @@ TUC_PKI_006 "OCSP-Abfrage"
 (see [OCSP checks](./README.md#ocsp-checks) section).
 
 For examples of how to use the TUC_PKI_018 implementation
-see [TucPki018VerifierTest.java](src%2Ftest%2Fjava%2Fde%2Fgematik%2Fpki%2Fgemlibpki%2Fcertificate%2FTucPki018VerifierTest.java)
+see [TucPki018VerifierTest.java (TI 1.0)](src/test/java/de/gematik/pki/gemlibpki/commons/certificate/TucPki018VerifierTest.java) and [TucPki001VerifierTest (TI 2.0)](src/test/java/de/gematik/pki/gemlibpki/ti20/tsl/TucPki001VerifierTest.java)
 
 ##### OCSP checks
 
@@ -64,7 +64,18 @@ according to rf2560, is generated. OCSP responses are validated according to TUC
 gemSpec_PKI.
 
 OCSP validation can be disabled via builder parameter `withOcspCheck` of
-[TucPki018Verifier](src/main/java/de/gematik/pki/gemlibpki/certificate/TucPki018Verifier.java).
+[TucPki018Verifier](src/main/java/de/gematik/pki/gemlibpki/commons/certificate/TucPki018Verifier.java).
+
+The location of the OCSP SSP (service supply point - address of the OCSP responder) is different for TI 1.0 and TI 2.0 (TI = Telematik Infrastruktur).
+The Interface [OcspTransceiverFactory](src/main/java/de/gematik/pki/gemlibpki/commons/ocsp/OcspTransceiverFactory.java) will take care of it. There following implementations of this interface exist:
+###### TI 1.0: 
+The SSP is expected to be listed in the TSL, in the entry for the CA of the certificate.
+The [TucPki018Verifier](src/main/java/de/gematik/pki/gemlibpki/commons/certificate/TucPki018Verifier.java) will use the [TslBasedSspOcspTransceiverFactory](src/main/java/de/gematik/pki/gemlibpki/ti10/ocsp/TslBasedSspOcspTransceiverFactory.java) as default and everything works as it did before TI 20 started.
+###### TI 2.0:
+The SSP is expected to be listed in the Extensions of the certificate itself. There it is the Extension `AuthorityInformationAccess`.
+The [TucPki018Verifier](src/main/java/de/gematik/pki/gemlibpki/commons/certificate/TucPki018Verifier.java) needs a [CertificateBasedSspOcspTransceiverFactory](src/main/java/de/gematik/pki/gemlibpki/ti20/ocsp/CertificateBasedSspOcspTransceiverFactory.java) and this will do the work.
+
+Examples can be found in the unit tests.
 
 ##### TSL handling
 
@@ -72,22 +83,22 @@ The library contains checks defined in TUC_PKI_001 „Periodische Aktualisierung
 specified in gematik document "Übergreifende Spezifikation PKI" (gemSpec_PKI)
 
 We provide several methods to get information, for parsing, modifying, signing and validation of a
-TSL. (see: [TSL package](src/main/java/de/gematik/pki/gemlibpki/tsl))
+TSL. (see: [TSL package](src/main/java/de/gematik/pki/gemlibpki/commons/tsl))
 
 Attention: the trust anchor change mechanism is not completely implemented in this library,
 because it has to be part of the TSL downloading component. An example of an implementation
-can be found in the system under test simulator of the gematik PKI test
-suite: [TslProcurer](https://github.com/gematik/app-PkiTestsuite/blob/1.1.3/pkits-sut-server-sim/src/main/java/de/gematik/pki/pkits/sut/server/sim/tsl/TslProcurer.java)
+can be found in the `system under test simulator` of the gematik PKI test
+suite, component: [TslProcurer](https://github.com/gematik/app-PkiTestsuite/blob/main/pkits-sut-server-sim/src/main/java/de/gematik/pki/pkits/sut/server/sim/tsl/TslProcurer.java)
 
 ###### Steps to perform TSL checks
 
-- instantiate a [TslReader](src/main/java/de/gematik/pki/gemlibpki/tsl/TslReader.java) to read a TSL
+- instantiate a [TslReader](src/main/java/de/gematik/pki/gemlibpki/commons/tsl/TslReader.java) to read a TSL
 - use the result of the TslReader to instantiate
-  a [TslInformationProvider](src/main/java/de/gematik/pki/gemlibpki/tsl/TslInformationProvider.java)
+  a [TslInformationProvider](src/main/java/de/gematik/pki/gemlibpki/commons/tsl/TslInformationProvider.java)
   and call its public methods
 - get TspServices from TslInformationProvider
 - instantiate
-  a [TucPki001Verifier](src/main/java/de/gematik/pki/gemlibpki/tsl/TucPki001Verifier.java) (via
+  a [TucPki001Verifier](src/main/java/de/gematik/pki/gemlibpki/commons/tsl/TucPki001Verifier.java) (via
   builder) and call its public method `performTucPki001Checks()`
 - the offline mode for TUC_PKI_001 (used solely for a Konnektor) is not implemented
 
@@ -113,7 +124,7 @@ in any compatible unix environment.
 
 ## License
 
-Copyright 2020-2025 gematik GmbH
+Copyright 2020-2026 gematik GmbH
 
 Apache License, Version 2.0
 
