@@ -20,12 +20,13 @@
 
 package de.gematik.pki.gemlibpki.commons.utils;
 
+import static de.gematik.pki.gemlibpki.commons.TestConstants.P12_PASSWORD;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import de.gematik.pki.gemlibpki.commons.TestConstants;
+import de.gematik.pki.gemlibpki.commons.TestConstantsNonQes;
 import de.gematik.pki.gemlibpki.commons.exception.GemPkiRuntimeException;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -33,48 +34,46 @@ import org.junit.jupiter.api.Test;
 class P12ReaderTest {
 
   @Test
-  void verifyGetContentFromP12Valid() {
-    assertDoesNotThrow(() -> TestUtils.readP12("ocsp/rsaOcspSigner.p12"));
+  void readP12nonQes_whenRsaP12IsValid_thenDoesNotThrow() {
+    assertDoesNotThrow(() -> TestUtils.readP12nonQes("ocsp/rsaOcspSigner.p12"));
   }
 
   @Test
-  void verifyGetContentFromP12ValidEcc() {
-    final Path p12Path = Path.of(TestConstants.CERT_DIR, "ocsp/eccOcspSigner.p12");
-    assertDoesNotThrow(() -> P12Reader.getContentFromP12(p12Path, TestConstants.P12_PASSWORD));
+  void getContentFromP12_whenEccP12IsValid_thenDoesNotThrow() {
+    final Path p12Path = Path.of(TestConstantsNonQes.CERT_DIR_NON_QES, "ocsp/eccOcspSigner.p12");
+    assertDoesNotThrow(() -> P12Reader.getContentFromP12(p12Path, P12_PASSWORD));
   }
 
   @Test
-  void verifyGetContentFromP12Null() {
+  void getContentFromP12_whenP12ContainsNoEntries_thenReturnsNull() {
     assertNull(
         P12Reader.getContentFromP12(
-            Path.of(TestConstants.CERT_DIR, "empty.p12"), TestConstants.P12_PASSWORD));
+            Path.of(TestConstantsNonQes.CERT_DIR_NON_QES, "empty.p12"), P12_PASSWORD));
   }
 
   @Test
-  void verifyGetInvalidP12() {
+  void getContentFromP12_whenFileIsNotAP12_thenThrowsGemPkiRuntimeException() {
     final Path invalidP12 = Path.of("src/test/resources/log4j2.xml");
-    assertThatThrownBy(() -> P12Reader.getContentFromP12(invalidP12, TestConstants.P12_PASSWORD))
+    assertThatThrownBy(() -> P12Reader.getContentFromP12(invalidP12, P12_PASSWORD))
         .isInstanceOf(GemPkiRuntimeException.class)
         .hasMessage("Konnte .p12 Datei nicht verarbeiten.");
   }
 
   @Test
-  void verifyFileMissing() {
+  void getContentFromP12_whenPathDoesNotExist_thenThrowsGemPkiRuntimeException() {
     final Path invalidPath = Path.of("invalid");
-    assertThatThrownBy(() -> P12Reader.getContentFromP12(invalidPath, TestConstants.P12_PASSWORD))
+    assertThatThrownBy(() -> P12Reader.getContentFromP12(invalidPath, P12_PASSWORD))
         .isInstanceOf(GemPkiRuntimeException.class)
         .hasMessage("Cannot read path: " + invalidPath);
   }
 
   @Test
-  void verifyGetContentFromP12NonNull() {
+  void getContentFromP12_whenRequiredArgumentIsNull_thenThrowsNullPointerException() {
 
     assertNonNullParameter(
-        () -> P12Reader.getContentFromP12((byte[]) null, TestConstants.P12_PASSWORD),
-        "p12FileContent");
+        () -> P12Reader.getContentFromP12((byte[]) null, P12_PASSWORD), "p12FileContent");
 
-    assertNonNullParameter(
-        () -> P12Reader.getContentFromP12((Path) null, TestConstants.P12_PASSWORD), "path");
+    assertNonNullParameter(() -> P12Reader.getContentFromP12((Path) null, P12_PASSWORD), "path");
 
     final Path path = Path.of("foo");
     assertNonNullParameter(() -> P12Reader.getContentFromP12(path, null), "p12Password");

@@ -20,8 +20,12 @@
 
 package de.gematik.pki.gemlibpki.commons.tsl;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_ISSUER_CERT_TSL_CA51;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.FILE_NAME_TSL_DEFAULT_NON_QES;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_ISSUER_CERT_TSL_CA51;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsQes.FILE_NAME_TSL_DEFAULT_QES;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsQes.FILE_NAME_TSL_QES_MISSING_KEYINFO_IN_SIGNATURE;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsQes.FILE_NAME_TSL_QES_MISSING_SIGNER_CERT_IN_SIGNATURE;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsQes.FILE_NAME_TSL_QES_SIGNATURE_BROKEN;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -33,27 +37,89 @@ import org.w3c.dom.Document;
 class TslValidatorTest {
 
   @Test
-  void nonNullCheck() {
+  void
+      checkNonQesTslSignatureWithTrustAnchor_whenRequiredArgumentsAreNull_thenThrowsOnNullParameter() {
     final Document nullTslDoc = null;
     assertNonNullParameter(
-        () -> TslValidator.checkSignature(nullTslDoc, VALID_ISSUER_CERT_TSL_CA51), "tsl");
+        () ->
+            TslValidator.checkNonQesTslSignatureWithTrustAnchor(
+                nullTslDoc, VALID_ISSUER_CERT_TSL_CA51),
+        "tslToVerify");
 
     final byte[] nullTslBytes = null;
     assertNonNullParameter(
-        () -> TslValidator.checkSignature(nullTslBytes, VALID_ISSUER_CERT_TSL_CA51), "tsl");
+        () ->
+            TslValidator.checkNonQesTslSignatureWithTrustAnchor(
+                nullTslBytes, VALID_ISSUER_CERT_TSL_CA51),
+        "tslToVerify");
 
-    assertNonNullParameter(() -> TslValidator.checkSignature(new byte[] {0}, null), "trustAnchor");
+    assertNonNullParameter(
+        () -> TslValidator.checkNonQesTslSignatureWithTrustAnchor(new byte[] {0}, null),
+        "trustAnchor");
 
-    final Document tslAsDoc = TestUtils.getDefaultTslAsDoc();
-    assertNonNullParameter(() -> TslValidator.checkSignature(tslAsDoc, null), "trustAnchor");
+    final Document tslAsDoc = TestUtils.getDefaultTslAsDocNonQes();
+    assertNonNullParameter(
+        () -> TslValidator.checkNonQesTslSignatureWithTrustAnchor(tslAsDoc, null), "trustAnchor");
   }
 
   @Test
-  void checkSignature_valid() {
+  void checkNonQesTslSignatureWithTrustAnchor_whenTslSignatureIsValid_thenReturnsTrue() {
     final Document tslEcc =
         TslReader.getTslAsDoc(
-            ResourceReader.getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, TestUtils.class));
-    assertThat(TslValidator.checkSignature(tslEcc, VALID_ISSUER_CERT_TSL_CA51)).isTrue();
+            ResourceReader.getFilePathFromResources(
+                FILE_NAME_TSL_DEFAULT_NON_QES, TestUtils.class));
+    assertThat(
+            TslValidator.checkNonQesTslSignatureWithTrustAnchor(tslEcc, VALID_ISSUER_CERT_TSL_CA51))
+        .isTrue();
+  }
+
+  @Test
+  void
+      checkQesTslSignatureWithTslBasedTrust_whenValidQesTslIsProvided_thenReturnsTrueForDocumentAndBytes() {
+    final Document tslQes =
+        TslReader.getTslAsDoc(
+            ResourceReader.getFilePathFromResources(FILE_NAME_TSL_DEFAULT_QES, TestUtils.class));
+    assertThat(TslValidator.checkQesTslSignatureWithTslBasedTrust(tslQes)).isTrue();
+    assertThat(TslValidator.checkQesTslSignatureWithTslBasedTrust(TslConverter.docToBytes(tslQes)))
+        .isTrue();
+  }
+
+  @Test
+  void
+      checkQesTslSignatureWithTslBasedTrust_whenValidResignedQesTslIsProvided_thenReturnsTrueForDocumentAndBytes() {
+    final Document tslQes =
+        TslReader.getTslAsDoc(
+            ResourceReader.getFilePathFromResources(FILE_NAME_TSL_DEFAULT_QES, TestUtils.class));
+    assertThat(TslValidator.checkQesTslSignatureWithTslBasedTrust(tslQes)).isTrue();
+    assertThat(TslValidator.checkQesTslSignatureWithTslBasedTrust(TslConverter.docToBytes(tslQes)))
+        .isTrue();
+  }
+
+  @Test
+  void checkQesTslSignatureWithTslBasedTrust_whenSignerCertificateIsMissing_thenReturnsFalse() {
+    final Document tslQes =
+        TslReader.getTslAsDoc(
+            ResourceReader.getFilePathFromResources(
+                FILE_NAME_TSL_QES_MISSING_SIGNER_CERT_IN_SIGNATURE, TestUtils.class));
+    assertThat(TslValidator.checkQesTslSignatureWithTslBasedTrust(tslQes)).isFalse();
+  }
+
+  @Test
+  void checkQesTslSignatureWithTslBasedTrust_whenSignatureValueIsInvalid_thenReturnsFalse() {
+    final Document tslQes =
+        TslReader.getTslAsDoc(
+            ResourceReader.getFilePathFromResources(
+                FILE_NAME_TSL_QES_SIGNATURE_BROKEN, TestUtils.class));
+    assertThat(TslValidator.checkQesTslSignatureWithTslBasedTrust(tslQes)).isFalse();
+  }
+
+  @Test
+  void checkQesTslSignatureWithTslBasedTrust_whenKeyInfoIsMissing_thenReturnsFalse() {
+    final Document tslQes =
+        TslReader.getTslAsDoc(
+            ResourceReader.getFilePathFromResources(
+                FILE_NAME_TSL_QES_MISSING_KEYINFO_IN_SIGNATURE, TestUtils.class));
+    assertThat(TslValidator.checkQesTslSignatureWithTslBasedTrust(tslQes)).isFalse();
   }
 
   /**
@@ -61,13 +127,15 @@ class TslValidatorTest {
    * <ds:SignatureValue> element
    */
   @Test
-  void checkSignature_broken() {
+  void checkNonQesTslSignatureWithTrustAnchor_whenSignatureValueIsBroken_thenReturnsFalse() {
     final String file_tslEccDefault_signatureBroken =
-        "tsls/ecc/invalid/TSL_invalid_Signature_broken.xml";
+        "tsls/nonqes/invalid/TSL_invalid_Signature_broken.xml";
     final Document tslEcc =
         TslReader.getTslAsDoc(
             ResourceReader.getFilePathFromResources(
                 file_tslEccDefault_signatureBroken, TestUtils.class));
-    assertThat(TslValidator.checkSignature(tslEcc, VALID_ISSUER_CERT_TSL_CA51)).isFalse();
+    assertThat(
+            TslValidator.checkNonQesTslSignatureWithTrustAnchor(tslEcc, VALID_ISSUER_CERT_TSL_CA51))
+        .isFalse();
   }
 }

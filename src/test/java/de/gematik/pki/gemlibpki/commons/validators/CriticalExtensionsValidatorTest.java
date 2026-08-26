@@ -35,12 +35,12 @@ import org.mockito.Mockito;
 class CriticalExtensionsValidatorTest {
 
   @Test
-  void verifyConstructorNullParameter() {
+  void constructor_whenProductTypeIsNull_thenThrowsNullPointerException() {
     assertNonNullParameter(() -> new CriticalExtensionsValidator(null), "productType");
   }
 
   @Test
-  void verifyValidateCertificateNullParameter() {
+  void validateCertificate_whenCertificateOrProfileIsNull_thenThrowsNullPointerException() {
     final X509Certificate x509EeCert = Mockito.mock(X509Certificate.class);
 
     final CriticalExtensionsValidator tested = new CriticalExtensionsValidator(PRODUCT_TYPE);
@@ -52,9 +52,10 @@ class CriticalExtensionsValidatorTest {
   }
 
   @Test
-  void verifyCriticalExtensions() {
+  void
+      validateCertificate_whenCertificateContainsUnexpectedCriticalExtension_thenThrowsGemPkiException() {
     final X509Certificate certInvalidCriticalExtension =
-        TestUtils.readCert("GEM.SMCB-CA57/invalid/BabetteBeyer-invalid-extension-crit.pem");
+        TestUtils.readCertNonQes("GEM.SMCB-CA57/invalid/BabetteBeyer-invalid-extension-crit.pem");
 
     final CriticalExtensionsValidator tested = new CriticalExtensionsValidator(PRODUCT_TYPE);
 

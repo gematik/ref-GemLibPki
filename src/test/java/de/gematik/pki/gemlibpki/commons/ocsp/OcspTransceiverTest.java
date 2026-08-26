@@ -20,11 +20,11 @@
 
 package de.gematik.pki.gemlibpki.commons.ocsp;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.LOCAL_SSP_DIR;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.OCSP_HOST;
 import static de.gematik.pki.gemlibpki.commons.TestConstants.PRODUCT_TYPE;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_ISSUER_CERT_SMCB;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_X509_EE_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.LOCAL_SSP_DIR;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.OCSP_HOST;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_ISSUER_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_X509_EE_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.commons.ocsp.OcspTransceiver.OCSP_SEND_RECEIVE_FAILED;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -34,10 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import de.gematik.pki.gemlibpki.commons.error.ErrorCode;
 import de.gematik.pki.gemlibpki.commons.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.commons.exception.GemPkiRuntimeException;
-import de.gematik.pki.gemlibpki.commons.tsl.TspService;
-import de.gematik.pki.gemlibpki.commons.utils.TestUtils;
 import java.io.IOException;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -54,8 +51,6 @@ import org.mockito.Mockito;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class OcspTransceiverTest {
 
-  private static List<TspService> tspServiceList;
-
   private static OcspResponderMock ocspResponderMock;
 
   private static final int ocspTimeoutSeconds = OcspConstants.DEFAULT_OCSP_TIMEOUT_SECONDS;
@@ -63,7 +58,6 @@ class OcspTransceiverTest {
   @BeforeAll
   public void setup() {
     ocspResponderMock = OcspResponderMock.createAndStart(LOCAL_SSP_DIR, OCSP_HOST, null);
-    tspServiceList = TestUtils.getDefaultTspServiceList();
   }
 
   @AfterAll
@@ -88,7 +82,7 @@ class OcspTransceiverTest {
   }
 
   @Test
-  void verifySspUrlInvalidThrowsGemPkiExceptionOnly() {
+  void getOcspResponse_whenSspUrlIsInvalid_thenThrowsGemPkiException() {
     final OcspTransceiver builder =
         OcspTransceiver.builder()
             .productType(PRODUCT_TYPE)
@@ -102,43 +96,29 @@ class OcspTransceiverTest {
   }
 
   @Test
-  void sendOcspRequestReceiveOcspResponseGood() throws GemPkiException {
+  void sendOcspRequest_whenResponderReturnsGoodOcspResponse_thenReturnsResponse()
+      throws GemPkiException {
     final OCSPReq ocspReq = configureOcspResponderMockForOcspRequest();
 
     final OCSPResp ocspRespRx = getOcspTransceiver().sendOcspRequest(ocspReq).orElseThrow();
 
     assertThat(ocspReq).isNotNull();
-    assertDoesNotThrow(
-        () ->
-            TucPki006OcspVerifier.builder()
-                .productType(PRODUCT_TYPE)
-                .tspServiceList(tspServiceList)
-                .eeCert(VALID_X509_EE_CERT_SMCB)
-                .ocspResponse(ocspRespRx)
-                .build()
-                .verifyStatus());
+    assertDoesNotThrow(() -> OcspVerification.verifyStatus(PRODUCT_TYPE, ocspRespRx));
   }
 
   @Test
-  void sendOcspRequestReceiveOcspResponseGoodStatic() throws GemPkiException {
+  void sendOcspRequest_whenRequestIsWrappedWithRequireNonNull_thenReturnsResponse()
+      throws GemPkiException {
 
     final OCSPReq ocspReq = Objects.requireNonNull(configureOcspResponderMockForOcspRequest());
 
     final OCSPResp ocspRespRx = getOcspTransceiver().sendOcspRequest(ocspReq).orElseThrow();
 
-    assertDoesNotThrow(
-        () ->
-            TucPki006OcspVerifier.builder()
-                .productType(PRODUCT_TYPE)
-                .tspServiceList(tspServiceList)
-                .eeCert(VALID_X509_EE_CERT_SMCB)
-                .ocspResponse(ocspRespRx)
-                .build()
-                .verifyStatus());
+    assertDoesNotThrow(() -> OcspVerification.verifyStatus(PRODUCT_TYPE, ocspRespRx));
   }
 
   @Test
-  void sendOcspRequestReceiveOcspResponseOptIsEmpty() {
+  void getOcspResponse_whenSspIsInvalidAndOcspFailureIsTolerated_thenDoesNotThrow() {
 
     final OcspTransceiver transceiver =
         OcspTransceiver.builder()
@@ -150,11 +130,11 @@ class OcspTransceiverTest {
             .ocspTimeoutSeconds(10000)
             .build();
 
-    assertDoesNotThrow(transceiver::getOcspResponse);
+    assertDoesNotThrow(() -> transceiver.getOcspResponse());
   }
 
   @Test
-  void sendOcspRequestUnreachableUrl() {
+  void sendOcspRequest_whenSspIsUnreachableAndFailureIsNotTolerated_thenThrowsGemPkiException() {
     final OCSPReq ocspReq = configureOcspResponderMockForOcspRequest();
 
     final OcspTransceiver ocspTransceiver =
@@ -172,7 +152,7 @@ class OcspTransceiverTest {
   }
 
   @Test
-  void sendOcspRequestUnreachableUrlTolerate() {
+  void sendOcspRequest_whenSspIsUnreachableAndOcspFailureIsTolerated_thenDoesNotThrow() {
     final OCSPReq ocspReq = configureOcspResponderMockForOcspRequest();
 
     final OcspTransceiver ocspTransceiver =
@@ -189,7 +169,7 @@ class OcspTransceiverTest {
   }
 
   @Test
-  void sendOcspRequestUnreachableUrlTolerateOcspFailure() {
+  void sendOcspRequest_whenSspIsUnreachableAndTolerateOcspFailureIsEnabled_thenDoesNotThrow() {
     final OCSPReq ocspReq = configureOcspResponderMockForOcspRequest();
 
     final OcspTransceiver ocspTransceiver =
@@ -207,7 +187,7 @@ class OcspTransceiverTest {
 
   /** OcspResponderMock will send OcspResponse with HttpStatus 404 */
   @Test
-  void sendOcspRequestUnknownEndpoint() {
+  void sendOcspRequest_whenEndpointReturnsHttp404_thenThrowsGemPkiException() {
 
     final OCSPReq ocspReq = configureOcspResponderMockForOcspRequest();
     final String ssp = ocspResponderMock.getSspUrl() + "unknownEndpoint";
@@ -227,7 +207,7 @@ class OcspTransceiverTest {
   }
 
   @Test
-  void sendOcspRequestUnknownEndpointTolerate() {
+  void sendOcspRequest_whenEndpointReturnsHttp404AndOcspFailureIsTolerated_thenDoesNotThrow() {
 
     final OCSPReq ocspReq = configureOcspResponderMockForOcspRequest();
     final String ssp = ocspResponderMock.getSspUrl() + "unknownEndpoint";
@@ -246,7 +226,7 @@ class OcspTransceiverTest {
   }
 
   @Test
-  void nonNull() {
+  void sendOcspRequest_whenOcspRequestIsNull_thenThrowsOnNonNullParameter() {
     final OcspTransceiver ocspTransceiver = getOcspTransceiver();
     assertNonNullParameter(() -> ocspTransceiver.sendOcspRequest(null), "ocspReq");
   }
@@ -261,7 +241,8 @@ class OcspTransceiverTest {
   }
 
   @Test
-  void sendOcspRespGetEncoded_IOException() throws IOException {
+  void sendOcspRequest_whenRequestEncodingFails_thenThrowsGemPkiRuntimeException()
+      throws IOException {
     final OCSPReq ocspReqReal =
         OcspRequestGenerator.generateSingleOcspRequest(
             VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
@@ -279,8 +260,9 @@ class OcspTransceiverTest {
   }
 
   @Test
-  void sendOcspRespFutureGetBad_InterruptedException()
-      throws ExecutionException, InterruptedException, TimeoutException {
+  void
+      sendOcspRequest_whenFutureGetIsInterruptedAndFailureIsNotTolerated_thenThrowsGemPkiException()
+          throws ExecutionException, InterruptedException, TimeoutException {
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(
             VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
@@ -303,7 +285,7 @@ class OcspTransceiverTest {
   }
 
   @Test
-  void sendOcspRespFutureGetBad_InterruptedException_tolerate()
+  void sendOcspRequest_whenFutureGetIsInterruptedAndFailureIsTolerated_thenDoesNotThrow()
       throws ExecutionException, InterruptedException, TimeoutException {
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(
@@ -323,8 +305,9 @@ class OcspTransceiverTest {
   }
 
   @Test
-  void sendOcspRespFutureGetBad_ExecutionException()
-      throws ExecutionException, InterruptedException, TimeoutException {
+  void
+      sendOcspRequest_whenFutureGetThrowsExecutionExceptionAndFailureIsNotTolerated_thenThrowsGemPkiException()
+          throws ExecutionException, InterruptedException, TimeoutException {
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(
             VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
@@ -347,7 +330,7 @@ class OcspTransceiverTest {
   }
 
   @Test
-  void sendOcspRespFutureGetBad_ExecutionException_tolerate()
+  void sendOcspRequest_whenFutureGetThrowsExecutionExceptionAndFailureIsTolerated_thenDoesNotThrow()
       throws ExecutionException, InterruptedException, TimeoutException {
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(
@@ -367,7 +350,7 @@ class OcspTransceiverTest {
   }
 
   @Test
-  void sendOcspRespFutureGetBad_TimeoutException()
+  void sendOcspRequest_whenFutureGetTimesOut_thenThrowsGemPkiException()
       throws ExecutionException, InterruptedException, TimeoutException {
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(
@@ -391,7 +374,8 @@ class OcspTransceiverTest {
   }
 
   @Test
-  void sendOcspRespOcspForBodyBad_IOException() throws IOException {
+  void sendOcspRequest_whenReadingOcspResponseBodyFails_thenThrowsGemPkiRuntimeException()
+      throws IOException {
     final OCSPReq ocspReq = configureOcspResponderMockForOcspRequest();
 
     final OcspTransceiver transceiver = getOcspTransceiver();

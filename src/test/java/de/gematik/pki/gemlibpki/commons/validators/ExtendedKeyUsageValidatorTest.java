@@ -20,10 +20,10 @@
 
 package de.gematik.pki.gemlibpki.commons.validators;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.MISSING_EXT_KEY_USAGE_EE_CERT;
 import static de.gematik.pki.gemlibpki.commons.TestConstants.PRODUCT_TYPE;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_HBA_AUT_ECC;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_X509_EE_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.MISSING_EXT_KEY_USAGE_EE_CERT;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_HBA_AUT_ECC;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_X509_EE_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.commons.certificate.CertificateProfile.CERT_PROFILE_ANY;
 import static de.gematik.pki.gemlibpki.commons.certificate.CertificateProfile.CERT_PROFILE_C_HCI_AUT_ECC;
 import static de.gematik.pki.gemlibpki.commons.certificate.CertificateProfile.CERT_PROFILE_C_HP_AUT_ECC;
@@ -54,12 +54,12 @@ class ExtendedKeyUsageValidatorTest {
   }
 
   @Test
-  void verifyConstructorNullParameter() {
+  void constructor_whenProductTypeIsNull_thenThrowsNullPointerException() {
     assertNonNullParameter(() -> new ExtendedKeyUsageValidator(null), "productType");
   }
 
   @Test
-  void verifyValidateCertificateNullParameter() {
+  void validateCertificate_whenCertificateOrProfileIsNull_thenThrowsNullPointerException() {
     assertNonNullParameter(
         () -> tested.validateCertificate(null, CERTIFICATE_PROFILE), "x509EeCert");
     assertNonNullParameter(
@@ -67,25 +67,26 @@ class ExtendedKeyUsageValidatorTest {
   }
 
   @Test
-  void verifyExtendedKeyUsageMissingInCertificateAndNotExpected() {
+  void
+      validateCertificate_whenExtendedKeyUsageIsMissingAndProfileDoesNotRequireIt_thenDoesNotThrow() {
     assertDoesNotThrow(
         () -> tested.validateCertificate(MISSING_EXT_KEY_USAGE_EE_CERT, CERT_PROFILE_ANY));
   }
 
   @Test
-  void verifyExtendedKeyUsageNotChecked() {
+  void validateCertificate_whenProfileAllowsAnyExtendedKeyUsage_thenDoesNotThrow() {
 
     assertDoesNotThrow(() -> tested.validateCertificate(VALID_X509_EE_CERT_SMCB, CERT_PROFILE_ANY));
   }
 
   @Test
-  void verifyExtendedKeyUsageValid() {
+  void validateCertificate_whenExtendedKeyUsageMatchesProfile_thenDoesNotThrow() {
     assertDoesNotThrow(
         () -> tested.validateCertificate(VALID_X509_EE_CERT_SMCB, CERTIFICATE_PROFILE));
   }
 
   @Test
-  void verifyNotAllExtendedKeyUsagesPresentInCert() {
+  void validateCertificate_whenRequiredExtendedKeyUsagesAreMissing_thenThrowsGemPkiException() {
 
     assertThatThrownBy(
             () -> tested.validateCertificate(VALID_X509_EE_CERT_SMCB, CERT_PROFILE_C_HP_AUT_ECC))
@@ -94,7 +95,8 @@ class ExtendedKeyUsageValidatorTest {
   }
 
   @Test
-  void verifyToManyExtendedKeyUsagesPresentInCert() {
+  void
+      validateCertificate_whenCertificateContainsAdditionalExtendedKeyUsages_thenThrowsGemPkiException() {
     assertThatThrownBy(
             () -> tested.validateCertificate(VALID_HBA_AUT_ECC, CERT_PROFILE_C_HCI_AUT_ECC))
         .isInstanceOf(GemPkiException.class)
@@ -102,7 +104,8 @@ class ExtendedKeyUsageValidatorTest {
   }
 
   @Test
-  void verifyExtendedKeyUsageMissingInCertificate() {
+  void
+      validateCertificate_whenExtendedKeyUsageIsMissingButProfileRequiresIt_thenThrowsGemPkiException() {
     assertThatThrownBy(
             () -> tested.validateCertificate(MISSING_EXT_KEY_USAGE_EE_CERT, CERTIFICATE_PROFILE))
         .isInstanceOf(GemPkiException.class)
@@ -110,9 +113,9 @@ class ExtendedKeyUsageValidatorTest {
   }
 
   @Test
-  void verifyExtendedKeyUsageInvalidInCertificate() {
+  void validateCertificate_whenExtendedKeyUsageDoesNotMatchProfile_thenThrowsGemPkiException() {
     final X509Certificate invalidExtendedKeyUsageEeCert =
-        TestUtils.readCert("GEM.SMCB-CA57/invalid/BabetteBeyer-invalid-ext-keyusage.pem");
+        TestUtils.readCertNonQes("GEM.SMCB-CA57/invalid/BabetteBeyer-invalid-ext-keyusage.pem");
 
     assertThatThrownBy(
             () -> tested.validateCertificate(invalidExtendedKeyUsageEeCert, CERTIFICATE_PROFILE))
@@ -121,7 +124,9 @@ class ExtendedKeyUsageValidatorTest {
   }
 
   @Test
-  void verifyExtendedKeyUsageCertificateParsingException() throws CertificateParsingException {
+  void
+      validateCertificate_whenReadingExtendedKeyUsageThrowsCertificateParsingException_thenThrowsGemPkiRuntimeException()
+          throws CertificateParsingException {
 
     final X509Certificate cert = Mockito.spy(VALID_X509_EE_CERT_SMCB);
     Mockito.when(cert.getExtendedKeyUsage()).thenThrow(new CertificateParsingException());

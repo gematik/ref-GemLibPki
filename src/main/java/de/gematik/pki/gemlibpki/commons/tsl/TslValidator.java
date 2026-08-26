@@ -33,10 +33,14 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.xml.security.Init;
+import org.apache.xml.security.keys.KeyInfo;
+import org.apache.xml.security.signature.XMLSignature;
 import org.apache.xml.security.signature.XMLSignatureException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 import xades4j.XAdES4jException;
 import xades4j.providers.CertificateValidationProvider;
 import xades4j.providers.impl.PKIXCertificateValidationProvider;
@@ -50,16 +54,29 @@ import xades4j.verification.XadesVerifier;
 public final class TslValidator {
 
   /**
-   * Check signature of given TSL (mathematically and against trust anchor).
+   * Checks the signature of a given TSL (mathematically and against a given trust anchor).
    *
-   * @param tsl the tsl to check
+   * @param tslToVerify the tsl to check
    * @param trustAnchor the tsl trust anchor certificate (issuer of signing certificate)
-   * @return true if signature is valid, otherwise false
+   * @return true if the signature is valid, otherwise false
    */
-  public static boolean checkSignature(
-      @NonNull final Document tsl, @NonNull final X509Certificate trustAnchor) {
+  public static boolean checkNonQesTslSignatureWithTrustAnchor(
+      final byte @NonNull [] tslToVerify, @NonNull final X509Certificate trustAnchor) {
+    return checkNonQesTslSignatureWithTrustAnchor(
+        TslConverter.bytesToDoc(tslToVerify), trustAnchor);
+  }
+
+  /**
+   * Checks the signature of a given TSL (mathematically and against a given trust anchor).
+   *
+   * @param tslToVerify the tsl to check
+   * @param trustAnchor the tsl trust anchor certificate (issuer of signing certificate)
+   * @return true if the signature is valid, otherwise false
+   */
+  public static boolean checkNonQesTslSignatureWithTrustAnchor(
+      @NonNull final Document tslToVerify, @NonNull final X509Certificate trustAnchor) {
     try {
-      final Optional<XAdESVerificationResult> xvr = getVerificationResult(tsl, trustAnchor);
+      final Optional<XAdESVerificationResult> xvr = getVerificationResult(tslToVerify, trustAnchor);
       if (xvr.isEmpty()) {
         return false;
       }
@@ -76,18 +93,6 @@ public final class TslValidator {
     } catch (final IOException e) {
       throw new GemPkiRuntimeException("TSL signature verification failed.", e);
     }
-  }
-
-  /**
-   * Check signature of given TSL (mathematically and against trust anchor).
-   *
-   * @param tsl the tsl to check
-   * @param trustAnchor the tsl trust anchor certificate (issuer of signing certificate)
-   * @return true if signature is valid, otherwise false
-   */
-  public static boolean checkSignature(
-      final byte @NonNull [] tsl, @NonNull final X509Certificate trustAnchor) {
-    return checkSignature(TslConverter.bytesToDoc(tsl), trustAnchor);
   }
 
   private static Optional<XAdESVerificationResult> getVerificationResult(
@@ -114,5 +119,89 @@ public final class TslValidator {
       return Optional.empty();
     }
     return Optional.of(verifier.verify(signature, null));
+  }
+
+  /**
+   * Validates the signature of a given QES TSL (mathematically). The signer's public key is taken
+   * from the signer certificate in the TSL signature element.
+   *
+   * @param tsl the tsl to check
+   * @return true if the signature is valid, otherwise false
+   */
+  public static boolean checkQesTslSignatureWithTslBasedTrust(@NonNull final Document tsl) {
+
+    try {
+      Init.init();
+
+      final Element signatureElement = TslUtils.getSignature(tsl);
+
+      registerIds(tsl);
+
+      final XMLSignature xmlSignature = new XMLSignature(signatureElement, "");
+
+      final KeyInfo keyInfo = xmlSignature.getKeyInfo();
+      if (keyInfo == null) {
+        return false;
+      }
+
+      final X509Certificate cert = keyInfo.getX509Certificate();
+      if (cert == null) {
+        return false;
+      }
+
+      return xmlSignature.checkSignatureValue(cert);
+
+    } catch (final Exception e) {
+      return false;
+    }
+  }
+
+  /**
+   * Validates the signature of a given QES TSL (mathematically). The signer's public key is taken
+   * from the signer certificate in the TSL signature element.
+   *
+   * @param tsl the tsl to check
+   * @return true if the signature is valid, otherwise false
+   */
+  public static boolean checkQesTslSignatureWithTslBasedTrust(final byte @NonNull [] tsl) {
+    return checkQesTslSignatureWithTslBasedTrust(TslConverter.bytesToDoc(tsl));
+  }
+
+  private static void registerIds(final Document doc) {
+    /*
+    - Id="..." is in DOM not ID
+    - setIdAttribute("Id", true) registers it as ID
+    - is just Metainformation in DOM
+    - signature stays as is
+    */
+
+    // Root-Element (Reference URI="")
+    final Element root = doc.getDocumentElement();
+    if (root.hasAttribute("Id")) {
+      root.setIdAttribute("Id", true);
+    }
+    if (root.hasAttribute("ID")) {
+      root.setIdAttribute("ID", true);
+    }
+
+    // ds:Signature @Id
+    final NodeList signatures =
+        doc.getElementsByTagNameNS("http://www.w3.org/2000/09/xmldsig#", "Signature");
+    for (int i = 0; i < signatures.getLength(); i++) {
+      final Element sig = (Element) signatures.item(i);
+      if (sig.hasAttribute("Id")) {
+        sig.setIdAttribute("Id", true);
+      }
+    }
+
+    // xades:SignedProperties @Id
+    final NodeList signedProps =
+        doc.getElementsByTagNameNS("http://uri.etsi.org/01903/v1.3.2#", "SignedProperties");
+    for (int i = 0; i < signedProps.getLength(); i++) {
+      final Element sp = (Element) signedProps.item(i);
+      if (sp.hasAttribute("Id")) {
+        sp.setIdAttribute("Id", true);
+      }
+    }
   }
 }

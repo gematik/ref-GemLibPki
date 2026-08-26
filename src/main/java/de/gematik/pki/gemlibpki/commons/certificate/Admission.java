@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.asn1.ASN1Encodable;
@@ -41,8 +42,7 @@ import org.bouncycastle.cert.X509CertificateHolder;
 
 /**
  * Class to abstract the admission of a certificate. This class works with a parameterized variable
- * for the certificate in its constructor. As specified by gematik, there is only one admission. So
- * this class returns the first available information.
+ * for the certificate in its constructor.
  */
 @Slf4j
 public class Admission {
@@ -84,53 +84,42 @@ public class Admission {
   /**
    * Reading profession items
    *
-   * @return Non-duplicate list of profession items of the first profession info of the first
-   *     admission in the certificate
+   * @return Non-duplicate list of profession items of all profession infos in the certificate
    */
   public Set<String> getProfessionItems() {
-    final AdmissionSyntax admissionInstance = AdmissionSyntax.getInstance(asn1Admission);
-
-    if (admissionInstance == null) {
-      log.info(NO_ADMISSION_MESSAGE);
+    final Stream<ProfessionInfo> professionInfoStream = getProfessionInfoStream();
+    if (professionInfoStream == null) {
       return Collections.emptySet();
     }
 
-    final Admissions[] admissions = admissionInstance.getContentsOfAdmissions();
-    if (admissions.length == 0) {
-      log.info("Keine Elemente in der Admission vorhanden.");
+    final Set<String> professionItems =
+        professionInfoStream
+            .flatMap(professionInfo -> Arrays.stream(professionInfo.getProfessionItems()))
+            .map(DirectoryString::getString)
+            .collect(Collectors.toSet());
+
+    if (professionItems.isEmpty()) {
+      log.info("Keine ProfessionItems vorhanden.");
       return Collections.emptySet();
     }
 
-    final ProfessionInfo[] professionInfos = admissions[0].getProfessionInfos();
-    if (professionInfos.length == 0) {
-      log.info("Keine ProfessionInfo vorhanden.");
-      return Collections.emptySet();
-    }
-
-    return Arrays.stream(professionInfos[0].getProfessionItems())
-        .map(DirectoryString::getString)
-        .collect(Collectors.toSet());
+    return professionItems;
   }
 
   /**
    * Reading profession oid's
    *
-   * @return Non-duplicate list of profession oid's of the first profession info of the first
-   *     admission in the certificate
+   * @return Non-duplicate list of profession oid's of all profession infos in the certificate
    */
   public Set<String> getProfessionOids() {
-
-    final AdmissionSyntax admissionInstance = AdmissionSyntax.getInstance(asn1Admission);
-
-    if (admissionInstance == null) {
-      log.info(NO_ADMISSION_MESSAGE);
+    final Stream<ProfessionInfo> professionInfoStream = getProfessionInfoStream();
+    if (professionInfoStream == null) {
       return Collections.emptySet();
     }
 
     final Set<String> professionOids =
-        Arrays.stream(
-                admissionInstance.getContentsOfAdmissions()[0].getProfessionInfos()[0]
-                    .getProfessionOIDs())
+        professionInfoStream
+            .flatMap(professionInfo -> Arrays.stream(professionInfo.getProfessionOIDs()))
             .map(ASN1ObjectIdentifier::getId)
             .collect(Collectors.toSet());
 
@@ -145,16 +134,21 @@ public class Admission {
   /**
    * Reading registration number
    *
-   * @return String of the registration number of the first profession info of the first admission
-   *     in the certificate
+   * @return String of the registration number of the first profession info with a registration
+   *     number in the certificate
    */
   public String getRegistrationNumber() {
+    final Stream<ProfessionInfo> professionInfoStream = getProfessionInfoStream();
+    if (professionInfoStream == null) {
+      return "";
+    }
 
     final String regNr =
-        AdmissionSyntax.getInstance(asn1Admission)
-            .getContentsOfAdmissions()[0]
-            .getProfessionInfos()[0]
-            .getRegistrationNumber();
+        professionInfoStream
+            .map(ProfessionInfo::getRegistrationNumber)
+            .filter(registrationNumber -> !registrationNumber.isEmpty())
+            .findFirst()
+            .orElse("");
 
     if (regNr.isEmpty()) {
       log.info("Keine RegistrationNumber vorhanden.");
@@ -162,5 +156,44 @@ public class Admission {
     }
 
     return regNr;
+  }
+
+  boolean hasAdmissionSyntax() {
+    return AdmissionSyntax.getInstance(asn1Admission) != null;
+  }
+
+  boolean hasProfessionInfos() {
+    final AdmissionSyntax admissionInstance = AdmissionSyntax.getInstance(asn1Admission);
+    if (admissionInstance == null) {
+      return false;
+    }
+
+    return Arrays.stream(admissionInstance.getContentsOfAdmissions())
+        .anyMatch(admission -> admission.getProfessionInfos().length > 0);
+  }
+
+  private Stream<ProfessionInfo> getProfessionInfoStream() {
+    final AdmissionSyntax admissionInstance = AdmissionSyntax.getInstance(asn1Admission);
+    if (admissionInstance == null) {
+      log.info(NO_ADMISSION_MESSAGE);
+      return null;
+    }
+
+    final Admissions[] admissions = admissionInstance.getContentsOfAdmissions();
+    if (admissions.length == 0) {
+      log.info("Keine Elemente in der Admission vorhanden.");
+      return null;
+    }
+
+    final Stream<ProfessionInfo> professionInfoStream =
+        Arrays.stream(admissions)
+            .flatMap(admission -> Arrays.stream(admission.getProfessionInfos()));
+    final ProfessionInfo[] professionInfos = professionInfoStream.toArray(ProfessionInfo[]::new);
+    if (professionInfos.length == 0) {
+      log.info("Keine ProfessionInfo vorhanden.");
+      return null;
+    }
+
+    return Arrays.stream(professionInfos);
   }
 }

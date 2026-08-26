@@ -3,8 +3,9 @@
 **/target
 tmp/
 
+automation/
 doc/dev/
-*.Jenkinsfile
 checkCertValidity.sh
 checkLicenses.sh
+copilot-instructions.md
 

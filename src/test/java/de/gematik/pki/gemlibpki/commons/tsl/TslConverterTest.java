@@ -20,18 +20,18 @@
 
 package de.gematik.pki.gemlibpki.commons.tsl;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
-import static de.gematik.pki.gemlibpki.commons.tsl.TslSignerTest.SIGNER_PATH_ECC;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.FILE_NAME_TSL_DEFAULT_NON_QES;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsQes.FILE_NAME_TSL_DEFAULT_QES;
+import static de.gematik.pki.gemlibpki.commons.tsl.TslSignerNonQesTest.SIGNER_PATH_NON_QES;
 import static de.gematik.pki.gemlibpki.commons.utils.ResourceReader.getFilePathFromResources;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.assertNonNullParameter;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.assertXmlEqual;
-import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.readP12;
+import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.readP12nonQes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import de.gematik.pki.gemlibpki.commons.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.commons.tsl.TslConverter.DocToBytesOption;
-import de.gematik.pki.gemlibpki.commons.tsl.TslSigner.TslSignerBuilder;
 import de.gematik.pki.gemlibpki.commons.utils.GemLibPkiUtils;
 import de.gematik.pki.gemlibpki.commons.utils.P12Container;
 import de.gematik.pki.gemlibpki.commons.utils.TestUtils;
@@ -52,19 +52,27 @@ import org.w3c.dom.Document;
 
 class TslConverterTest {
 
-  private static final Path TSL_PATH =
-      getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, TslConverter.class);
+  private static final Path PATH_TSL_DEFAULT_NON_QES =
+      getFilePathFromResources(FILE_NAME_TSL_DEFAULT_NON_QES, TslConverter.class);
+  private static final Path PATH_TSL_DEFAULT_QES =
+      getFilePathFromResources(FILE_NAME_TSL_DEFAULT_QES, TslConverter.class);
 
   @Test
-  void tslToDoc() {
-    final TrustStatusListType tsl = TslReader.getTslUnsigned(TSL_PATH);
-    assertXmlEqual(TslConverter.tslToDocUnsigned(tsl), TSL_PATH);
+  void tslToDocUnsigned_whenNonQesTslIsProvided_thenReturnsEquivalentDocument() {
+    final TrustStatusListType tslNonQes = TslReader.getTslUnsigned(PATH_TSL_DEFAULT_NON_QES);
+    assertXmlEqual(TslConverter.tslToDocUnsigned(tslNonQes), PATH_TSL_DEFAULT_NON_QES);
   }
 
   @Test
-  void testTslToDocException() {
+  void tslToDocUnsigned_whenQesTslIsProvided_thenReturnsEquivalentDocument() {
+    final TrustStatusListType tslQes = TslReader.getTslUnsigned(PATH_TSL_DEFAULT_QES);
+    assertXmlEqual(TslConverter.tslToDocUnsigned(tslQes), PATH_TSL_DEFAULT_QES);
+  }
 
-    final TrustStatusListType tsl = TslReader.getTslUnsigned(TSL_PATH);
+  @Test
+  void tslToDocUnsigned_whenMarshallerCreationFails_thenThrowsGemPkiRuntimeException() {
+
+    final TrustStatusListType tsl = TslReader.getTslUnsigned(PATH_TSL_DEFAULT_NON_QES);
 
     try (final MockedStatic<TslUtils> tslUtilsMockedStatic =
         Mockito.mockStatic(TslUtils.class, Mockito.CALLS_REAL_METHODS)) {
@@ -80,21 +88,34 @@ class TslConverterTest {
   }
 
   @Test
-  void bytesToDoc() {
-    final byte[] tslBytes = GemLibPkiUtils.readContent(TSL_PATH);
-    assertXmlEqual(TslConverter.bytesToDoc(tslBytes), TSL_PATH);
+  void bytesToDoc_whenNonQesBytesAreProvided_thenReturnsEquivalentDocument() {
+    final byte[] tslBytes = GemLibPkiUtils.readContent(PATH_TSL_DEFAULT_NON_QES);
+    assertXmlEqual(TslConverter.bytesToDoc(tslBytes), PATH_TSL_DEFAULT_NON_QES);
   }
 
   @Test
-  void docToBytes() {
-    final Document tslDoc = TslReader.getTslAsDoc(TSL_PATH);
-    assertXmlEqual(TslConverter.docToBytes(tslDoc), TSL_PATH);
+  void bytesToDoc_whenQesBytesAreProvided_thenReturnsEquivalentDocument() {
+    final byte[] tslBytes = GemLibPkiUtils.readContent(PATH_TSL_DEFAULT_QES);
+    assertXmlEqual(TslConverter.bytesToDoc(tslBytes), PATH_TSL_DEFAULT_QES);
   }
 
   @Test
-  void docToBytesException() throws TransformerConfigurationException {
+  void docToBytes_whenNonQesDocumentIsProvided_thenReturnsEquivalentBytes() {
+    final Document tslDoc = TslReader.getTslAsDoc(PATH_TSL_DEFAULT_NON_QES);
+    assertXmlEqual(TslConverter.docToBytes(tslDoc), PATH_TSL_DEFAULT_NON_QES);
+  }
 
-    final Document tslDoc = TslReader.getTslAsDoc(TSL_PATH);
+  @Test
+  void docToBytes_whenQesDocumentIsProvided_thenReturnsEquivalentBytes() {
+    final Document tslDoc = TslReader.getTslAsDoc(PATH_TSL_DEFAULT_QES);
+    assertXmlEqual(TslConverter.docToBytes(tslDoc), PATH_TSL_DEFAULT_QES);
+  }
+
+  @Test
+  void docToBytes_whenTransformerCreationFails_thenThrowsGemPkiRuntimeException()
+      throws TransformerConfigurationException {
+
+    final Document tslDoc = TslReader.getTslAsDoc(PATH_TSL_DEFAULT_NON_QES);
 
     final TransformerFactory transformerFactoryMock = Mockito.mock(TransformerFactory.class);
     Mockito.when(transformerFactoryMock.newTransformer())
@@ -115,14 +136,24 @@ class TslConverterTest {
 
   @ParameterizedTest
   @EnumSource(value = DocToBytesOption.class)
-  void docToBytesWithDocToBytesOption(final DocToBytesOption docToBytesOption) {
-    final Document tslDoc = TslReader.getTslAsDoc(TSL_PATH);
+  void docToBytes_whenNonQesDocumentAndAnyDocToBytesOptionAreProvided_thenReturnsEquivalentBytes(
+      final DocToBytesOption docToBytesOption) {
+    final Document tslDoc = TslReader.getTslAsDoc(PATH_TSL_DEFAULT_NON_QES);
     final byte[] tslBytes = TslConverter.docToBytes(tslDoc, docToBytesOption);
-    assertXmlEqual(tslBytes, TSL_PATH);
+    assertXmlEqual(tslBytes, PATH_TSL_DEFAULT_NON_QES);
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = DocToBytesOption.class)
+  void docToBytes_whenQesDocumentAndAnyDocToBytesOptionAreProvided_thenReturnsEquivalentBytes(
+      final DocToBytesOption docToBytesOption) {
+    final Document tslDoc = TslReader.getTslAsDoc(PATH_TSL_DEFAULT_QES);
+    final byte[] tslBytes = TslConverter.docToBytes(tslDoc, docToBytesOption);
+    assertXmlEqual(tslBytes, PATH_TSL_DEFAULT_QES);
   }
 
   @Test
-  void docToBytesPrettyPrint() {
+  void docToBytes_whenPrettyPrintOptionIsUsed_thenReturnsFormattedXml() {
     final String xmlOneLine =
         "<note><to>email1</to><from>email2</from><heading>Reminder</heading><body>Gematik!</body></note>";
     final String xmlPrettyPrintExpected =
@@ -147,12 +178,13 @@ class TslConverterTest {
   }
 
   @Test
-  void docToBytesPrettyPrintAndSign() {
+  void
+      docToBytes_whenDocumentsAreSignedBeforeAndAfterPrettyPrinting_thenReturnsExpectedIndentationCounts() {
 
-    final TslSignerBuilder tslSignerBuilder = TslSigner.builder();
-    final P12Container signerEcc = readP12(SIGNER_PATH_ECC);
+    final TslSignerNonQes.TslSignerNonQesBuilder tslSignerBuilder = TslSignerNonQes.builder();
+    final P12Container signerEcc = readP12nonQes(SIGNER_PATH_NON_QES);
 
-    final TrustStatusListType tslUnsigned = TestUtils.getTslUnsigned(FILE_NAME_TSL_ECC_DEFAULT);
+    final TrustStatusListType tslUnsigned = TestUtils.getTslUnsigned(FILE_NAME_TSL_DEFAULT_NON_QES);
 
     final Document tslDocUnsigned = TslConverter.tslToDocUnsigned(tslUnsigned);
     final byte[] tslBytesUnsigned = TslConverter.docToBytes(tslDocUnsigned);
@@ -199,14 +231,23 @@ class TslConverterTest {
   }
 
   @Test
-  void bytesToTsl() {
-    final byte[] tslBytes = GemLibPkiUtils.readContent(TSL_PATH);
-    assertXmlEqual(TslConverter.bytesToTslUnsigned(tslBytes), TslReader.getTslUnsigned(TSL_PATH));
+  void bytesToTslUnsigned_whenNonQesBytesAreProvided_thenReturnsEquivalentTsl() {
+    final byte[] tslBytes = GemLibPkiUtils.readContent(PATH_TSL_DEFAULT_NON_QES);
+    assertXmlEqual(
+        TslConverter.bytesToTslUnsigned(tslBytes),
+        TslReader.getTslUnsigned(PATH_TSL_DEFAULT_NON_QES));
   }
 
   @Test
-  void bytesToTslException() {
-    final byte[] tslBytes = GemLibPkiUtils.readContent(TSL_PATH);
+  void bytesToTslUnsigned_whenQesBytesAreProvided_thenReturnsEquivalentTsl() {
+    final byte[] tslBytes = GemLibPkiUtils.readContent(PATH_TSL_DEFAULT_QES);
+    assertXmlEqual(
+        TslConverter.bytesToTslUnsigned(tslBytes), TslReader.getTslUnsigned(PATH_TSL_DEFAULT_QES));
+  }
+
+  @Test
+  void bytesToTslUnsigned_whenUnmarshallerCreationFails_thenThrowsGemPkiRuntimeException() {
+    final byte[] tslBytes = GemLibPkiUtils.readContent(PATH_TSL_DEFAULT_NON_QES);
 
     try (final MockedStatic<TslUtils> tslUtilsMockedStatic =
         Mockito.mockStatic(TslUtils.class, Mockito.CALLS_REAL_METHODS)) {
@@ -224,7 +265,7 @@ class TslConverterTest {
   }
 
   @Test
-  void nonNullTests() {
+  void tslConverterMethods_whenRequiredArgumentsAreNull_thenFailFast() {
     assertNonNullParameter(() -> TslConverter.tslToDocUnsigned(null), "tslUnsigned");
     assertNonNullParameter(() -> TslConverter.tslUnsignedToBytes(null), "tsl");
     assertNonNullParameter(() -> TslConverter.docToBytes(null), "tslDoc");

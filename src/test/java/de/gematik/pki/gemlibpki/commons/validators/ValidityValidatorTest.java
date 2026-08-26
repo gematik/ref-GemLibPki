@@ -36,7 +36,7 @@ import org.junit.jupiter.api.Test;
 class ValidityValidatorTest {
 
   private static final X509Certificate VALID_X509_EE_CERT =
-      TestUtils.readCert("GEM.SMCB-CA57/valid/PraxisBabetteBeyer.pem");
+      TestUtils.readCertNonQes("GEM.SMCB-CA57/valid/PraxisBabetteBeyer.pem");
   private static final ZonedDateTime ZONED_DATE_TIME = ZonedDateTime.parse("2025-03-28T15:00:00Z");
   private ValidityValidator tested;
 
@@ -46,12 +46,12 @@ class ValidityValidatorTest {
   }
 
   @Test
-  void verifyConstructorNullParameter() {
+  void validityValidator_whenProductTypeIsNull_thenThrowsNullPointerException() {
     assertNonNullParameter(() -> new ValidityValidator(null), "productType");
   }
 
   @Test
-  void verifyValidateCertificateNullParameter() {
+  void validateCertificate_whenCertificateOrReferenceDateIsNull_thenThrowsNullPointerException() {
 
     assertNonNullParameter(() -> tested.validateCertificate(null), "x509EeCert");
     assertNonNullParameter(() -> tested.validateCertificate(null, ZONED_DATE_TIME), "x509EeCert");
@@ -64,9 +64,9 @@ class ValidityValidatorTest {
   }
 
   @Test
-  void verifyValidityCertificateExpired() {
+  void validateCertificate_whenCertificateIsExpiredAtReferenceDate_thenThrowsGemPkiException() {
     final X509Certificate expiredEeCert =
-        TestUtils.readCert("GEM.SMCB-CA57/invalid/BabetteBeyer-expired.pem");
+        TestUtils.readCertNonQes("GEM.SMCB-CA57/invalid/BabetteBeyer-expired.pem");
 
     assertThatThrownBy(() -> tested.validateCertificate(expiredEeCert, ZONED_DATE_TIME))
         .isInstanceOf(GemPkiException.class)
@@ -74,9 +74,9 @@ class ValidityValidatorTest {
   }
 
   @Test
-  void verifyValidityCertificateNotYetValid() {
+  void validateCertificate_whenCertificateIsNotYetValidAtReferenceDate_thenThrowsGemPkiException() {
     final X509Certificate notYetValidEeCert =
-        TestUtils.readCert("GEM.SMCB-CA57/invalid/BabetteBeyer-not-yet-valid.pem");
+        TestUtils.readCertNonQes("GEM.SMCB-CA57/invalid/BabetteBeyer-not-yet-valid.pem");
 
     assertThatThrownBy(() -> tested.validateCertificate(notYetValidEeCert, ZONED_DATE_TIME))
         .isInstanceOf(GemPkiException.class)
@@ -84,7 +84,7 @@ class ValidityValidatorTest {
   }
 
   @Test
-  void verifyValidityCertificateValid() {
+  void validateCertificate_whenCertificateIsValidAtReferenceDate_thenDoesNotThrow() {
     assertDoesNotThrow(() -> tested.validateCertificate(VALID_X509_EE_CERT, ZONED_DATE_TIME));
   }
 }

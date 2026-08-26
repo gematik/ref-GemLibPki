@@ -376,7 +376,7 @@ public class TucPki001Verifier {
             .getIssuerTspServiceSubset(tslSigner)
             .getX509IssuerCert();
 
-    if (!TslValidator.checkSignature(tslToCheckDoc, trustAnchor)) {
+    if (!TslValidator.checkNonQesTslSignatureWithTrustAnchor(tslToCheckDoc, trustAnchor)) {
       throw new GemPkiException(productType, ErrorCode.SE_1013_XML_SIGNATURE_ERROR);
     }
   }

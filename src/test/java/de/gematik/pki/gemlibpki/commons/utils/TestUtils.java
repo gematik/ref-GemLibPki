@@ -20,10 +20,17 @@
 
 package de.gematik.pki.gemlibpki.commons.utils;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
+import static de.gematik.pki.gemlibpki.commons.TestConstants.P12_PASSWORD;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.FILE_NAME_TSL_DEFAULT_NON_QES;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsQes.FILE_NAME_TSL_DEFAULT_QES;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsQes.FILE_NAME_TSL_QES_DEFAULT_ADDITIONAL_CA;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsQes.FILE_NAME_TSL_QES_DEFAULT_ADDITIONAL_OCSP_SIGNER;
 import static org.awaitility.Awaitility.await;
 
-import de.gematik.pki.gemlibpki.commons.TestConstants;
+import de.gematik.pki.gemlibpki.commons.TestConstantsNonQes;
+import de.gematik.pki.gemlibpki.commons.TestConstantsQes;
+import de.gematik.pki.gemlibpki.commons.ocsp.OcspRequestGenerator;
+import de.gematik.pki.gemlibpki.commons.ocsp.OcspResponseGenerator;
 import de.gematik.pki.gemlibpki.commons.tsl.TslInformationProvider;
 import de.gematik.pki.gemlibpki.commons.tsl.TslReader;
 import de.gematik.pki.gemlibpki.commons.tsl.TspService;
@@ -43,6 +50,10 @@ import java.util.concurrent.Callable;
 import lombok.NonNull;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.cert.ocsp.CertificateStatus;
+import org.bouncycastle.cert.ocsp.OCSPReq;
+import org.bouncycastle.cert.ocsp.OCSPResp;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xmlunit.assertj3.XmlAssert;
@@ -87,13 +98,34 @@ public class TestUtils {
         ResourceReader.getFilePathFromResources(tslFilename, TestUtils.class));
   }
 
-  public static TrustStatusListType getDefaultTslUnsigned() {
+  public static TrustStatusListType getDefaultTslUnsignedNonQes() {
     return TslReader.getTslUnsigned(
-        ResourceReader.getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, TestUtils.class));
+        ResourceReader.getFilePathFromResources(FILE_NAME_TSL_DEFAULT_NON_QES, TestUtils.class));
   }
 
-  public static Document getDefaultTslAsDoc() {
-    return getTslAsDoc(FILE_NAME_TSL_ECC_DEFAULT);
+  public static TrustStatusListType getDefaultTslUnsignedQes() {
+    return TslReader.getTslUnsigned(
+        ResourceReader.getFilePathFromResources(FILE_NAME_TSL_DEFAULT_QES, TestUtils.class));
+  }
+
+  public static TrustStatusListType getAdditionalCaDefaultTslUnsignedQes() {
+    return TslReader.getTslUnsigned(
+        ResourceReader.getFilePathFromResources(
+            FILE_NAME_TSL_QES_DEFAULT_ADDITIONAL_CA, TestUtils.class));
+  }
+
+  public static TrustStatusListType getAdditionalOcspSignerDefaultTslUnsignedQes() {
+    return TslReader.getTslUnsigned(
+        ResourceReader.getFilePathFromResources(
+            FILE_NAME_TSL_QES_DEFAULT_ADDITIONAL_OCSP_SIGNER, TestUtils.class));
+  }
+
+  public static Document getDefaultTslAsDocNonQes() {
+    return getTslAsDoc(FILE_NAME_TSL_DEFAULT_NON_QES);
+  }
+
+  public static Document getDefaultTslAsDocQes() {
+    return getTslAsDoc(FILE_NAME_TSL_DEFAULT_QES);
   }
 
   public static Document getTslAsDoc(final String filename) {
@@ -101,9 +133,16 @@ public class TestUtils {
         ResourceReader.getFilePathFromResources(filename, TestUtils.class));
   }
 
-  public static List<TspService> getDefaultTspServiceList() {
+  public static List<TspService> getDefaultTspServiceListNonQes() {
+    return new TslInformationProvider(getDefaultTslUnsignedNonQes()).getTspServices();
+  }
 
-    return new TslInformationProvider(getDefaultTslUnsigned()).getTspServices();
+  public static List<TspService> getDefaultTspServiceListQes() {
+    return new TslInformationProvider(getDefaultTslUnsignedQes()).getTspServices();
+  }
+
+  public static List<TspService> getAlternativeTspServiceListQes() {
+    return new TslInformationProvider(getAdditionalCaDefaultTslUnsignedQes()).getTspServices();
   }
 
   public static void waitSeconds(final long seconds) {
@@ -117,8 +156,12 @@ public class TestUtils {
     return () -> start.plusSeconds(seconds).isBefore(ZonedDateTime.now());
   }
 
-  public static X509Certificate readCert(final String filename) {
-    return CertificateProvider.getX509Certificate(TestConstants.CERT_DIR + filename);
+  public static X509Certificate readCertNonQes(final String filename) {
+    return CertificateProvider.getX509Certificate(TestConstantsNonQes.CERT_DIR_NON_QES + filename);
+  }
+
+  public static X509Certificate readCertQes(final String filename) {
+    return CertificateProvider.getX509Certificate(TestConstantsQes.CERT_DIR_QES + filename);
   }
 
   public static Path createLogFileInTarget(final String prefix) throws IOException {
@@ -136,9 +179,58 @@ public class TestUtils {
     return filePath;
   }
 
-  public static P12Container readP12(final String p12Path) {
+  public static P12Container readP12nonQes(final String p12Path) {
     return Objects.requireNonNull(
         P12Reader.getContentFromP12(
-            Path.of(TestConstants.CERT_DIR, p12Path), TestConstants.P12_PASSWORD));
+            Path.of(TestConstantsNonQes.CERT_DIR_NON_QES, p12Path), P12_PASSWORD));
+  }
+
+  public static P12Container readP12Qes(final String p12Path) {
+    return Objects.requireNonNull(
+        P12Reader.getContentFromP12(Path.of(TestConstantsQes.CERT_DIR_QES, p12Path), P12_PASSWORD));
+  }
+
+  public static byte[] readP12QesAsBytes(final String p12Path) {
+    return GemLibPkiUtils.readContent(Path.of(TestConstantsQes.CERT_DIR_QES, p12Path));
+  }
+
+  public static OCSPResp generateOcspResponse(
+      @NonNull final X509Certificate x509EeCert,
+      @NonNull final X509Certificate x509IssuerCert,
+      final P12Container responseSigner) {
+    return generateOcspResponse(x509EeCert, x509IssuerCert, responseSigner, null);
+  }
+
+  public static OCSPResp generateOcspResponse(
+      @NonNull final X509Certificate x509EeCert,
+      @NonNull final X509Certificate x509IssuerCert,
+      final P12Container responseSigner,
+      final Extension extension) {
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(x509EeCert, x509IssuerCert, extension);
+    return OcspResponseGenerator.builder()
+        .signer(responseSigner)
+        .build()
+        .generate(ocspReq, x509EeCert, x509IssuerCert);
+  }
+
+  public static OCSPResp generateOcspResponseWithTimeStamps(
+      @NonNull final X509Certificate x509EeCert,
+      @NonNull final X509Certificate x509IssuerCert,
+      final P12Container responseSigner,
+      final Extension extension,
+      final ZonedDateTime thisUpdate,
+      final ZonedDateTime producedAt,
+      final ZonedDateTime nextUpdate,
+      final CertificateStatus certificateStatus) {
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(x509EeCert, x509IssuerCert, extension);
+    return OcspResponseGenerator.builder()
+        .signer(responseSigner)
+        .thisUpdate(thisUpdate)
+        .producedAt(producedAt)
+        .nextUpdate(nextUpdate)
+        .build()
+        .generate(ocspReq, x509EeCert, x509IssuerCert, certificateStatus);
   }
 }

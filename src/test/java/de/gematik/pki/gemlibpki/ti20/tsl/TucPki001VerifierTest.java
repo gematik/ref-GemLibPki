@@ -20,10 +20,10 @@
 
 package de.gematik.pki.gemlibpki.ti20.tsl;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.FILE_NAME_TSL_ECC_DEFAULT_SIGNER_SSP_LOCALHOST;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.OCSP_HOST;
 import static de.gematik.pki.gemlibpki.commons.TestConstants.PRODUCT_TYPE;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_ISSUER_CERT_TSL_CA51;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.FILE_NAME_TSL_DEFAULT_NON_QES_SIGNER_SSP_LOCALHOST;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.OCSP_HOST;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_ISSUER_CERT_TSL_CA51;
 import static de.gematik.pki.gemlibpki.commons.tsl.TslUtils.getFirstTslSignerCertificate;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.overwriteSspUrls;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -57,19 +57,21 @@ class TucPki001VerifierTest {
 
   @BeforeAll
   static void start() {
-    final TrustStatusListType tslToCheckTslUnsigned = TestUtils.getDefaultTslUnsigned();
+    final TrustStatusListType tslToCheckTslUnsigned = TestUtils.getDefaultTslUnsignedNonQes();
     tspServicesInTruststore = new TslInformationProvider(tslToCheckTslUnsigned).getTspServices();
     overwriteSspUrls(tspServicesInTruststore, "invalidSsp");
   }
 
   @Test
-  void verifyPerformTucPki001ChecksValid_OcspResponderLocalhost() throws IOException {
+  void
+      performTucPki001Checks_whenTslSupplyPointIsInvalidButSignerCertificateSspIsReachable_thenSucceedsOnlyWithOcspTransceiverFactory()
+          throws IOException {
     final Document tslSignerSspLocalhost =
-        TestUtils.getTslAsDoc(FILE_NAME_TSL_ECC_DEFAULT_SIGNER_SSP_LOCALHOST);
+        TestUtils.getTslAsDoc(FILE_NAME_TSL_DEFAULT_NON_QES_SIGNER_SSP_LOCALHOST);
     final byte[] tslBytes = TslConverter.docToBytes(tslSignerSspLocalhost);
 
     final TrustStatusListType tsltTslSignerSspLocalhost =
-        TestUtils.getTslUnsigned(FILE_NAME_TSL_ECC_DEFAULT_SIGNER_SSP_LOCALHOST);
+        TestUtils.getTslUnsigned(FILE_NAME_TSL_DEFAULT_NON_QES_SIGNER_SSP_LOCALHOST);
     final X509Certificate tslSigner = getFirstTslSignerCertificate(tsltTslSignerSspLocalhost);
     final String ssp = new AuthorityInformationAccessExtension(tslSigner).getSsp();
     final URI sspUri = URI.create(ssp);

@@ -20,52 +20,88 @@
 
 package de.gematik.pki.gemlibpki.commons.tsl;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_X509_EE_CERT_ALT_CA;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_X509_EE_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_X509_EE_CERT_ALT_CA;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_X509_EE_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsQes.VALID_X509_EE_CERT_QES;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import de.gematik.pki.gemlibpki.commons.error.ErrorCode;
 import de.gematik.pki.gemlibpki.commons.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.commons.utils.TestUtils;
+import eu.europa.esig.trustedlist.jaxb.tsl.ServiceHistoryInstanceType;
+import eu.europa.esig.trustedlist.jaxb.tsl.ServiceHistoryType;
+import eu.europa.esig.trustedlist.jaxb.tsl.TSPServiceType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.List;
+import javax.xml.datatype.DatatypeFactory;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class TspInformationProviderTest {
 
   private String productType;
-  private TspInformationProvider tspInformationProvider;
+  private TspInformationProvider tspInformationProviderNonQes;
+  private TspInformationProvider tspInformationProviderQes;
 
   @BeforeEach
   void setUp() {
     productType = "IDP";
     final TslInformationProvider tslInformationProvider =
-        new TslInformationProvider(TestUtils.getDefaultTslUnsigned());
-    tspInformationProvider =
+        new TslInformationProvider(TestUtils.getDefaultTslUnsignedNonQes());
+    tspInformationProviderNonQes =
         new TspInformationProvider(tslInformationProvider.getTspServices(), productType);
+    tspInformationProviderQes =
+        new TspInformationProvider(
+            new TslInformationProvider(TestUtils.getDefaultTslUnsignedQes()).getTspServices(),
+            productType);
   }
 
   @Test
-  void generateTspServiceSubsetValidEE() {
+  void
+      getIssuerTspServiceSubset_whenValidEndEntityCertificateIsProvided_thenReturnsWithoutException() {
     assertDoesNotThrow(
-        () -> tspInformationProvider.getIssuerTspServiceSubset(VALID_X509_EE_CERT_SMCB));
+        () -> tspInformationProviderNonQes.getIssuerTspServiceSubset(VALID_X509_EE_CERT_SMCB));
+    assertDoesNotThrow(
+        () -> tspInformationProviderQes.getIssuerTspServiceSubset(VALID_X509_EE_CERT_QES));
   }
 
   @Test
-  void getIssuerTspServiceSubsetNonNull() {
+  void getIssuerTspServiceSubset_whenCertificateIsNull_thenThrowsOnNullParameter() {
     assertNonNullParameter(
-        () -> tspInformationProvider.getIssuerTspServiceSubset(null), "x509EeCert");
-    assertNonNullParameter(() -> tspInformationProvider.getIssuerTspService(null), "x509EeCert");
+        () -> tspInformationProviderNonQes.getIssuerTspServiceSubset(null), "x509EeCert");
+    assertNonNullParameter(
+        () -> tspInformationProviderNonQes.getIssuerTspServiceSubset(null), "x509EeCert");
+  }
+
+  @SneakyThrows
+  @Test
+  void getIssuerTspService_whenNonQesCertificateIsProvided_thenReturnsTspService() {
+    final TspService tspService =
+        tspInformationProviderNonQes.getIssuerTspService(VALID_X509_EE_CERT_SMCB);
+    assertThat(tspService).isNotNull();
+    assertThat(tspService.getTspServiceType()).isNotNull();
+  }
+
+  @SneakyThrows
+  @Test
+  void getIssuerTspService_whenQesCertificateIsProvided_thenReturnsTspService() {
+    final TspService tspService =
+        tspInformationProviderQes.getIssuerTspService(VALID_X509_EE_CERT_QES);
+    assertThat(tspService).isNotNull();
+    assertThat(tspService.getTspServiceType()).isNotNull();
   }
 
   @Test
-  void generateTspServiceSubsetIssuerCertificateExtractionError() {
+  void getIssuerTspServiceSubset_whenIssuerCertificateExtractionFails_thenThrowsGemPkiException() {
     final TrustStatusListType tslAltCaBroken =
-        TestUtils.getTslUnsigned("tsls/ecc/defect/TSL_defect_altCA_broken.xml");
+        TestUtils.getTslUnsigned("tsls/nonqes/defect/TSL_defect_altCA_broken.xml");
     assertThatThrownBy(
             () ->
                 new TspInformationProvider(
@@ -76,63 +112,126 @@ class TspInformationProviderTest {
   }
 
   @Test
-  void generateTspServiceSubsetIssuerCertificateMissing() {
+  void issuerTspServiceLookup_whenIssuerCertificateIsMissing_thenThrowsGemPkiException() {
     assertThatThrownBy(
-            () -> tspInformationProvider.getIssuerTspServiceSubset(VALID_X509_EE_CERT_ALT_CA))
+            () -> tspInformationProviderNonQes.getIssuerTspServiceSubset(VALID_X509_EE_CERT_ALT_CA))
+        .isInstanceOf(GemPkiException.class)
+        .hasMessage(ErrorCode.TE_1027_CA_CERT_MISSING.getErrorMessage(productType));
+    assertThatThrownBy(
+            () -> tspInformationProviderQes.getIssuerTspService(VALID_X509_EE_CERT_ALT_CA))
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.TE_1027_CA_CERT_MISSING.getErrorMessage(productType));
   }
 
   @Test
-  void generateTspServiceSubsetMissingAki() {
+  void getIssuerTspServiceSubset_whenAuthorityKeyIdentifierIsMissing_thenThrowsGemPkiException() {
     final X509Certificate invalidx509EeCert =
-        TestUtils.readCert("GEM.SMCB-CA57/invalid/BabetteBeyer-missing-authorityKeyId.pem");
-    assertThatThrownBy(() -> tspInformationProvider.getIssuerTspServiceSubset(invalidx509EeCert))
+        TestUtils.readCertNonQes("GEM.SMCB-CA57/invalid/BabetteBeyer-missing-authorityKeyId.pem");
+    assertThatThrownBy(
+            () -> tspInformationProviderNonQes.getIssuerTspServiceSubset(invalidx509EeCert))
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.SE_1023_AUTHORITYKEYID_DIFFERENT.getErrorMessage(productType));
   }
 
   @Test
-  void generateTspServiceSubsetServiceSupplyPointValid() throws GemPkiException {
+  void
+      getIssuerTspServiceSubset_whenIssuerServicesHaveDifferentSupplyPointStates_thenReturnsExpectedSupplyPoints()
+          throws GemPkiException {
     assertThat(
-            tspInformationProvider
+            tspInformationProviderNonQes
                 .getIssuerTspServiceSubset(VALID_X509_EE_CERT_SMCB)
                 .getServiceSupplyPoint())
         .isEqualTo("http://ehca-testref.komp-ca.telematik-test:8080/status/ecc-ocsp");
+    assertThat(
+            tspInformationProviderQes
+                .getIssuerTspServiceSubset(VALID_X509_EE_CERT_QES)
+                .getServiceSupplyPoint())
+        .isEmpty();
   }
 
+  @SneakyThrows
   @Test
-  void generateTspServiceSubsetServiceSupplyPointMissing() {
+  void getIssuerTspServiceSubset_whenServiceSupplyPointIsMissing_thenReturnsEmptySupplyPoint() {
     final TrustStatusListType tslAltCaMissingSsp =
-        TestUtils.getTslUnsigned("tsls/ecc/defect/TSL_defect_altCA_missingSsp.xml");
+        TestUtils.getTslUnsigned("tsls/nonqes/defect/TSL_defect_altCA_missingSsp.xml");
 
-    assertThatThrownBy(
-            () ->
-                new TspInformationProvider(
-                        new TslInformationProvider(tslAltCaMissingSsp).getTspServices(),
-                        productType)
-                    .getIssuerTspServiceSubset(VALID_X509_EE_CERT_ALT_CA))
-        .isInstanceOf(GemPkiException.class)
-        .hasMessage(ErrorCode.TE_1026_SERVICESUPPLYPOINT_MISSING.getErrorMessage(productType));
+    assertThat(
+            new TspInformationProvider(
+                    new TslInformationProvider(tslAltCaMissingSsp).getTspServices(), productType)
+                .getIssuerTspServiceSubset(VALID_X509_EE_CERT_ALT_CA)
+                .getServiceSupplyPoint())
+        .isEmpty();
+  }
+
+  @SneakyThrows
+  @Test
+  void getIssuerTspServiceSubset_whenServiceSupplyPointIsEmpty_thenReturnsEmptySupplyPoint() {
+    final TrustStatusListType tslAltCaEmptySsp =
+        TestUtils.getTslUnsigned("tsls/nonqes/defect/TSL_defect_altCA_EmptySsp.xml");
+
+    assertThat(
+            new TspInformationProvider(
+                    new TslInformationProvider(tslAltCaEmptySsp).getTspServices(), productType)
+                .getIssuerTspServiceSubset(VALID_X509_EE_CERT_ALT_CA)
+                .getServiceSupplyPoint())
+        .isEmpty();
   }
 
   @Test
-  void generateTspServiceSubsetServiceSupplyPointMissing2() {
-    final TrustStatusListType tslAltCaMissingSsp =
-        TestUtils.getTslUnsigned("tsls/ecc/defect/TSL_defect_altCA_missingSsp2.xml");
-
-    assertThatThrownBy(
-            () ->
-                new TspInformationProvider(
-                        new TslInformationProvider(tslAltCaMissingSsp).getTspServices(),
-                        productType)
-                    .getIssuerTspServiceSubset(VALID_X509_EE_CERT_ALT_CA))
-        .isInstanceOf(GemPkiException.class)
-        .hasMessage(ErrorCode.TE_1026_SERVICESUPPLYPOINT_MISSING.getErrorMessage(productType));
+  void getIssuerTspService_whenValidCertificateIsProvided_thenReturnsWithoutException() {
+    assertDoesNotThrow(
+        () -> tspInformationProviderNonQes.getIssuerTspService(VALID_X509_EE_CERT_SMCB));
+    assertDoesNotThrow(() -> tspInformationProviderQes.getIssuerTspService(VALID_X509_EE_CERT_QES));
   }
 
   @Test
-  void verifyGetIssuerTspService() {
-    assertDoesNotThrow(() -> tspInformationProvider.getIssuerTspService(VALID_X509_EE_CERT_SMCB));
+  void getIssuerTspService_whenMalformedEntriesArePresent_thenSkipsThem() {
+    final List<TspService> tspServicesWithMalformedEntry = new ArrayList<>();
+    tspServicesWithMalformedEntry.add(new TspService(new TSPServiceType()));
+    tspServicesWithMalformedEntry.addAll(
+        new TslInformationProvider(TestUtils.getDefaultTslUnsignedNonQes()).getTspServices());
+
+    assertDoesNotThrow(
+        () ->
+            new TspInformationProvider(tspServicesWithMalformedEntry, productType)
+                .getIssuerTspService(VALID_X509_EE_CERT_SMCB));
+  }
+
+  @SneakyThrows
+  @Test
+  void getIssuerTspServiceSubset_whenServiceHistoryExists_thenIncludesServiceHistoryEntries() {
+    final TspService issuerTspService =
+        tspInformationProviderQes.getIssuerTspService(VALID_X509_EE_CERT_QES);
+    final ServiceHistoryType serviceHistory = new ServiceHistoryType();
+    serviceHistory
+        .getServiceHistoryInstance()
+        .add(createServiceHistoryInstance(TslConstants.SVCSTATUS_GRANTED, "2024-01-01T00:00:00Z"));
+    serviceHistory
+        .getServiceHistoryInstance()
+        .add(createServiceHistoryInstance(TslConstants.SVCSTATUS_GRANTED, "2023-01-01T00:00:00Z"));
+    issuerTspService.getTspServiceType().setServiceHistory(serviceHistory);
+
+    final TspServiceSubset subset =
+        new TspInformationProvider(List.of(issuerTspService), productType)
+            .getIssuerTspServiceSubset(VALID_X509_EE_CERT_QES);
+
+    assertThat(subset.getServiceStatusHistory())
+        .hasSize(2)
+        .extracting(
+            TspServiceStatusHistoryEntry::serviceStatus,
+            historyEntry -> historyEntry.statusStartingTime().toInstant())
+        .containsExactly(
+            tuple(TslConstants.SVCSTATUS_GRANTED, java.time.Instant.parse("2024-01-01T00:00:00Z")),
+            tuple(TslConstants.SVCSTATUS_GRANTED, java.time.Instant.parse("2023-01-01T00:00:00Z")));
+  }
+
+  @SneakyThrows
+  private ServiceHistoryInstanceType createServiceHistoryInstance(
+      final String serviceStatus, final String statusStartingTime) {
+    final ServiceHistoryInstanceType serviceHistoryInstance = new ServiceHistoryInstanceType();
+    serviceHistoryInstance.setServiceStatus(serviceStatus);
+    serviceHistoryInstance.setStatusStartingTime(
+        DatatypeFactory.newInstance().newXMLGregorianCalendar(statusStartingTime));
+    return serviceHistoryInstance;
   }
 }

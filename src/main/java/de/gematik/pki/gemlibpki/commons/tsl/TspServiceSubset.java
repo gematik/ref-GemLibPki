@@ -27,7 +27,7 @@ import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
 
-/** Class containing a subset of a TspService referring explicitly one issuer certificate */
+/** Class containing a subset of a TspService referring explicitly to one issuer certificate */
 @Builder
 @Getter
 public class TspServiceSubset {
@@ -37,4 +37,7 @@ public class TspServiceSubset {
   private final ZonedDateTime statusStartingTime;
   private final String serviceSupplyPoint;
   private final List<ExtensionType> extensions;
+
+  @Builder.Default
+  private final List<TspServiceStatusHistoryEntry> serviceStatusHistory = List.of();
 }

@@ -20,8 +20,8 @@
 
 package de.gematik.pki.gemlibpki.commons.ocsp;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_ISSUER_CERT_SMCB;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_X509_EE_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_ISSUER_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_X509_EE_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.commons.ocsp.OcspUtils.OCSP_RESPONSE_ERROR;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -39,7 +39,7 @@ import org.mockito.Mockito;
 class OcspUtilsTest {
 
   @Test
-  void nonNullTests() {
+  void ocspUtilsMethods_whenRequiredParameterIsNull_thenThrowsException() {
     assertNonNullParameter(() -> OcspUtils.getBasicOcspResp(null), "ocspResponse");
 
     assertNonNullParameter(() -> OcspUtils.getFirstSingleResp(null), "ocspResponse");
@@ -53,13 +53,14 @@ class OcspUtilsTest {
         OcspRequestGenerator.generateSingleOcspRequest(
             VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
     return OcspResponseGenerator.builder()
-        .signer(OcspTestConstants.getOcspSignerEcc())
+        .signer(OcspTestConstants.getOcspSignerEccNonQes())
         .build()
         .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
   }
 
   @Test
-  void testGetBasicOcspRespNull() throws OCSPException {
+  void getBasicOcspResp_whenResponseObjectIsNull_thenThrowsGemPkiRuntimeException()
+      throws OCSPException {
     final OCSPResp ocspResp = getOcspResp();
 
     final OCSPResp ocspRespMock = Mockito.spy(ocspResp);
@@ -71,7 +72,9 @@ class OcspUtilsTest {
   }
 
   @Test
-  void testGetBasicOcspRespOcspException() throws OCSPException {
+  void
+      getBasicOcspResp_whenReadingResponseObjectThrowsOcspException_thenThrowsGemPkiRuntimeException()
+          throws OCSPException {
     final OCSPResp ocspResp = getOcspResp();
 
     final OCSPResp ocspRespMock = Mockito.spy(ocspResp);
@@ -83,7 +86,9 @@ class OcspUtilsTest {
   }
 
   @Test
-  void testGetFirstSingleResp() throws OCSPException {
+  void
+      getFirstSingleResp_whenResponseContainsMultipleSingleResponses_thenThrowsGemPkiRuntimeException()
+          throws OCSPException {
     final OCSPResp ocspResp = getOcspResp();
     final OCSPResp ocspRespMock = Mockito.spy(ocspResp);
 
@@ -102,7 +107,8 @@ class OcspUtilsTest {
   }
 
   @Test
-  void testGetFirstSingleReq() {
+  void
+      getFirstSingleReq_whenRequestContainsMultipleSingleRequests_thenThrowsGemPkiRuntimeException() {
 
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(

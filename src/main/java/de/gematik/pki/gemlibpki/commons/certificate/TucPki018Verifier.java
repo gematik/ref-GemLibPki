@@ -23,6 +23,7 @@ package de.gematik.pki.gemlibpki.commons.certificate;
 import static de.gematik.pki.gemlibpki.commons.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_FUTURE_MILLISECONDS;
 import static de.gematik.pki.gemlibpki.commons.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_PAST_MILLISECONDS;
 
+import de.gematik.pki.gemlibpki.commons.error.ErrorCode;
 import de.gematik.pki.gemlibpki.commons.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.commons.exception.GemPkiParsingException;
 import de.gematik.pki.gemlibpki.commons.exception.GemPkiRuntimeException;
@@ -33,9 +34,8 @@ import de.gematik.pki.gemlibpki.commons.ocsp.OcspTransceiverFactory;
 import de.gematik.pki.gemlibpki.commons.tsl.TspInformationProvider;
 import de.gematik.pki.gemlibpki.commons.tsl.TspService;
 import de.gematik.pki.gemlibpki.commons.tsl.TspServiceSubset;
-import de.gematik.pki.gemlibpki.commons.validators.OcspValidator;
+import de.gematik.pki.gemlibpki.commons.validators.TucPki018OcspValidator;
 import de.gematik.pki.gemlibpki.ti10.ocsp.TslBasedSspOcspTransceiverFactory;
-import java.io.IOException;
 import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -51,7 +51,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.cert.ocsp.OCSPResp;
 
 /**
- * Entry point to access a verification of certificate(s) regarding standard process called
+ * Entry point to access verification of certificate(s) regarding a standard process called
  * TucPki018. This class works with parameterized variables (defined by builder pattern) and with
  * given variables provided by runtime (method parameters).
  */
@@ -83,7 +83,7 @@ public class TucPki018Verifier {
 
   @Builder.Default private OcspTransceiverFactory ocspTransceiverFactory = null;
 
-  @Builder.Default private OcspValidator ocspValidator = null;
+  @Builder.Default private TucPki018OcspValidator tucPki018OcspValidator = null;
   @Builder.Default private OcspTransceiver ocspTransceiver = null;
 
   /**
@@ -107,7 +107,7 @@ public class TucPki018Verifier {
    * process ends successfully. GS-A_4660-02
    *
    * @param x509EeCert end-entity certificate to check
-   * @param referenceDate date to check revocation, producedAt, thisUpdate and nextUpdate against
+   * @param referenceDate date to check certificate validity and revocation against
    * @return the determined {@link Admission}
    * @throws GemPkiException if the certificate is invalid
    */
@@ -126,12 +126,12 @@ public class TucPki018Verifier {
 
   private void initializeValidator() {
 
-    if (ocspValidator != null) {
+    if (tucPki018OcspValidator != null) {
       return;
     }
 
-    ocspValidator =
-        OcspValidator.builder()
+    tucPki018OcspValidator =
+        TucPki018OcspValidator.builder()
             .productType(productType)
             .tspServiceList(tspServiceList)
             .withOcspCheck(withOcspCheck)
@@ -165,16 +165,20 @@ public class TucPki018Verifier {
 
   /**
    * @param x509EeCert Certificate to check the OCSP status from
-   * @param referenceDate date to check revocation, producedAt, thisUpdate and nextUpdate against
+   * @param referenceDate date to check revocation status against
    * @throws GemPkiException thrown if OCSP status is not "good" for the certificate
    */
   protected void doOcspIfConfigured(
       @NonNull final X509Certificate x509EeCert, @NonNull final ZonedDateTime referenceDate)
       throws GemPkiException {
+    if (!withOcspCheck) {
+      log.warn(ErrorCode.SW_1039_NO_OCSP_CHECK.getErrorMessage(productType));
+      return;
+    }
     initializeTransceiver(x509EeCert);
     initializeValidator();
 
-    ocspValidator.validateCertificate(x509EeCert, referenceDate);
+    tucPki018OcspValidator.validateCertificate(x509EeCert, referenceDate);
   }
 
   /**
@@ -202,14 +206,7 @@ public class TucPki018Verifier {
             "Übergebenes Zertifikat wurde erfolgreich gegen das Zertifikatsprofil {} getestet.",
             certificateProfile);
 
-        final Admission admission = new Admission(x509EeCert);
-        if (!admission.getProfessionOids().isEmpty()) {
-          log.debug("Gefundene Rolle(n): {}", admission.getProfessionItems());
-        }
-        return admission;
-      } catch (final IOException e) {
-        throw new GemPkiRuntimeException(
-            "Error in processing the admission of the end entity certificate.", e);
+        return AdmissionSupport.getAdmission(x509EeCert);
       } catch (final GemPkiException e) {
         errors.put(certificateProfile, e);
       }

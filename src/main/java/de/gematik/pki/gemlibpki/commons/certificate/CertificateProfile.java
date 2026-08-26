@@ -31,6 +31,7 @@ import static de.gematik.pki.gemlibpki.commons.certificate.CertificateType.CERT_
 import static de.gematik.pki.gemlibpki.commons.certificate.CertificateType.CERT_TYPE_GSMCK_AK_AUT;
 import static de.gematik.pki.gemlibpki.commons.certificate.CertificateType.CERT_TYPE_HBA_AUT;
 import static de.gematik.pki.gemlibpki.commons.certificate.CertificateType.CERT_TYPE_HBA_ENC;
+import static de.gematik.pki.gemlibpki.commons.certificate.CertificateType.CERT_TYPE_HBA_QES;
 import static de.gematik.pki.gemlibpki.commons.certificate.CertificateType.CERT_TYPE_HSK_ENC;
 import static de.gematik.pki.gemlibpki.commons.certificate.CertificateType.CERT_TYPE_HSK_SIG;
 import static de.gematik.pki.gemlibpki.commons.certificate.CertificateType.CERT_TYPE_SMC_B_AUT;
@@ -84,6 +85,7 @@ public enum CertificateProfile {
       true),
   CERT_PROFILE_C_EGK_SIG_ECC(CERT_TYPE_EGK_SIG, List.of(KEYUSAGE_NON_REPUDIATION), List.of(), true),
   CERT_PROFILE_C_HBA_ENC_ECC(CERT_TYPE_HBA_ENC, List.of(KEYUSAGE_KEY_AGREEMENT), List.of(), true),
+  CERT_PROFILE_C_HP_QES_ECC(CERT_TYPE_HBA_QES, List.of(KEYUSAGE_NON_REPUDIATION), List.of(), false),
   CERT_PROFILE_C_HP_AUT_RSA(
       CERT_TYPE_HBA_AUT,
       List.of(KEYUSAGE_DIGITAL_SIGNATURE, KEYUSAGE_KEY_ENCIPHERMENT),

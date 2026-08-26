@@ -21,7 +21,7 @@
 package de.gematik.pki.gemlibpki.commons.validators;
 
 import static de.gematik.pki.gemlibpki.commons.TestConstants.PRODUCT_TYPE;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_X509_EE_CERT_INVALID_KEY_USAGE;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_X509_EE_CERT_INVALID_KEY_USAGE;
 import static de.gematik.pki.gemlibpki.commons.certificate.CertificateProfile.CERT_PROFILE_ANY;
 import static de.gematik.pki.gemlibpki.commons.certificate.CertificateProfile.CERT_PROFILE_C_HCI_AUT_ECC;
 import static de.gematik.pki.gemlibpki.commons.certificate.CertificateProfile.CERT_PROFILE_C_HCI_AUT_RSA;
@@ -41,7 +41,7 @@ class KeyUsageValidatorTest {
 
   private static final CertificateProfile CERTIFICATE_PROFILE = CERT_PROFILE_C_HCI_AUT_ECC;
   private static final X509Certificate VALID_X_509_EE_CERT =
-      TestUtils.readCert("GEM.SMCB-CA57/valid/PraxisBabetteBeyer.pem");
+      TestUtils.readCertNonQes("GEM.SMCB-CA57/valid/PraxisBabetteBeyer.pem");
   private KeyUsageValidator tested;
 
   @BeforeEach
@@ -50,12 +50,13 @@ class KeyUsageValidatorTest {
   }
 
   @Test
-  void verifyConstructorNullParameter() {
+  void keyUsageValidator_whenProductTypeIsNull_thenThrowsNullPointerException() {
     assertNonNullParameter(() -> new KeyUsageValidator(null), "productType");
   }
 
   @Test
-  void verifyValidateCertificateNullParameter() {
+  void
+      validateCertificate_whenX509EeCertOrCertificateProfileIsNull_thenThrowsNullPointerException() {
     assertNonNullParameter(
         () -> tested.validateCertificate(null, CERTIFICATE_PROFILE), "x509EeCert");
     assertNonNullParameter(
@@ -63,20 +64,20 @@ class KeyUsageValidatorTest {
   }
 
   @Test
-  void verifyKeyUsageValid() {
+  void validateCertificate_whenCertificateContainsRequiredKeyUsage_thenDoesNotThrow() {
     assertDoesNotThrow(() -> tested.validateCertificate(VALID_X_509_EE_CERT, CERTIFICATE_PROFILE));
   }
 
   @Test
-  void verifyKeyUsageInvalidInCertificateButNotChecked() {
+  void validateCertificate_whenCertificateProfileDoesNotCheckKeyUsage_thenDoesNotThrow() {
     assertDoesNotThrow(
         () -> tested.validateCertificate(VALID_X509_EE_CERT_INVALID_KEY_USAGE, CERT_PROFILE_ANY));
   }
 
   @Test
-  void verifyKeyUsageMissingInCertificate() {
+  void validateCertificate_whenCertificateIsMissingKeyUsageExtension_thenThrowsGemPkiException() {
     final X509Certificate missingKeyUsages509EeCert =
-        TestUtils.readCert("GEM.SMCB-CA57/invalid/BabetteBeyer-missing-keyUsage.pem");
+        TestUtils.readCertNonQes("GEM.SMCB-CA57/invalid/BabetteBeyer-missing-keyUsage.pem");
 
     assertThatThrownBy(
             () -> tested.validateCertificate(missingKeyUsages509EeCert, CERTIFICATE_PROFILE))
@@ -85,7 +86,7 @@ class KeyUsageValidatorTest {
   }
 
   @Test
-  void verifyKeyUsageInvalidInCertificate() {
+  void validateCertificate_whenCertificateContainsWrongKeyUsage_thenThrowsGemPkiException() {
 
     assertThatThrownBy(
             () ->
@@ -96,7 +97,8 @@ class KeyUsageValidatorTest {
   }
 
   @Test
-  void verifyNotAllKeyUsagesPresentInCert() {
+  void
+      validateCertificate_whenCertificateDoesNotContainAllRequiredKeyUsages_thenThrowsGemPkiException() {
     assertThatThrownBy(
             () -> tested.validateCertificate(VALID_X_509_EE_CERT, CERT_PROFILE_C_HCI_AUT_RSA))
         .isInstanceOf(GemPkiException.class)

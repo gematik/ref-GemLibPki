@@ -20,9 +20,9 @@
 
 package de.gematik.pki.gemlibpki.commons.validators;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.FILE_NAME_TSL_ECC_ALT_CA;
 import static de.gematik.pki.gemlibpki.commons.TestConstants.PRODUCT_TYPE;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_X509_EE_CERT_ALT_CA;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.FILE_NAME_TSL_NON_QES_ALT_CA;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_X509_EE_CERT_ALT_CA;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -44,7 +44,7 @@ import org.mockito.Mockito;
 class IssuerServiceStatusValidatorTest {
 
   @Test
-  void verifyConstructorNullParameter() {
+  void constructor_whenProductTypeOrTspServiceSubsetIsNull_thenThrowsNullPointerException() {
 
     final TspServiceSubset tspServiceSubset = Mockito.mock(TspServiceSubset.class);
 
@@ -55,7 +55,7 @@ class IssuerServiceStatusValidatorTest {
   }
 
   @Test
-  void verifyValidateCertificateNullParameter() {
+  void validateCertificate_whenCertificateOrReferenceDateIsNull_thenThrowsNullPointerException() {
     final TspServiceSubset tspServiceSubset = Mockito.mock(TspServiceSubset.class);
     final ZonedDateTime zonedDateTime = Mockito.mock(ZonedDateTime.class);
 
@@ -73,9 +73,9 @@ class IssuerServiceStatusValidatorTest {
   }
 
   @Test
-  void verifyIssuerServiceStatusNotRevoked() {
+  void validateCertificate_whenIssuerServiceIsNotRevoked_thenDoesNotThrow() {
     assertDoesNotThrow(
-        () -> doValidateCertificate(FILE_NAME_TSL_ECC_ALT_CA, VALID_X509_EE_CERT_ALT_CA));
+        () -> doValidateCertificate(FILE_NAME_TSL_NON_QES_ALT_CA, VALID_X509_EE_CERT_ALT_CA));
   }
 
   /**
@@ -83,8 +83,8 @@ class IssuerServiceStatusValidatorTest {
    * (issuer of VALID_X509_EE_CERT_ALT_CA) in TSL FILE_NAME_TSL_ALT_CA_REVOKED
    */
   @Test
-  void verifyIssuerServiceStatusRevokedLater() {
-    final String tslAltCaRevokedLater = "tsls/ecc/valid/TSL_altCA_revokedLater.xml";
+  void validateCertificate_whenCertificateWasIssuedBeforeServiceRevocation_thenDoesNotThrow() {
+    final String tslAltCaRevokedLater = "tsls/nonqes/valid/TSL_altCA_revokedLater.xml";
     assertDoesNotThrow(
         () -> doValidateCertificate(tslAltCaRevokedLater, VALID_X509_EE_CERT_ALT_CA));
   }
@@ -94,12 +94,13 @@ class IssuerServiceStatusValidatorTest {
    * (issuer of VALID_X509_EE_CERT_ALT_CA) in TSL FILE_NAME_TSL_ALT_CA_REVOKED
    */
   @Test
-  void verifyIssuerServiceStatusRevoked() {
+  void
+      validateCertificate_whenCertificateWasIssuedAfterServiceRevocation_thenThrowsGemPkiException() {
 
     assertThatThrownBy(
             () ->
                 doValidateCertificate(
-                    "tsls/ecc/valid/TSL_altCA_revoked.xml", VALID_X509_EE_CERT_ALT_CA))
+                    "tsls/nonqes/valid/TSL_altCA_revoked.xml", VALID_X509_EE_CERT_ALT_CA))
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.SE_1036_CA_CERTIFICATE_REVOKED_IN_TSL.getErrorMessage(PRODUCT_TYPE));
   }
