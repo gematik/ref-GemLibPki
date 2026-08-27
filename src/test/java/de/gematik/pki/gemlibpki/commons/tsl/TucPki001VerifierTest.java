@@ -20,10 +20,10 @@
 
 package de.gematik.pki.gemlibpki.commons.tsl;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.LOCAL_SSP_DIR;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.OCSP_HOST;
 import static de.gematik.pki.gemlibpki.commons.TestConstants.PRODUCT_TYPE;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_ISSUER_CERT_TSL_CA51;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.LOCAL_SSP_DIR;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.OCSP_HOST;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_ISSUER_CERT_TSL_CA51;
 import static de.gematik.pki.gemlibpki.commons.tsl.TslConverter.ERROR_READING_TSL;
 import static de.gematik.pki.gemlibpki.commons.tsl.TslUtils.getFirstTslSignerCertificate;
 import static de.gematik.pki.gemlibpki.commons.utils.ResourceReader.getFileFromResourceAsBytes;
@@ -86,15 +86,15 @@ class TucPki001VerifierTest {
 
   @BeforeAll
   static void start() {
-    tslToCheckTslUnsigned = TestUtils.getDefaultTslUnsigned();
-    final Document tslToCheckDoc = TestUtils.getDefaultTslAsDoc();
+    tslToCheckTslUnsigned = TestUtils.getDefaultTslUnsignedNonQes();
+    final Document tslToCheckDoc = TestUtils.getDefaultTslAsDocNonQes();
     tslToCheck = TslConverter.docToBytes(tslToCheckDoc);
     tspServicesInTruststore = new TslInformationProvider(tslToCheckTslUnsigned).getTspServices();
     overwriteSspUrls(tspServicesInTruststore, "invalidSsp");
   }
 
   @Test
-  void verifyPerformTucPki001ChecksValid() {
+  void performTucPki001Checks_whenOcspCheckSucceeds_thenDoesNotThrow() {
     final OcspResponderMock ocspResponderMock =
         OcspResponderMock.createAndStart(LOCAL_SSP_DIR, OCSP_HOST, null);
     final X509Certificate tslSigner = getFirstTslSignerCertificate(tslToCheckTslUnsigned);
@@ -115,7 +115,7 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyPerformTucPki001ChecksValid_ExternalTucPki018Verifier() {
+  void performTucPki001Checks_whenExternalTucPki018VerifierIsProvided_thenDoesNotThrow() {
     final OcspResponderMock ocspResponderMock =
         OcspResponderMock.createAndStart(LOCAL_SSP_DIR, OCSP_HOST, null);
     final X509Certificate tslSigner = getFirstTslSignerCertificate(tslToCheckTslUnsigned);
@@ -144,7 +144,7 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyInvalidTslSig() {
+  void performTucPki001Checks_whenTslSignatureIsInvalid_thenThrowsGemPkiException() {
     final byte[] tslBytesUnsigned = TslConverter.tslUnsignedToBytes(tslToCheckTslUnsigned);
 
     final X509Certificate tslSigner = getFirstTslSignerCertificate(tslToCheckTslUnsigned);
@@ -170,9 +170,9 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyGetTslSignerCertificateInvalidFindFirst() {
+  void getTslSignerCertificate_whenKeyInfoContentIsMissing_thenThrowsGemPkiException() {
 
-    final TrustStatusListType tslToCheckUnsigned = TestUtils.getDefaultTslUnsigned();
+    final TrustStatusListType tslToCheckUnsigned = TestUtils.getDefaultTslUnsignedNonQes();
     tslToCheckUnsigned.getSignature().getKeyInfo().getContent().clear();
     final byte[] tslBytesUnsigned = TslConverter.tslUnsignedToBytes(tslToCheckUnsigned);
 
@@ -191,9 +191,9 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyGetTslSignerCertificateInvalidManyChanges() {
+  void getTslSignerCertificate_whenCertificateBytesAreNotParsable_thenThrowsGemPkiException() {
 
-    final TrustStatusListType tslToCheckUnsigned = TestUtils.getDefaultTslUnsigned();
+    final TrustStatusListType tslToCheckUnsigned = TestUtils.getDefaultTslUnsignedNonQes();
 
     final JAXBElement<byte[]> signatureCertificateJaxbElem =
         TslUtils.getFirstSignatureCertificateJaxbElement(tslToCheckUnsigned);
@@ -218,9 +218,9 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyGetTslSignerCertificateInvalidFewChanges() {
+  void getTslSignerCertificate_whenCertificateBytesAreCorrupted_thenThrowsGemPkiException() {
 
-    final TrustStatusListType tslToCheckUnsigned = TestUtils.getDefaultTslUnsigned();
+    final TrustStatusListType tslToCheckUnsigned = TestUtils.getDefaultTslUnsignedNonQes();
 
     final JAXBElement<byte[]> signatureCertificateJaxbElem =
         TslUtils.getFirstSignatureCertificateJaxbElement(tslToCheckUnsigned);
@@ -245,7 +245,7 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyPerformTucPki001ChecksOcspDisabled() {
+  void performTucPki001Checks_whenOcspCheckIsDisabled_thenDoesNotThrow() {
     final TucPki001Verifier tucPki001Verifier =
         TucPki001Verifier.builder()
             .productType(PRODUCT_TYPE)
@@ -259,7 +259,7 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyPerformTucPki001ChecksWithoutOcspInvalid() {
+  void performTucPki001Checks_whenOcspResponderCannotBeReached_thenThrowsGemPkiException() {
 
     final TucPki001Verifier tucPki001Verifier =
         TucPki001Verifier.builder()
@@ -276,7 +276,7 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyTslValidityValidNextUpdate() {
+  void verifyTslValidity_whenValidationTimeEqualsIssueDate_thenDoesNotThrow() {
     final ZonedDateTime issueDate = TslReader.getIssueDate(tslToCheckTslUnsigned);
     assertDoesNotThrow(
         () ->
@@ -284,7 +284,7 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyTslValidityValidNextUpdateInGracePeriod() {
+  void verifyTslValidity_whenValidationTimeIsWithinGracePeriodAfterNextUpdate_thenDoesNotThrow() {
     final ZonedDateTime nextUpdate = TslReader.getNextUpdate(tslToCheckTslUnsigned);
     assertDoesNotThrow(
         () ->
@@ -293,7 +293,8 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyTslValidityWarn2() {
+  void
+      verifyTslValidity_whenValidationTimeExceedsNextUpdateWithoutGracePeriod_thenThrowsGemPkiException() {
     final ZonedDateTime nextUpdate = TslReader.getNextUpdate(tslToCheckTslUnsigned);
 
     assertThatThrownBy(
@@ -305,18 +306,18 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyPerformTucPki001ChecksOcspStatusUnknown() {
+  void performTucPki001Checks_whenOcspStatusIsUnknown_thenThrowsGemPkiException() {
 
     final OcspResponderMock ocspResponderMock =
         OcspResponderMock.createAndStart(LOCAL_SSP_DIR, OCSP_HOST, null);
     final X509Certificate tslSigner =
-        TestUtils.readP12(TslSignerTest.SIGNER_PATH_ECC).getCertificate();
+        TestUtils.readP12nonQes(TslSignerNonQesTest.SIGNER_PATH_NON_QES).getCertificate();
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA51);
     final CertificateStatus unknownStatus = new UnknownStatus();
     final OCSPResp ocspRespLocal =
         OcspResponseGenerator.builder()
-            .signer(OcspTestConstants.getOcspSignerEcc())
+            .signer(OcspTestConstants.getOcspSignerEccNonQes())
             .build()
             .generate(ocspReq, tslSigner, VALID_ISSUER_CERT_TSL_CA51, unknownStatus);
     ocspResponderMock.configureWireMockReceiveHttpPost(ocspRespLocal, HttpURLConnection.HTTP_OK);
@@ -338,16 +339,17 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyPerformTucPki001Checks_OcspResponseProducedAt_valid() {
+  void performTucPki001Checks_whenOcspProducedAtIsWithinTolerance_thenDoesNotThrow() {
     final OcspResponderMock ocspResponderMock =
         OcspResponderMock.createAndStart(LOCAL_SSP_DIR, OCSP_HOST, null);
     final X509Certificate tslSigner =
-        TestUtils.readP12(TslSignerTest.SIGNER_PATH_ECC).getCertificate();
+        TestUtils.readP12nonQes(TslSignerNonQesTest.SIGNER_PATH_NON_QES).getCertificate();
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA51);
     final OCSPResp ocspRespLocal =
         OcspResponseGenerator.builder()
-            .signer(OcspTestConstants.getOcspSignerEcc())
+            .signer(OcspTestConstants.getOcspSignerEccNonQes())
+            .thisUpdate(ZonedDateTime.now().minusSeconds(5))
             .producedAt(ZonedDateTime.now().minusSeconds(3))
             .build()
             .generate(ocspReq, tslSigner, VALID_ISSUER_CERT_TSL_CA51, CertificateStatus.GOOD);
@@ -369,16 +371,16 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyPerformTucPki001Checks_OcspResponseProducedAt_expired() {
+  void performTucPki001Checks_whenOcspProducedAtExceedsTolerance_thenThrowsGemPkiException() {
     final OcspResponderMock ocspResponderMock =
         OcspResponderMock.createAndStart(LOCAL_SSP_DIR, OCSP_HOST, null);
     final X509Certificate tslSigner =
-        TestUtils.readP12(TslSignerTest.SIGNER_PATH_ECC).getCertificate();
+        TestUtils.readP12nonQes(TslSignerNonQesTest.SIGNER_PATH_NON_QES).getCertificate();
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(tslSigner, VALID_ISSUER_CERT_TSL_CA51);
     final OCSPResp ocspRespLocal =
         OcspResponseGenerator.builder()
-            .signer(OcspTestConstants.getOcspSignerEcc())
+            .signer(OcspTestConstants.getOcspSignerEccNonQes())
             .producedAt(ZonedDateTime.now().minusSeconds(7))
             .build()
             .generate(ocspReq, tslSigner, VALID_ISSUER_CERT_TSL_CA51, CertificateStatus.GOOD);
@@ -402,7 +404,7 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyNullChecks() {
+  void builderMethods_whenRequiredArgumentsAreNull_thenThrowsOnNullParameter() {
     final TucPki001VerifierBuilder builder = TucPki001Verifier.builder();
 
     assertNonNullParameter(() -> builder.productType(null), "productType");
@@ -422,7 +424,7 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyPerformTucPki001ChecksTslIdAndTslSeqNr_SameIdAndSameTslSeqNr_NotForUpdate() {
+  void performTucPki001Checks_whenTslIdAndSequenceMatchCurrentTsl_thenThrowsGemPkiException() {
     final OcspResponderMock ocspResponderMock = verifyPerformTucPki001ChecksTslIdAndTslSeqNr_init();
 
     final TucPki001Verifier tucPki001Verifier =
@@ -441,7 +443,7 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyPerformTucPki001ChecksTslIdAndTslSeqNr_DifferentIdsAndIncrementedTslSeqNr_ForUpdate() {
+  void performTucPki001Checks_whenTslIdDiffersAndSequenceIsIncremented_thenDoesNotThrow() {
     final OcspResponderMock ocspResponderMock = verifyPerformTucPki001ChecksTslIdAndTslSeqNr_init();
 
     final TucPki001Verifier tucPki001Verifier =
@@ -463,7 +465,7 @@ class TucPki001VerifierTest {
 
   @Test
   void
-      verifyPerformTucPki001ChecksTslIdAndTslSeqNr_Check1NewTslSeqNrIsSmallerThanCurrentTslSeqNr() {
+      performTucPki001Checks_whenNewTslSequenceIsSmallerThanCurrentSequence_thenThrowsGemPkiException() {
     final OcspResponderMock ocspResponderMock = verifyPerformTucPki001ChecksTslIdAndTslSeqNr_init();
 
     final TucPki001Verifier tucPki001Verifier =
@@ -486,8 +488,7 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void
-      verifyPerformTucPki001ChecksTslIdAndTslSeqNr_Check3NewTslSeqNrGreaterThanCurrentTslSeqNrButSameIds() {
+  void performTucPki001Checks_whenTslIdMatchesAndSequenceIsIncremented_thenThrowsGemPkiException() {
     final OcspResponderMock ocspResponderMock = verifyPerformTucPki001ChecksTslIdAndTslSeqNr_init();
 
     final TucPki001Verifier tucPki001Verifier =
@@ -510,7 +511,8 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyPerformTucPki001ChecksTslIdAndTslSeqNr_Check2SameTslSeqNrButIdsDiffer() {
+  void
+      performTucPki001Checks_whenTslIdDiffersAndSequenceMatchesCurrent_thenThrowsGemPkiException() {
     final OcspResponderMock ocspResponderMock = verifyPerformTucPki001ChecksTslIdAndTslSeqNr_init();
 
     final TucPki001Verifier tucPki001Verifier =
@@ -529,8 +531,9 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyTslTrustAnchorUpdate() {
-    final X509Certificate taCert = TestUtils.readCert("GEM.TSL-CA52/GEM.TSL-CA52_TEST-ONLY.cer");
+  void isToActivate_whenStatusStartingTimeHasPassed_thenReturnsTrueNowAndAfterStart() {
+    final X509Certificate taCert =
+        TestUtils.readCertNonQes("GEM.TSL-CA52/GEM.TSL-CA52_TEST-ONLY.cer");
 
     final ZonedDateTime statusStartingTime = GemLibPkiUtils.now().minusSeconds(2);
     final TrustAnchorUpdate trustAnchorUpdate = new TrustAnchorUpdate(taCert, statusStartingTime);
@@ -541,7 +544,7 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyNoTaUpdatePresent() {
+  void getVerifiedAnnouncedTrustAnchorUpdate_whenNoTrustAnchorUpdateExists_thenReturnsEmpty() {
 
     final TucPki001Verifier tucPki001Verifier =
         TucPki001Verifier.builder()
@@ -555,10 +558,11 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyGetFutureTrustAnchor() {
+  void
+      getVerifiedAnnouncedTrustAnchorUpdate_whenFutureTrustAnchorExists_thenReturnsExpectedUpdate() {
     final byte[] tslBytes =
         TslConverter.tslUnsignedToBytes(
-            TestUtils.getTslUnsigned("tsls/ecc/valid/TSL_TAchange.xml"));
+            TestUtils.getTslUnsigned("tsls/nonqes/valid/TSL_TAchange.xml"));
     final TucPki001Verifier tucPki001Verifier =
         TucPki001Verifier.builder()
             .productType(PRODUCT_TYPE)
@@ -572,7 +576,8 @@ class TucPki001VerifierTest {
         tucPki001Verifier.getVerifiedAnnouncedTrustAnchorUpdate().orElseThrow();
 
     final ZonedDateTime zdt = ZonedDateTime.of(2025, 7, 23, 11, 51, 4, 0, ZoneOffset.UTC);
-    final X509Certificate taCert = TestUtils.readCert("GEM.TSL-CA52/GEM.TSL-CA52_TEST-ONLY.cer");
+    final X509Certificate taCert =
+        TestUtils.readCertNonQes("GEM.TSL-CA52/GEM.TSL-CA52_TEST-ONLY.cer");
     assertThat(trustAnchorUpdate.getStatusStartingTime())
         .isCloseTo(zdt, Assertions.within(1, ChronoUnit.MILLIS));
     assertThat(trustAnchorUpdate.getFutureTrustAnchor()).isEqualTo(taCert);
@@ -585,9 +590,11 @@ class TucPki001VerifierTest {
         "TSL_defect_TAchange_broken.xml",
         "TSL_defect_TAchange_notYetValid.xml"
       })
-  void verifyMultipleTaUpdatesPresent(final String tslPath) {
+  void
+      getVerifiedAnnouncedTrustAnchorUpdate_whenTrustAnchorAnnouncementsAreInvalid_thenReturnsEmpty(
+          final String tslPath) {
     final byte[] tslBytes =
-        TslConverter.tslUnsignedToBytes(TestUtils.getTslUnsigned("tsls/ecc/defect/" + tslPath));
+        TslConverter.tslUnsignedToBytes(TestUtils.getTslUnsigned("tsls/nonqes/defect/" + tslPath));
     final TucPki001Verifier tucPki001Verifier =
         TucPki001Verifier.builder()
             .productType(PRODUCT_TYPE)
@@ -602,9 +609,10 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyExceptionInTaAnnouncement() {
+  void
+      getVerifiedAnnouncedTrustAnchorUpdate_whenTrustAnchorAnnouncementParsingFails_thenReturnsEmpty() {
     final TrustStatusListType tslUnsigned =
-        TestUtils.getTslUnsigned("tsls/ecc/valid/TSL_TAchange.xml");
+        TestUtils.getTslUnsigned("tsls/nonqes/valid/TSL_TAchange.xml");
 
     for (final TSPType tspType :
         tslUnsigned.getTrustServiceProviderList().getTrustServiceProvider()) {
@@ -625,7 +633,7 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyValidateSchemesValid() {
+  void validateAgainstXsdSchemas_whenTslMatchesSchemas_thenDoesNotThrow() {
 
     final TucPki001Verifier tucPki001Verifier =
         TucPki001Verifier.builder()
@@ -642,10 +650,11 @@ class TucPki001VerifierTest {
   @ParameterizedTest
   @ValueSource(
       strings = {
-        "tsls/ecc/invalid/TSL_invalid_xmlNonEtsiTag_altCA.xml",
-        "tsls/ecc/invalid/TSL_invalid_xmlNamespace_altCA.xml"
+        "tsls/nonqes/invalid/TSL_invalid_xmlNonEtsiTag_altCA.xml",
+        "tsls/nonqes/invalid/TSL_invalid_xmlNamespace_altCA.xml"
       })
-  void verifyValidateSchemesInvalid(final String tslFilename) {
+  void validateAgainstXsdSchemas_whenTslViolatesSchema_thenThrowsGemPkiException(
+      final String tslFilename) {
     final byte[] tslBytes = getFileFromResourceAsBytes(tslFilename, TucPki001VerifierTest.class);
 
     final TucPki001Verifier tucPki001Verifier =
@@ -663,7 +672,7 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyInvalidSchema() {
+  void validateAgainstXsd_whenSchemaFileIsInvalid_thenThrowsGemPkiRuntimeException() {
 
     final TucPki001Verifier tucPki001Verifier =
         TucPki001Verifier.builder()
@@ -680,7 +689,8 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyInvalidSchema_IOException() throws IOException, SAXException {
+  void validateAgainstXsd_whenValidatorThrowsIoException_thenThrowsGemPkiRuntimeException()
+      throws IOException, SAXException {
 
     final TucPki001Verifier tucPki001Verifier =
         TucPki001Verifier.builder()
@@ -706,7 +716,7 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void verifyWellFormedXml() {
+  void validateWellFormedXml_whenXmlIsTruncated_thenThrowsGemPkiException() {
 
     final byte[] tslToCheckBroken = Arrays.copyOfRange(tslToCheck, 0, tslToCheck.length - 1);
 
@@ -725,7 +735,7 @@ class TucPki001VerifierTest {
   }
 
   @Test
-  void testValidateWellFormedXmlException() {
+  void validateWellFormedXml_whenDocumentBuilderCreationFails_thenThrowsGemPkiRuntimeException() {
     final TucPki001Verifier tucPki001Verifier =
         TucPki001Verifier.builder()
             .productType(PRODUCT_TYPE)

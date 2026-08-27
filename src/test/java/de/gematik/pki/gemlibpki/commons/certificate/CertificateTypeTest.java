@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 class CertificateTypeTest {
 
   @Test
-  void getName() {
+  void getName_whenCalled_thenCompletesWithoutException() {
     assertDoesNotThrow(CertificateType.CERT_TYPE_SMC_B_AUT::getName);
   }
 }

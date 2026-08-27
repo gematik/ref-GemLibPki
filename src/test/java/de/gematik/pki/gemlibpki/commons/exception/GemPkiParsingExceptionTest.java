@@ -31,8 +31,10 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class GemPkiParsingExceptionTest {
+
   @Test
-  void apiTest() {
+  void
+      gemPkiParsingException_whenConstructedWithEnumMap_thenThrowsGemPkiRuntimeExceptionAboutApiUsage() {
     final Map<CertificateProfile, GemPkiException> map = new EnumMap<>(CertificateProfile.class);
     assertThatThrownBy(() -> new GemPkiParsingException(PRODUCT_TYPE, map))
         .isInstanceOf(GemPkiRuntimeException.class)
@@ -40,7 +42,7 @@ class GemPkiParsingExceptionTest {
   }
 
   @Test
-  void nonNullTests() {
+  void gemPkiParsingException_whenConstructorArgumentsAreNull_thenThrowsExpectedExceptions() {
     final EnumMap<CertificateProfile, GemPkiException> error =
         new EnumMap<>(CertificateProfile.class);
     error.put(

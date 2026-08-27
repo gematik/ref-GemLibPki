@@ -94,7 +94,7 @@ public class OcspResponderMock {
     // build OCSP Response depending on request
     final OCSPResp ocspRespToSent =
         OcspResponseGenerator.builder()
-            .signer(OcspTestConstants.getOcspSignerEcc())
+            .signer(OcspTestConstants.getOcspSignerEccNonQes())
             .build()
             .generate(ocspReq, eeCert, issuerCert);
     // configure WireMock with OCSP Response
@@ -123,7 +123,7 @@ public class OcspResponderMock {
     final OCSPReq ocspReq = OcspRequestGenerator.generateSingleOcspRequest(eeCert, issuerCert);
     final OCSPResp ocspRespToSent =
         OcspResponseGenerator.builder()
-            .signer(OcspTestConstants.getOcspSignerEcc())
+            .signer(OcspTestConstants.getOcspSignerEccNonQes())
             .producedAt(ZonedDateTime.now().plus(producedAtDeltaMilliseconds, ChronoUnit.MILLIS))
             .build()
             .generate(ocspReq, eeCert, issuerCert);

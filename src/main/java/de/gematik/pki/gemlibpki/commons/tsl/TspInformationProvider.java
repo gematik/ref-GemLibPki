@@ -24,18 +24,26 @@ import de.gematik.pki.gemlibpki.commons.error.ErrorCode;
 import de.gematik.pki.gemlibpki.commons.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.commons.utils.CertReader;
 import eu.europa.esig.trustedlist.jaxb.tsl.AttributedNonEmptyURIType;
+import eu.europa.esig.trustedlist.jaxb.tsl.DigitalIdentityListType;
 import eu.europa.esig.trustedlist.jaxb.tsl.DigitalIdentityType;
+import eu.europa.esig.trustedlist.jaxb.tsl.InternationalNamesType;
+import eu.europa.esig.trustedlist.jaxb.tsl.ServiceHistoryInstanceType;
+import eu.europa.esig.trustedlist.jaxb.tsl.ServiceHistoryType;
 import eu.europa.esig.trustedlist.jaxb.tsl.ServiceSupplyPointsType;
+import eu.europa.esig.trustedlist.jaxb.tsl.TSPServiceInformationType;
+import eu.europa.esig.trustedlist.jaxb.tsl.TSPServiceType;
 import java.io.IOException;
 import java.security.cert.X509Certificate;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1OctetString;
@@ -107,7 +115,8 @@ public class TspInformationProvider {
     }
     final AuthorityKeyIdentifier authKeyIdentifier =
         AuthorityKeyIdentifier.getInstance(akiSequenceAsOctet);
-    return Arrays.equals(subKeyIdentifier.getKeyIdentifier(), authKeyIdentifier.getKeyIdentifier());
+    return Arrays.equals(
+        subKeyIdentifier.getKeyIdentifier(), authKeyIdentifier.getKeyIdentifierOctets());
   }
 
   /**
@@ -124,6 +133,30 @@ public class TspInformationProvider {
         .getStatusStartingTime()
         .toGregorianCalendar()
         .toZonedDateTime();
+  }
+
+  private static Optional<ZonedDateTime> getStatusStartingTime(
+      final ServiceHistoryInstanceType serviceHistoryInstance) {
+    return Optional.ofNullable(serviceHistoryInstance)
+        .map(ServiceHistoryInstanceType::getStatusStartingTime)
+        .map(statusStartingTime -> statusStartingTime.toGregorianCalendar().toZonedDateTime());
+  }
+
+  private static List<TspServiceStatusHistoryEntry> getServiceStatusHistory(
+      final TspService tspService) {
+    return Optional.ofNullable(tspService)
+        .map(TspService::getTspServiceType)
+        .map(TSPServiceType::getServiceHistory)
+        .map(ServiceHistoryType::getServiceHistoryInstance)
+        .stream()
+        .flatMap(List::stream)
+        .filter(Objects::nonNull)
+        .map(
+            serviceHistoryInstance ->
+                new TspServiceStatusHistoryEntry(
+                    serviceHistoryInstance.getServiceStatus(),
+                    getStatusStartingTime(serviceHistoryInstance).orElse(null)))
+        .toList();
   }
 
   /**
@@ -146,6 +179,7 @@ public class TspInformationProvider {
         .serviceStatus(tspService.getTspServiceType().getServiceInformation().getServiceStatus())
         .statusStartingTime(getCertificateAuthorityStatusStartingTime(tspService))
         .serviceSupplyPoint(getFirstServiceSupplyPointFromTspService(tspService))
+        .serviceStatusHistory(getServiceStatusHistory(tspService))
         .extensions(
             tspService
                 .getTspServiceType()
@@ -155,42 +189,56 @@ public class TspInformationProvider {
         .build();
   }
 
+  /**
+   * Compose an information subset of a QES-CA TspService if one of its issuers signed the given
+   * end-entity certificate.
+   *
+   * @param x509EeCert The end-entity certificate
+   * @return information subset of a QES-CA TspService {@link TspServiceSubset}
+   * @throws GemPkiException exception thrown if certificate cannot be found or is not QES-qualified
+   */
+  public TspServiceSubset getIssuerQesCaTspServiceSubset(@NonNull final X509Certificate x509EeCert)
+      throws GemPkiException {
+    try {
+      final TspServiceSubset qesCaTspServiceSubset = getIssuerTspServiceSubset(x509EeCert);
+      log.debug(
+          "QES-CA certificate found in BNetzA-VL: {}",
+          qesCaTspServiceSubset.getX509IssuerCert().getSubjectX500Principal());
+      return qesCaTspServiceSubset;
+    } catch (final GemPkiException e) {
+      if (ErrorCode.TE_1027_CA_CERT_MISSING.equals(e.getError())
+          || ErrorCode.SE_1023_AUTHORITYKEYID_DIFFERENT.equals(e.getError())) {
+        throw new GemPkiException(
+            productType, ErrorCode.SE_1059_CA_CERTIFICATE_NOT_QES_QUALIFIED, e);
+      }
+
+      throw e;
+    }
+  }
+
   private Pair<TspService, X509Certificate> getIssuerTspServiceAndIssuerCert(
       @NonNull final X509Certificate x509EeCert) throws GemPkiException {
     Optional<X509Certificate> foundX509IssuerCert = Optional.empty();
     log.info(
         "Looking for issuer {} in trust store.", x509EeCert.getIssuerX500Principal().getName());
     for (final TspService tspService : tspServices) {
-      try {
-        for (final DigitalIdentityType dit :
-            tspService
-                .getTspServiceType()
-                .getServiceInformation()
-                .getServiceDigitalIdentity()
-                .getDigitalId()) {
-          final X509Certificate x509IssuerCert =
-              CertReader.readX509(productType, dit.getX509Certificate());
+      final Optional<List<DigitalIdentityType>> digitalIds = getProcessableDigitalIds(tspService);
+      if (digitalIds.isEmpty()) {
+        log.debug("skipped {} due to missing tsp information", getDisplayName(tspService));
+        continue;
+      }
 
-          if (x509EeCert
-              .getIssuerX500Principal()
-              .equals(x509IssuerCert.getSubjectX500Principal())) {
+      for (final DigitalIdentityType dit : digitalIds.get()) {
+        final X509Certificate x509IssuerCert =
+            CertReader.readX509(productType, dit.getX509Certificate());
 
-            if (verifyAkiMatchesSki(x509EeCert, x509IssuerCert)) {
-              return Pair.of(tspService, x509IssuerCert);
-            }
-            foundX509IssuerCert = Optional.of(x509IssuerCert);
+        if (x509EeCert.getIssuerX500Principal().equals(x509IssuerCert.getSubjectX500Principal())) {
+
+          if (verifyAkiMatchesSki(x509EeCert, x509IssuerCert)) {
+            return Pair.of(tspService, x509IssuerCert);
           }
+          foundX509IssuerCert = Optional.of(x509IssuerCert);
         }
-      } catch (final NullPointerException e) {
-        log.debug(
-            "skipped {} due to missing tsp information",
-            tspService
-                .getTspServiceType()
-                .getServiceInformation()
-                .getServiceName()
-                .getName()
-                .getFirst()
-                .getValue());
       }
     }
 
@@ -218,33 +266,63 @@ public class TspInformationProvider {
    *
    * @param tspService the given TspService
    * @return ServiceSupplyPoint as string (URL)
-   * @throws GemPkiException exception thrown if service supply point is missing
    */
-  private String getFirstServiceSupplyPointFromTspService(final TspService tspService)
-      throws GemPkiException {
+  private String getFirstServiceSupplyPointFromTspService(final TspService tspService) {
 
     final Optional<ServiceSupplyPointsType> serviceSupplyPointsType =
         Optional.ofNullable(
             tspService.getTspServiceType().getServiceInformation().getServiceSupplyPoints());
 
     if (serviceSupplyPointsType.isEmpty()) {
-      throw new GemPkiException(productType, ErrorCode.TE_1026_SERVICESUPPLYPOINT_MISSING);
+      return StringUtils.EMPTY;
     }
 
     final List<AttributedNonEmptyURIType> sspList =
         serviceSupplyPointsType.get().getServiceSupplyPoint();
 
     if (sspList.isEmpty()) {
-      throw new GemPkiException(productType, ErrorCode.TE_1026_SERVICESUPPLYPOINT_MISSING);
+      return StringUtils.EMPTY;
     }
 
     final String firstServiceSupplyPoint = sspList.getFirst().getValue();
 
     if (firstServiceSupplyPoint.isBlank()) {
-      throw new GemPkiException(productType, ErrorCode.TE_1026_SERVICESUPPLYPOINT_MISSING);
+      return StringUtils.EMPTY;
     }
 
     log.debug("First ServiceSupplyPoint was identified: {}", firstServiceSupplyPoint);
     return firstServiceSupplyPoint;
+  }
+
+  private Optional<List<DigitalIdentityType>> getProcessableDigitalIds(
+      final TspService tspService) {
+    return Optional.ofNullable(tspService)
+        .map(TspService::getTspServiceType)
+        .map(TSPServiceType::getServiceInformation)
+        .map(TSPServiceInformationType::getServiceDigitalIdentity)
+        .map(DigitalIdentityListType::getDigitalId)
+        .map(
+            digitalIds ->
+                digitalIds.stream()
+                    .filter(Objects::nonNull)
+                    .filter(TspInformationProvider::containsX509Certificate)
+                    .toList())
+        .filter(digitalIds -> !digitalIds.isEmpty());
+  }
+
+  private static boolean containsX509Certificate(final DigitalIdentityType digitalIdentityType) {
+    return digitalIdentityType != null && digitalIdentityType.getX509Certificate() != null;
+  }
+
+  private String getDisplayName(final TspService tspService) {
+    return Optional.ofNullable(tspService)
+        .map(TspService::getTspServiceType)
+        .map(TSPServiceType::getServiceInformation)
+        .map(TSPServiceInformationType::getServiceName)
+        .map(InternationalNamesType::getName)
+        .filter(serviceNames -> !serviceNames.isEmpty())
+        .map(serviceNames -> serviceNames.getFirst().getValue())
+        .filter(StringUtils::isNotBlank)
+        .orElse("<unknown tsp service>");
   }
 }

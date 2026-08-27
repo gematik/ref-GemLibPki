@@ -46,8 +46,8 @@ class TucPki001VerifierIT {
 
   @BeforeAll
   static void start() {
-    final TrustStatusListType tslToCheckTslUnsigned = TestUtils.getDefaultTslUnsigned();
-    final Document tslToCheckDoc = TestUtils.getDefaultTslAsDoc();
+    final TrustStatusListType tslToCheckTslUnsigned = TestUtils.getDefaultTslUnsignedNonQes();
+    final Document tslToCheckDoc = TestUtils.getDefaultTslAsDocNonQes();
     tslToCheck = TslConverter.docToBytes(tslToCheckDoc);
     tspServicesInTruststore = new TslInformationProvider(tslToCheckTslUnsigned).getTspServices();
     overwriteSspUrls(tspServicesInTruststore, "invalidSsp");

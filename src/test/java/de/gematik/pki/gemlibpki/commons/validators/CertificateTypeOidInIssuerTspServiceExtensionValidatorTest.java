@@ -20,11 +20,11 @@
 
 package de.gematik.pki.gemlibpki.commons.validators;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.MISSING_CERT_TYPE;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.MISSING_POLICY_ID_CERT;
 import static de.gematik.pki.gemlibpki.commons.TestConstants.PRODUCT_TYPE;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_X509_EE_CERT_ALT_CA;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.FILE_NAME_TSL_DEFAULT_NON_QES;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.MISSING_CERT_TYPE;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.MISSING_POLICY_ID_CERT;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_X509_EE_CERT_ALT_CA;
 import static de.gematik.pki.gemlibpki.commons.certificate.CertificateProfile.CERT_PROFILE_C_HCI_AUT_ECC;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -46,7 +46,7 @@ import org.mockito.Mockito;
 class CertificateTypeOidInIssuerTspServiceExtensionValidatorTest {
 
   @Test
-  void verifyConstructorNullParameter() {
+  void constructor_whenProductTypeOrTspServiceSubsetIsNull_thenThrowsNullPointerException() {
     final TspServiceSubset tspServiceSubset = Mockito.mock(TspServiceSubset.class);
 
     assertNonNullParameter(
@@ -58,7 +58,7 @@ class CertificateTypeOidInIssuerTspServiceExtensionValidatorTest {
   }
 
   @Test
-  void verifyValidateCertificateNullParameter() {
+  void validateCertificate_whenCertificateOrProfileIsNull_thenThrowsNullPointerException() {
     final TspServiceSubset tspServiceSubset = Mockito.mock(TspServiceSubset.class);
     final X509Certificate x509EeCert = Mockito.mock(X509Certificate.class);
 
@@ -72,9 +72,10 @@ class CertificateTypeOidInIssuerTspServiceExtensionValidatorTest {
   }
 
   @Test
-  void verifyCertificateProfileWrongServiceInfoExtInTsl() {
+  void
+      validateCertificate_whenIssuerTspServiceExtensionDoesNotAuthorizeCertificateType_thenThrowsGemPkiException() {
     final String tslAltCaWrongServiceExtension =
-        "tsls/ecc/defect/TSL_defect_altCA_wrong-srvInfoExt.xml";
+        "tsls/nonqes/defect/TSL_defect_altCA_wrong-srvInfoExt.xml";
 
     assertThatThrownBy(
             () -> doValidateCertificate(tslAltCaWrongServiceExtension, VALID_X509_EE_CERT_ALT_CA))
@@ -83,14 +84,14 @@ class CertificateTypeOidInIssuerTspServiceExtensionValidatorTest {
   }
 
   @Test
-  void multipleCertificateProfilesMultipleCertTypesInEe() {
+  void validateCertificate_whenCertificateContainsMultipleCertificateTypes_thenDoesNotThrow() {
     final X509Certificate eeMultipleCertTypes =
-        TestUtils.readCert("GEM.SMCB-CA51/Aschoffsche_Apotheke-AUT-twoCertTypes-ECC.pem");
+        TestUtils.readCertNonQes("GEM.SMCB-CA51/Aschoffsche_Apotheke-AUT-twoCertTypes-ECC.pem");
     assertDoesNotThrow(() -> doValidateCertificate(eeMultipleCertTypes));
   }
 
   @Test
-  void verifyCertificateProfileMissingPolicyId() {
+  void validateCertificate_whenCertificatePolicyIdIsMissing_thenThrowsGemPkiException() {
 
     assertThatThrownBy(() -> doValidateCertificate(MISSING_POLICY_ID_CERT))
         .isInstanceOf(GemPkiException.class)
@@ -98,7 +99,7 @@ class CertificateTypeOidInIssuerTspServiceExtensionValidatorTest {
   }
 
   @Test
-  void verifyCertificateProfileMissingCertType() {
+  void validateCertificate_whenCertificateTypeExtensionIsMissing_thenThrowsGemPkiException() {
 
     assertThatThrownBy(() -> doValidateCertificate(MISSING_CERT_TYPE))
         .isInstanceOf(GemPkiException.class)
@@ -106,9 +107,10 @@ class CertificateTypeOidInIssuerTspServiceExtensionValidatorTest {
   }
 
   @Test
-  void testGetCertificatePolicyOidsException() {
+  void
+      validateCertificate_whenReadingCertificatePoliciesThrowsIOException_thenThrowsGemPkiException() {
     final X509Certificate validX509EeCert =
-        TestUtils.readCert("GEM.SMCB-CA57/valid/PraxisBabetteBeyer.pem");
+        TestUtils.readCertNonQes("GEM.SMCB-CA57/valid/PraxisBabetteBeyer.pem");
 
     try (final MockedConstruction<Policies> ignored =
         Mockito.mockConstructionWithAnswer(
@@ -124,7 +126,7 @@ class CertificateTypeOidInIssuerTspServiceExtensionValidatorTest {
   }
 
   private void doValidateCertificate(final X509Certificate x509EeCert) throws GemPkiException {
-    doValidateCertificate(FILE_NAME_TSL_ECC_DEFAULT, x509EeCert);
+    doValidateCertificate(FILE_NAME_TSL_DEFAULT_NON_QES, x509EeCert);
   }
 
   private void doValidateCertificate(final String tslFilename, final X509Certificate x509EeCert)

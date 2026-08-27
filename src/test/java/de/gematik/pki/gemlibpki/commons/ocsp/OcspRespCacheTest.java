@@ -20,10 +20,10 @@
 
 package de.gematik.pki.gemlibpki.commons.ocsp;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_ISSUER_CERT_SMCB;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_ISSUER_CERT_SMCB_CA41_RSA;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_X509_EE_CERT_SMCB;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_X509_EE_CERT_SMCB_CA41_RSA;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_ISSUER_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_ISSUER_CERT_SMCB_CA41_RSA;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_X509_EE_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_X509_EE_CERT_SMCB_CA41_RSA;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -60,20 +60,20 @@ class OcspRespCacheTest {
       final X509Certificate _issuerCert,
       final CertificateStatus _certStatus) {
     return OcspResponseGenerator.builder()
-        .signer(OcspTestConstants.getOcspSignerEcc())
+        .signer(OcspTestConstants.getOcspSignerEccNonQes())
         .build()
         .generate(_ocspReq, _eeCert, _issuerCert, _certStatus);
   }
 
   @Test
-  void setAndGetOcspGracePeriodSeconds() {
+  void getOcspGracePeriodSeconds_whenCacheIsCreated_thenReturnsConfiguredGracePeriod() {
     final int OCSP_GRACE_PERIOD = 10;
     final OcspRespCache ocspRespCache = new OcspRespCache(OCSP_GRACE_PERIOD);
     assertThat(ocspRespCache.getOcspGracePeriodSeconds()).isEqualTo(OCSP_GRACE_PERIOD);
   }
 
   @Test
-  void setAndGetOcspGracePeriodSecondsSet() {
+  void setOcspGracePeriodSeconds_whenCalled_thenUpdatesGracePeriod() {
     final int OCSP_GRACE_PERIOD = 10;
     final OcspRespCache ocspRespCache = new OcspRespCache(OCSP_GRACE_PERIOD);
     ocspRespCache.setOcspGracePeriodSeconds(OCSP_GRACE_PERIOD + 5);
@@ -81,7 +81,7 @@ class OcspRespCacheTest {
   }
 
   @Test
-  void saveCheckSize() {
+  void saveResponse_whenResponseIsSaved_thenSizeIncreases() {
     final OcspRespCache ocspRespCache = new OcspRespCache(30);
     assertThat(ocspRespCache.getSize()).isZero();
     final OCSPResp ocspResp = getOcspResp();
@@ -90,7 +90,7 @@ class OcspRespCacheTest {
   }
 
   @Test
-  void saveAndGetResponse() {
+  void getResponse_whenResponseWasSaved_thenReturnsCachedResponse() {
     final OcspRespCache ocspRespCache = new OcspRespCache(30);
 
     assertThat(ocspRespCache.getResponse(VALID_X509_EE_CERT_SMCB.getSerialNumber())).isEmpty();
@@ -101,7 +101,7 @@ class OcspRespCacheTest {
 
   private static OCSPResp getOcspResp() {
     return OcspResponseGenerator.builder()
-        .signer(OcspTestConstants.getOcspSignerEcc())
+        .signer(OcspTestConstants.getOcspSignerEccNonQes())
         .build()
         .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
   }
@@ -147,17 +147,17 @@ class OcspRespCacheTest {
   }
 
   @Test
-  void saveAndGetResponseWithGracePeriodCertificateStatusGood() {
+  void getResponse_whenGracePeriodExpiresForGoodStatus_thenRemovesCachedResponses() {
     saveAndGetResponseWithGracePeriod(CertificateStatus.GOOD);
   }
 
   @Test
-  void saveAndGetResponseWithGracePeriodCertificateStatusUnknown() {
+  void getResponse_whenGracePeriodExpiresForUnknownStatus_thenRemovesCachedResponses() {
     saveAndGetResponseWithGracePeriod(new UnknownStatus());
   }
 
   @Test
-  void saveAndGetResponseWithGracePeriodCertificateStatusRevoked() {
+  void getResponse_whenGracePeriodExpiresForRevokedStatus_thenRemovesCachedResponses() {
 
     final ZonedDateTime revokedDate = ZonedDateTime.now(ZoneOffset.UTC);
     final int revokedReason = CRLReason.aACompromise;
@@ -168,7 +168,32 @@ class OcspRespCacheTest {
   }
 
   @Test
-  void nonNull() {
+  void getResponse_whenRevokedResponseIsFreshAndSuccessful_thenKeepsResponseInCache() {
+    final ZonedDateTime thisUpdate = ZonedDateTime.now(ZoneOffset.UTC);
+    final ZonedDateTime producedAt = ZonedDateTime.now(ZoneOffset.UTC);
+    final ZonedDateTime nextUpdate = ZonedDateTime.now(ZoneOffset.UTC).plusMinutes(10);
+    final ZonedDateTime revocationTime = ZonedDateTime.now(ZoneOffset.UTC).minusMinutes(10);
+
+    final OCSPResp ocspResp =
+        TestUtils.generateOcspResponseWithTimeStamps(
+            VALID_X509_EE_CERT_SMCB,
+            VALID_ISSUER_CERT_SMCB,
+            OcspTestConstants.getOcspSignerEccNonQes(),
+            null,
+            thisUpdate,
+            producedAt,
+            nextUpdate,
+            new RevokedStatus(Date.from(revocationTime.toInstant()), CRLReason.privilegeWithdrawn));
+
+    final int OCSP_GRACE_PERIOD = 30;
+    final OcspRespCache ocspRespCache = new OcspRespCache(OCSP_GRACE_PERIOD);
+    ocspRespCache.saveResponse(VALID_X509_EE_CERT_SMCB.getSerialNumber(), ocspResp);
+
+    assertThat(ocspRespCache.getResponse(VALID_X509_EE_CERT_SMCB.getSerialNumber())).isPresent();
+  }
+
+  @Test
+  void ocspRespCacheMethods_whenRequiredParameterIsNull_thenThrowsException() {
     final OcspRespCache ocspRespCache = new OcspRespCache(30);
     assertNonNullParameter(() -> ocspRespCache.getResponse(null), "certSerialNr");
 
@@ -176,5 +201,28 @@ class OcspRespCacheTest {
     assertNonNullParameter(() -> ocspRespCache.saveResponse(null, ocspResp), "certSerialNr");
     final BigInteger certSerialNr = BigInteger.valueOf(1);
     assertNonNullParameter(() -> ocspRespCache.saveResponse(certSerialNr, null), "ocspResp");
+  }
+
+  @Test
+  void getResponse_whenCachedResponseIsExpired_thenDeletesResponseOnAccess() {
+    final OcspRespCache ocspRespCache = new OcspRespCache(30);
+    final ZonedDateTime thisUpdate = ZonedDateTime.now(ZoneOffset.UTC).minusDays(10);
+    final ZonedDateTime producedAt = thisUpdate.plusSeconds(1);
+    final ZonedDateTime nextUpdate = producedAt.plusDays(1);
+    final OCSPResp ocspResp =
+        TestUtils.generateOcspResponseWithTimeStamps(
+            VALID_X509_EE_CERT_SMCB,
+            VALID_ISSUER_CERT_SMCB,
+            OcspTestConstants.getOcspSignerEccNonQes(),
+            null,
+            thisUpdate,
+            producedAt,
+            nextUpdate,
+            CertificateStatus.GOOD);
+
+    ocspRespCache.saveResponse(VALID_X509_EE_CERT_SMCB.getSerialNumber(), ocspResp);
+    // this response is cached but will be deleted on next cache access
+    assertThat(ocspRespCache.getSize()).isEqualTo(1);
+    assertThat(ocspRespCache.getResponse(VALID_X509_EE_CERT_SMCB.getSerialNumber())).isEmpty();
   }
 }

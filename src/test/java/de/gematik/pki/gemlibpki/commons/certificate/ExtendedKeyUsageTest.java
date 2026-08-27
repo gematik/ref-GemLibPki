@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 class ExtendedKeyUsageTest {
 
   @Test
-  void getValue() {
+  void getValue_whenCalled_thenCompletesWithoutException() {
     assertDoesNotThrow(ExtendedKeyUsage.EXT_KEYUSAGE_ID_KP_CLIENTAUTH::getValue);
   }
 }

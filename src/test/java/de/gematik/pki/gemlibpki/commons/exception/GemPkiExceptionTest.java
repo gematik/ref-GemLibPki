@@ -41,7 +41,7 @@ class GemPkiExceptionTest {
   }
 
   @Test
-  void testGemPkiExceptionContainsProductType() {
+  void gemPkiException_whenCreatedWithProductTypeAndErrorCode_thenMessageContainsProductType() {
 
     assertThatThrownBy(
             () -> {
@@ -52,7 +52,7 @@ class GemPkiExceptionTest {
   }
 
   @Test
-  void testGemPkiExceptionContainsPkiPrefix() {
+  void gemPkiException_whenCreatedWithProductTypeAndErrorCode_thenMessageContainsPkiPrefix() {
 
     assertThatThrownBy(
             () -> {
@@ -63,7 +63,7 @@ class GemPkiExceptionTest {
   }
 
   @Test
-  void nonNullTests() {
+  void gemPkiException_whenConstructorArgumentsAreNull_thenThrowsExpectedExceptions() {
     assertNonNullParameter(
         () -> new GemPkiException(null, ErrorCode.SE_1003_MULTIPLE_TRUST_ANCHOR), "productType");
     assertThatThrownBy(() -> new GemPkiException(PRODUCT_TYPE, null))

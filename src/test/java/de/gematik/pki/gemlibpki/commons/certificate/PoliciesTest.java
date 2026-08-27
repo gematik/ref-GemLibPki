@@ -20,8 +20,8 @@
 
 package de.gematik.pki.gemlibpki.commons.certificate;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.MISSING_CERT_TYPE;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_X509_EE_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.MISSING_CERT_TYPE;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_X509_EE_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,18 +31,18 @@ import org.junit.jupiter.api.Test;
 class PoliciesTest {
 
   @Test
-  void getPolicyOids() throws IOException {
+  void getPolicyOids_whenCertificateContainsPolicies_thenReturnsPolicyOids() throws IOException {
     assertThat(new Policies(VALID_X509_EE_CERT_SMCB).getPolicyOids())
         .contains(CertificateType.CERT_TYPE_SMC_B_AUT.getOid());
   }
 
   @Test
-  void policiesCertNull() {
+  void constructor_whenX509EeCertIsNull_thenThrowsNullPointerException() {
     assertNonNullParameter(() -> new Policies(null), "x509EeCert");
   }
 
   @Test
-  void getPolicyOidsEmpty() throws IOException {
+  void getPolicyOids_whenCertificateContainsNoPolicies_thenReturnsEmptySet() throws IOException {
     assertThat(new Policies(MISSING_CERT_TYPE).getPolicyOids()).isEmpty();
   }
 }

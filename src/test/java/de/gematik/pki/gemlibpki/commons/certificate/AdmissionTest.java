@@ -20,8 +20,9 @@
 
 package de.gematik.pki.gemlibpki.commons.certificate;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_X509_EE_CERT_SMCB;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_X509_EE_CERT_SMCB_KZBV;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_X509_EE_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_X509_EE_CERT_SMCB_KZBV;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsQes.VALID_X509_EE_CERT_QES_PSYCHO_TWO_ADMISSIONS;
 import static de.gematik.pki.gemlibpki.commons.certificate.Role.OID_PRAXIS_PSYCHOTHERAPEUT;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,18 +42,20 @@ import org.mockito.Mockito;
 final class AdmissionTest {
 
   @Test
-  void admissionNull() {
+  void constructor_whenX509EeCertIsNull_thenThrowsNullPointerException() {
     assertNonNullParameter(() -> new Admission(null), "x509EeCert");
   }
 
   @Test
-  void getAdmissionAuthority() throws IOException {
+  void getAdmissionAuthority_whenCertificateContainsAdmissionAuthority_thenReturnsAuthority()
+      throws IOException {
     assertThat(new Admission(VALID_X509_EE_CERT_SMCB_KZBV).getAdmissionAuthority())
         .isEqualTo("C=DE,O=KZV Berlin");
   }
 
   @Test
-  void getAdmissionAuthorityEmpty() throws IOException {
+  void getAdmissionAuthority_whenAdmissionSyntaxIsMissing_thenReturnsEmptyString()
+      throws IOException {
     final Admission admission = new Admission(VALID_X509_EE_CERT_SMCB);
 
     try (final MockedStatic<AdmissionSyntax> admissionSyntaxMockedStatic =
@@ -68,41 +71,53 @@ final class AdmissionTest {
   }
 
   @Test
-  void getProfessionItems() throws IOException {
+  void getProfessionItems_whenCertificateContainsProfessionItems_thenReturnsItems()
+      throws IOException {
     assertThat(new Admission(VALID_X509_EE_CERT_SMCB).getProfessionItems())
         .contains(OID_PRAXIS_PSYCHOTHERAPEUT.getProfessionItem());
   }
 
   @Test
-  void getProfessionOids() throws IOException {
+  void getProfessionOids_whenCertificateContainsProfessionOids_thenReturnsOids()
+      throws IOException {
     assertThat(new Admission(VALID_X509_EE_CERT_SMCB).getProfessionOids())
         .contains(OID_PRAXIS_PSYCHOTHERAPEUT.getProfessionOid());
   }
 
   @Test
-  void getRegistrationNumber() throws IOException {
+  void getProfessionOids_whenCertificateContainsMultipleAdmissions_thenReturnsAllOids()
+      throws IOException {
+    assertThat(new Admission(VALID_X509_EE_CERT_QES_PSYCHO_TWO_ADMISSIONS).getProfessionOids())
+        .hasSize(2);
+  }
+
+  @Test
+  void
+      getRegistrationNumber_whenCertificateContainsRegistrationNumber_thenReturnsRegistrationNumber()
+          throws IOException {
     assertThat(new Admission(VALID_X509_EE_CERT_SMCB).getRegistrationNumber())
         .isEqualTo("1-2-Psycho-BabetteBeyer01");
   }
 
   @Test
-  void verifyMissingProfOid() throws IOException {
+  void getProfessionOids_whenCertificateHasNoProfessionOid_thenReturnsEmptySet()
+      throws IOException {
     final X509Certificate missingProfOid =
-        TestUtils.readCert("GEM.SMCB-CA57/valid/BabetteBeyer-missing-prof-oid.pem");
+        TestUtils.readCertNonQes("GEM.SMCB-CA57/valid/BabetteBeyer-missing-prof-oid.pem");
     assertDoesNotThrow(() -> new Admission(missingProfOid));
     assertThat(new Admission(missingProfOid).getProfessionOids()).isEmpty();
   }
 
   @Test
-  void verifyMissingAdmission() throws IOException {
+  void getProfessionOids_whenCertificateHasNoAdmission_thenReturnsEmptySet() throws IOException {
     final X509Certificate missingAdmission =
-        TestUtils.readCert("GEM.SMCB-CA57/valid/BabetteBeyer-missing-admission.pem");
+        TestUtils.readCertNonQes("GEM.SMCB-CA57/valid/BabetteBeyer-missing-admission.pem");
     assertDoesNotThrow(() -> new Admission(missingAdmission));
     assertThat(new Admission(missingAdmission).getProfessionOids()).isEmpty();
   }
 
   @Test
-  void verifyGetProfessionItems_empty1() throws IOException {
+  void getProfessionItems_whenAdmissionSyntaxIsMissing_thenReturnsEmptySet() throws IOException {
     final Admission admission = new Admission(VALID_X509_EE_CERT_SMCB);
 
     try (final MockedStatic<AdmissionSyntax> admissionSyntaxMockedStatic =
@@ -118,7 +133,7 @@ final class AdmissionTest {
   }
 
   @Test
-  void verifyGetProfessionItems_empty2() throws IOException {
+  void getProfessionItems_whenAdmissionsAreMissing_thenReturnsEmptySet() throws IOException {
     final Admission admission = new Admission(VALID_X509_EE_CERT_SMCB);
 
     final AdmissionSyntax admissionInstanceMock = Mockito.mock(AdmissionSyntax.class);
@@ -137,7 +152,7 @@ final class AdmissionTest {
   }
 
   @Test
-  void verifyGetProfessionItems_empty3() throws IOException {
+  void getProfessionItems_whenProfessionInfosAreMissing_thenReturnsEmptySet() throws IOException {
     final Admission admission = new Admission(VALID_X509_EE_CERT_SMCB);
 
     final Admissions bcAdmissionsMock = Mockito.mock(Admissions.class);

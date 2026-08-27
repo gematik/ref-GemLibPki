@@ -21,17 +21,43 @@
 package de.gematik.pki.gemlibpki.commons.tsl;
 
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.assertNonNullParameter;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import de.gematik.pki.gemlibpki.commons.utils.TestUtils;
+import java.nio.file.Path;
+import javax.xml.crypto.dsig.XMLSignature;
 import org.junit.jupiter.api.Test;
+import org.w3c.dom.Document;
 
 class TslUtilsTest {
 
   @Test
-  void nonNullTests() {
+  void tslUtilsMethods_whenRequiredArgumentsAreNull_thenThrowsOnNullParameter() {
     assertNonNullParameter(() -> TslUtils.tslDownloadUrlMatchesOid(null), "oid");
 
     assertNonNullParameter(() -> TslUtils.createJaxbElement(null), "tslUnsigned");
 
     assertNonNullParameter(() -> TslUtils.getSignature(null), "tsl");
+  }
+
+  @Test
+  void removeExistingXmlSignatures_whenDocumentContainsSignature_thenRemovesSignature() {
+    final Path destFile = Path.of("target/TslWithoutSignatureBlock.xml");
+    final Document tslQes = TestUtils.getDefaultTslAsDocQes();
+
+    assertThat(
+            tslQes.getElementsByTagName("Signature").getLength()
+                + tslQes.getElementsByTagNameNS(XMLSignature.XMLNS, "Signature").getLength())
+        .isEqualTo(1);
+
+    TslUtils.removeExistingXmlSignatures(tslQes);
+
+    // signature block should be removed from tsl
+    TslWriter.write(tslQes, destFile);
+
+    assertThat(
+            tslQes.getElementsByTagName("Signature").getLength()
+                + tslQes.getElementsByTagNameNS(XMLSignature.XMLNS, "Signature").getLength())
+        .isZero();
   }
 }

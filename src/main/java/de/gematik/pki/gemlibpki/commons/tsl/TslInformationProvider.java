@@ -39,13 +39,24 @@ public class TslInformationProvider {
    * @return list with {@link TspService}
    */
   public List<TspService> getFilteredTspServices(@NonNull final List<String> stiFilterList) {
-
     return tslUnsigned.getTrustServiceProviderList().getTrustServiceProvider().stream()
-        .flatMap(tspType -> tspType.getTSPServices().getTSPService().stream())
+        .flatMap(
+            tspType -> {
+              if (tspType.getTSPServices() == null
+                  || tspType.getTSPServices().getTSPService() == null) {
+                return java.util.stream.Stream
+                    .<eu.europa.esig.trustedlist.jaxb.tsl.TSPServiceType>empty();
+              }
+              return tspType.getTSPServices().getTSPService().stream();
+            })
         .filter(
-            tspServiceType ->
-                stiFilterList.contains(
-                    tspServiceType.getServiceInformation().getServiceTypeIdentifier()))
+            tspServiceType -> {
+              if (tspServiceType == null || tspServiceType.getServiceInformation() == null) {
+                return false;
+              }
+              final String sti = tspServiceType.getServiceInformation().getServiceTypeIdentifier();
+              return sti != null && stiFilterList.contains(sti);
+            })
         .map(TspService::new)
         .toList();
   }
@@ -57,7 +68,15 @@ public class TslInformationProvider {
    */
   public List<TspService> getTspServices() {
     return tslUnsigned.getTrustServiceProviderList().getTrustServiceProvider().stream()
-        .flatMap(f -> f.getTSPServices().getTSPService().stream())
+        .flatMap(
+            f -> {
+              if (f.getTSPServices() == null || f.getTSPServices().getTSPService() == null) {
+                return java.util.stream.Stream
+                    .<eu.europa.esig.trustedlist.jaxb.tsl.TSPServiceType>empty();
+              }
+              return f.getTSPServices().getTSPService().stream();
+            })
+        .filter(s -> s != null && s.getServiceInformation() != null)
         .map(TspService::new)
         .toList();
   }
@@ -80,8 +99,20 @@ public class TslInformationProvider {
             .toList();
 
     return tspTypes.stream()
-        .flatMap(f -> f.getTSPServices().getTSPService().stream())
-        .filter(c -> stiFilterList.contains(c.getServiceInformation().getServiceTypeIdentifier()))
+        .flatMap(
+            f -> {
+              if (f.getTSPServices() == null || f.getTSPServices().getTSPService() == null) {
+                return java.util.stream.Stream
+                    .<eu.europa.esig.trustedlist.jaxb.tsl.TSPServiceType>empty();
+              }
+              return f.getTSPServices().getTSPService().stream();
+            })
+        .filter(c -> c != null && c.getServiceInformation() != null)
+        .filter(
+            c -> {
+              final String sti = c.getServiceInformation().getServiceTypeIdentifier();
+              return sti != null && stiFilterList.contains(sti);
+            })
         .map(TspService::new)
         .toList();
   }

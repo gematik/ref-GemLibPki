@@ -28,9 +28,20 @@ import org.junit.jupiter.api.Test;
 class TspServiceTest {
 
   @Test
-  void testToString() {
+  void toString_whenServiceIsNonQes_thenContainsTestOnly() {
     final TspService tspService =
-        new TslInformationProvider(TestUtils.getDefaultTslUnsigned()).getTspServices().getFirst();
+        new TslInformationProvider(TestUtils.getDefaultTslUnsignedNonQes())
+            .getTspServices()
+            .getFirst();
     assertThat(tspService.toString()).contains("TEST-ONLY");
+  }
+
+  @Test
+  void toString_whenServiceIsQes_thenContainsBaPrefix() {
+    final TspService tspService =
+        new TslInformationProvider(TestUtils.getDefaultTslUnsignedQes())
+            .getTspServices()
+            .getFirst();
+    assertThat(tspService.toString()).contains("BA-");
   }
 }

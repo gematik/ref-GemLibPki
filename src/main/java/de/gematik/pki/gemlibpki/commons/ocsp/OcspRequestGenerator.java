@@ -24,14 +24,18 @@ import static de.gematik.pki.gemlibpki.commons.utils.GemLibPkiUtils.setBouncyCas
 
 import de.gematik.pki.gemlibpki.commons.exception.GemPkiRuntimeException;
 import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.bouncycastle.asn1.DERNull;
+import org.bouncycastle.asn1.ocsp.OCSPObjectIdentifiers;
 import org.bouncycastle.asn1.oiw.OIWObjectIdentifiers;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.Extensions;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
 import org.bouncycastle.cert.ocsp.CertificateID;
 import org.bouncycastle.cert.ocsp.OCSPException;
@@ -46,8 +50,17 @@ import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class OcspRequestGenerator {
 
+  private static final int NONCE_LENGTH_BYTES = 16;
+  private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
   static {
     setBouncyCastleProvider();
+  }
+
+  public static Extension generateNonceExtension() {
+    final byte[] nonceBytes = new byte[NONCE_LENGTH_BYTES];
+    SECURE_RANDOM.nextBytes(nonceBytes);
+    return new Extension(OCSPObjectIdentifiers.id_pkix_ocsp_nonce, false, nonceBytes);
   }
 
   /**
@@ -61,11 +74,23 @@ public final class OcspRequestGenerator {
   public static OCSPReq generateSingleOcspRequest(
       @NonNull final X509Certificate x509EeCert, @NonNull final X509Certificate x509IssuerCert) {
     return generateSingleOcspRequest(
-        x509EeCert,
-        x509IssuerCert,
-        new AlgorithmIdentifier(
-            OIWObjectIdentifiers.idSHA1, // NOTE this is subject to change to SHA256
-            DERNull.INSTANCE));
+        x509EeCert, x509IssuerCert, getDefaultAlgorithmIdentifier(), null);
+  }
+
+  /**
+   * Generates an OCSP request and adds the given request extension if present.
+   *
+   * @param x509EeCert end-entity certificate
+   * @param x509IssuerCert issuer of end-entity certificate
+   * @param extension request extension to add
+   * @return OCSP request for a single certificate
+   */
+  public static OCSPReq generateSingleOcspRequest(
+      @NonNull final X509Certificate x509EeCert,
+      @NonNull final X509Certificate x509IssuerCert,
+      final Extension extension) {
+    return generateSingleOcspRequest(
+        x509EeCert, x509IssuerCert, getDefaultAlgorithmIdentifier(), extension);
   }
 
   /**
@@ -99,7 +124,7 @@ public final class OcspRequestGenerator {
   }
 
   /**
-   * Generates an OCSP request using BouncyCastle.
+   * Generates an OCSP request without nonce.
    *
    * @param x509EeCert end-entity certificate
    * @param x509IssuerCert issuer of end-entity certificate
@@ -110,6 +135,23 @@ public final class OcspRequestGenerator {
       @NonNull final X509Certificate x509EeCert,
       @NonNull final X509Certificate x509IssuerCert,
       @NonNull final AlgorithmIdentifier algorithmIdentifier) {
+    return generateSingleOcspRequest(x509EeCert, x509IssuerCert, algorithmIdentifier, null);
+  }
+
+  /**
+   * Generates an OCSP request using BouncyCastle.
+   *
+   * @param x509EeCert end-entity certificate
+   * @param x509IssuerCert issuer of end-entity certificate
+   * @param algorithmIdentifier algorithm identifier to compute issuer certificate's hash
+   * @param extension request extension to add
+   * @return OCSP request for a single certificate
+   */
+  public static OCSPReq generateSingleOcspRequest(
+      @NonNull final X509Certificate x509EeCert,
+      @NonNull final X509Certificate x509IssuerCert,
+      @NonNull final AlgorithmIdentifier algorithmIdentifier,
+      final Extension extension) {
 
     try {
 
@@ -118,10 +160,19 @@ public final class OcspRequestGenerator {
       final OCSPReqBuilder ocspReqBuilder = new OCSPReqBuilder();
 
       ocspReqBuilder.addRequest(certificateId);
+      if (extension != null) {
+        ocspReqBuilder.setRequestExtensions(new Extensions(extension));
+      }
 
       return ocspReqBuilder.build();
     } catch (final OCSPException e) {
       throw new GemPkiRuntimeException("Generieren des OCSP Requests fehlgeschlagen.", e);
     }
+  }
+
+  private static AlgorithmIdentifier getDefaultAlgorithmIdentifier() {
+    return new AlgorithmIdentifier(
+        OIWObjectIdentifiers.idSHA1, // NOTE this is subject to change to SHA256
+        DERNull.INSTANCE);
   }
 }

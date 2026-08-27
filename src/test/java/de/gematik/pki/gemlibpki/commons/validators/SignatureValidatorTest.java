@@ -21,8 +21,8 @@
 package de.gematik.pki.gemlibpki.commons.validators;
 
 import static de.gematik.pki.gemlibpki.commons.TestConstants.PRODUCT_TYPE;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_ISSUER_CERT_SMCB;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_X509_EE_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_ISSUER_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_X509_EE_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -46,14 +46,15 @@ class SignatureValidatorTest {
   }
 
   @Test
-  void verifyConstructorNullParameter() {
+  void
+      signatureValidator_whenProductTypeOrIssuerCertificateIsNull_thenThrowsNullPointerException() {
     assertNonNullParameter(
         () -> new SignatureValidator(null, VALID_ISSUER_CERT_SMCB), "productType");
     assertNonNullParameter(() -> new SignatureValidator(PRODUCT_TYPE, null), "x509IssuerCert");
   }
 
   @Test
-  void verifyValidateCertificateNullParameter() {
+  void validateCertificate_whenCertificateOrReferenceDateIsNull_thenThrowsNullPointerException() {
     final ZonedDateTime zonedDateTime = Mockito.mock(ZonedDateTime.class);
 
     assertNonNullParameter(() -> tested.validateCertificate(null), "x509EeCert");
@@ -67,14 +68,14 @@ class SignatureValidatorTest {
   }
 
   @Test
-  void verifySignatureValid() {
+  void validateCertificate_whenCertificateSignatureIsValid_thenDoesNotThrow() {
     assertDoesNotThrow(() -> tested.validateCertificate(VALID_X509_EE_CERT_SMCB));
   }
 
   @Test
-  void verifySignatureNotValid() {
+  void validateCertificate_whenCertificateSignatureIsInvalid_thenThrowsGemPkiException() {
     final X509Certificate invalidX509EeCert =
-        TestUtils.readCert("GEM.SMCB-CA57/invalid/BabetteBeyer-invalid-signature.pem");
+        TestUtils.readCertNonQes("GEM.SMCB-CA57/invalid/BabetteBeyer-invalid-signature.pem");
 
     assertThatThrownBy(() -> tested.validateCertificate(invalidX509EeCert))
         .isInstanceOf(GemPkiException.class)

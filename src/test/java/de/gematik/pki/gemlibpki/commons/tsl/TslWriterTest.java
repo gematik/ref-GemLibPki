@@ -20,7 +20,7 @@
 
 package de.gematik.pki.gemlibpki.commons.tsl;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.FILE_NAME_TSL_DEFAULT_NON_QES;
 import static de.gematik.pki.gemlibpki.commons.tsl.TslWriter.STATUS_LIST_TO_FILE_FAILED;
 import static de.gematik.pki.gemlibpki.commons.utils.ResourceReader.getFilePathFromResources;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.assertNonNullParameter;
@@ -38,16 +38,16 @@ import org.w3c.dom.Document;
 class TslWriterTest {
 
   @Test
-  void writeFromTrustServiceStatusList() {
-    final TrustStatusListType tslUnsigned = TestUtils.getDefaultTslUnsigned();
+  void writeUnsigned_whenTrustStatusListIsProvided_thenWritesEquivalentXml() {
+    final TrustStatusListType tslUnsigned = TestUtils.getDefaultTslUnsignedNonQes();
     final Path destFile = Path.of("target/newTslTssl.xml");
     TslWriter.writeUnsigned(tslUnsigned, destFile);
-    assertXmlEqual(getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, getClass()), destFile);
+    assertXmlEqual(getFilePathFromResources(FILE_NAME_TSL_DEFAULT_NON_QES, getClass()), destFile);
   }
 
   @Test
-  void verifyWriteFromTslException() {
-    final TrustStatusListType tsl = TestUtils.getDefaultTslUnsigned();
+  void writeUnsigned_whenTargetPathIsInvalid_thenThrowsGemPkiRuntimeException() {
+    final TrustStatusListType tsl = TestUtils.getDefaultTslUnsignedNonQes();
     final Path destFile = Path.of("/root/../..");
 
     assertThatThrownBy(() -> TslWriter.writeUnsigned(tsl, destFile))
@@ -56,16 +56,16 @@ class TslWriterTest {
   }
 
   @Test
-  void writeFromDocument() {
-    final Document tslDoc = TestUtils.getDefaultTslAsDoc();
+  void write_whenDocumentIsProvided_thenWritesEquivalentXml() {
+    final Document tslDoc = TestUtils.getDefaultTslAsDocNonQes();
     final Path destFile = Path.of("target/newTslDoc.xml");
     TslWriter.write(tslDoc, destFile);
-    assertXmlEqual(getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, getClass()), destFile);
+    assertXmlEqual(getFilePathFromResources(FILE_NAME_TSL_DEFAULT_NON_QES, getClass()), destFile);
   }
 
   @Test
-  void verifyWriteFromDocumentException() {
-    final Document tslDoc = TestUtils.getDefaultTslAsDoc();
+  void write_whenTargetPathIsInvalid_thenThrowsGemPkiRuntimeException() {
+    final Document tslDoc = TestUtils.getDefaultTslAsDocNonQes();
     final Path destFile = Path.of("/root/../..");
 
     assertThatThrownBy(() -> TslWriter.write(tslDoc, destFile))
@@ -74,9 +74,9 @@ class TslWriterTest {
   }
 
   @Test
-  void verifyWriteDocAndTsslAreEqual() {
-    final TrustStatusListType tslUnsigned = TestUtils.getDefaultTslUnsigned();
-    final Document tslAsDoc = TestUtils.getDefaultTslAsDoc();
+  void write_whenDocumentAndUnsignedTslRepresentSameContent_thenProducesEqualXml() {
+    final TrustStatusListType tslUnsigned = TestUtils.getDefaultTslUnsignedNonQes();
+    final Document tslAsDoc = TestUtils.getDefaultTslAsDocNonQes();
     final Path doc = Path.of("target/tslAsDoc.xml");
     final Path tssl = Path.of("target/tslAsTssl.xml");
     TslWriter.write(tslAsDoc, doc);
@@ -85,15 +85,16 @@ class TslWriterTest {
   }
 
   @Test
-  void verifyConvert() {
-    final TrustStatusListType tslUnsigned = TestUtils.getDefaultTslUnsigned();
+  void tslToDocUnsigned_whenUnsignedTslIsConverted_thenMatchesDefaultXml() {
+    final TrustStatusListType tslUnsigned = TestUtils.getDefaultTslUnsignedNonQes();
     final Path doc = Path.of("target/tslConvertToDoc.xml");
     TslWriter.write(TslConverter.tslToDocUnsigned(tslUnsigned), doc);
-    assertXmlEqual(doc, getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, getClass()));
+    assertXmlEqual(doc, getFilePathFromResources(FILE_NAME_TSL_DEFAULT_NON_QES, getClass()));
   }
 
   @Test
-  void nonNullTests() throws ParserConfigurationException {
+  void writeMethods_whenRequiredArgumentsAreNull_thenThrowsOnNullParameter()
+      throws ParserConfigurationException {
     final Path tslFilePath = Path.of("dummyPath");
     final Document document = TslUtils.createDocBuilder().newDocument();
     final TrustStatusListType tsl = new TrustStatusListType();

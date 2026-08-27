@@ -20,8 +20,8 @@
 
 package de.gematik.pki.gemlibpki.commons.ocsp;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_ISSUER_CERT_SMCB;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_X509_EE_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_ISSUER_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_X509_EE_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -34,6 +34,10 @@ import java.math.BigInteger;
 import java.nio.file.Files;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
+import org.bouncycastle.asn1.ocsp.OCSPObjectIdentifiers;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.cert.ocsp.CertificateID;
 import org.bouncycastle.cert.ocsp.OCSPException;
 import org.bouncycastle.cert.ocsp.OCSPReq;
@@ -45,7 +49,7 @@ import org.mockito.Mockito;
 class OcspRequestGeneratorTest {
 
   @Test
-  void verifyGenerateOcspRequest() {
+  void generateSingleOcspRequest_whenCalledWithValidCertificates_thenReturnsSingleRequest() {
     final OCSPReq ocspReq =
         OcspRequestGenerator.generateSingleOcspRequest(
             VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
@@ -57,7 +61,22 @@ class OcspRequestGeneratorTest {
   }
 
   @Test
-  void nonNullTests() {
+  void generateSingleOcspRequest_whenNonceExtensionIsProvided_thenContainsNonceExtension() {
+    final byte[] nonceBytes = new byte[16];
+    Arrays.fill(nonceBytes, (byte) 0x01);
+    final Extension nonceExtension =
+        new Extension(OCSPObjectIdentifiers.id_pkix_ocsp_nonce, false, nonceBytes);
+
+    final OCSPReq ocspReq =
+        OcspRequestGenerator.generateSingleOcspRequest(
+            VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB, nonceExtension);
+
+    assertThat(ocspReq.getExtension(OCSPObjectIdentifiers.id_pkix_ocsp_nonce))
+        .isEqualTo(nonceExtension);
+  }
+
+  @Test
+  void ocspRequestGeneratorMethods_whenRequiredParameterIsNull_thenThrowsException() {
     assertNonNullParameter(
         () -> OcspRequestGenerator.generateSingleOcspRequest(null, VALID_ISSUER_CERT_SMCB),
         "x509EeCert");
@@ -81,7 +100,7 @@ class OcspRequestGeneratorTest {
     assertNonNullParameter(
         () ->
             OcspRequestGenerator.generateSingleOcspRequest(
-                VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB, null),
+                VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB, (AlgorithmIdentifier) null),
         "algorithmIdentifier");
 
     assertNonNullParameter(
@@ -106,7 +125,8 @@ class OcspRequestGeneratorTest {
   }
 
   @Test
-  void verifyCreateCertificateIdException() throws CertificateEncodingException {
+  void createCertificateId_whenIssuerCertificateEncodingFails_thenThrowsGemPkiRuntimeException()
+      throws CertificateEncodingException {
 
     final X509Certificate issuerCertSpy = Mockito.spy(VALID_ISSUER_CERT_SMCB);
     Mockito.doThrow(CertificateEncodingException.class).when(issuerCertSpy).getEncoded();
@@ -122,7 +142,7 @@ class OcspRequestGeneratorTest {
   }
 
   @Test
-  void verifyGenerateSingleOcspRequestException() {
+  void generateSingleOcspRequest_whenOcspReqBuilderBuildFails_thenThrowsGemPkiRuntimeException() {
 
     try (final MockedConstruction<OCSPReqBuilder> ignored =
         Mockito.mockConstruction(

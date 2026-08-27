@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import javax.xml.XMLConstants;
+import javax.xml.crypto.dsig.XMLSignature;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -48,6 +49,8 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class TslUtils {
@@ -131,5 +134,15 @@ public final class TslUtils {
             })
         .findFirst()
         .orElseThrow(() -> new GemPkiRuntimeException("tsl without a signer certificate element"));
+  }
+
+  public static void removeExistingXmlSignatures(final Document doc) {
+
+    final NodeList signatures = doc.getElementsByTagNameNS(XMLSignature.XMLNS, "Signature");
+
+    for (int i = signatures.getLength() - 1; i >= 0; i--) {
+      final Node sig = signatures.item(i);
+      sig.getParentNode().removeChild(sig);
+    }
   }
 }
