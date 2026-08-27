@@ -20,6 +20,7 @@
 
 package de.gematik.pki.gemlibpki.ti10.ocsp;
 
+import de.gematik.pki.gemlibpki.commons.error.ErrorCode;
 import de.gematik.pki.gemlibpki.commons.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.commons.ocsp.OcspTransceiver;
 import de.gematik.pki.gemlibpki.commons.ocsp.OcspTransceiverFactory;
@@ -52,6 +53,10 @@ public class TslBasedSspOcspTransceiverFactory implements OcspTransceiverFactory
 
     final TspServiceSubset subset =
         new TspInformationProvider(tspServiceList, productType).getIssuerTspServiceSubset(eeCert);
+
+    if (subset.getServiceSupplyPoint().isEmpty()) {
+      throw new GemPkiException(productType, ErrorCode.TE_1026_SERVICESUPPLYPOINT_MISSING);
+    }
 
     return OcspTransceiver.builder()
         .productType(productType)

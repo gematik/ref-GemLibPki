@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 class KeyUsageTest {
 
   @Test
-  void getDescription() {
+  void getDescription_whenCalled_thenCompletesWithoutException() {
     assertDoesNotThrow(KeyUsage.KEYUSAGE_KEY_ENCIPHERMENT::getDescription);
   }
 }

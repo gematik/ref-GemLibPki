@@ -20,17 +20,14 @@
 
 package de.gematik.pki.gemlibpki.ti10.ocsp;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
 import static de.gematik.pki.gemlibpki.commons.TestConstants.PRODUCT_TYPE;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_X509_EE_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.FILE_NAME_TSL_DEFAULT_NON_QES;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_X509_EE_CERT_SMCB;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import de.gematik.pki.gemlibpki.commons.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.commons.ocsp.OcspTransceiver;
 import de.gematik.pki.gemlibpki.commons.tsl.TslInformationProvider;
-import de.gematik.pki.gemlibpki.commons.tsl.TspInformationProvider;
 import de.gematik.pki.gemlibpki.commons.tsl.TspService;
-import de.gematik.pki.gemlibpki.commons.tsl.TspServiceSubset;
 import de.gematik.pki.gemlibpki.commons.utils.TestUtils;
 import java.security.cert.X509Certificate;
 import java.util.List;
@@ -43,13 +40,11 @@ class TslBasedSspOcspTransceiverFactoryTest {
   private TslBasedSspOcspTransceiverFactory factory;
 
   @BeforeEach
-  void setup() throws GemPkiException {
+  void setup() {
 
     final List<TspService> tspServices =
-        new TslInformationProvider(TestUtils.getTslUnsigned(FILE_NAME_TSL_ECC_DEFAULT))
+        new TslInformationProvider(TestUtils.getTslUnsigned(FILE_NAME_TSL_DEFAULT_NON_QES))
             .getTspServices();
-    final TspServiceSubset tspServiceSubset =
-        new TspInformationProvider(tspServices, PRODUCT_TYPE).getIssuerTspServiceSubset(eeCert);
 
     final int TIMEOUT = 5;
     final boolean TOLERATE_FAILURE = false;
@@ -58,7 +53,7 @@ class TslBasedSspOcspTransceiverFactoryTest {
   }
 
   @Test
-  void shouldCreateTransceiverWithCorrectValues() throws Exception {
+  void create_whenCertificateHasMatchingTslService_thenReturnsTransceiver() throws Exception {
     final OcspTransceiver transceiver = factory.create(eeCert);
     assertNotNull(transceiver);
   }

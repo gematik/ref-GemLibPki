@@ -45,7 +45,7 @@ import org.junit.jupiter.params.support.ParameterDeclarations;
 public class CertificateProvider implements ArgumentsProvider, AnnotationConsumer<VariableSource> {
 
   private String certPathSwitch;
-  private static final String CERTIFICATE_SUBDIR = "/certificates/GEM.SMCB-CA57/";
+  private static final String CERTIFICATE_SUBDIR = "/certificates/nonqes/GEM.SMCB-CA57/";
 
   @NonNull
   @Override

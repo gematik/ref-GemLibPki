@@ -30,6 +30,12 @@ public final class TslConstants {
 
   public static final String SVCSTATUS_REVOKED = "http://uri.etsi.org/TrstSvc/Svcstatus/revoked";
   public static final String SVCSTATUS_INACCORD = "http://uri.etsi.org/TrstSvc/Svcstatus/inaccord";
+  public static final String SVCSTATUS_GRANTED =
+      "http://uri.etsi.org/TrstSvc/TrustedList/Svcstatus/granted";
+  public static final String SVCSTATUS_WITHDRAWN =
+      "http://uri.etsi.org/TrstSvc/TrustedList/Svcstatus/withdrawn";
+  public static final String SVCSTATUS_UNDERSUPERVISION =
+      "http://uri.etsi.org/TrstSvc/TrustedList/Svcstatus/undersupervision";
 
   public static final String STI_QC = "http://uri.etsi.org/TrstSvc/Svctype/CA/QC";
   public static final String STI_UNSPECIFIED = "http://uri.etsi.org/TrstSvc/Svctype/unspecified";
@@ -38,6 +44,7 @@ public final class TslConstants {
       "http://uri.etsi.org/TrstSvc/Svctype/TSLServiceCertChange";
 
   public static final String STI_OCSP = "http://uri.etsi.org/TrstSvc/Svctype/Certstatus/OCSP";
+  public static final String STI_OCSP_QC = "http://uri.etsi.org/TrstSvc/Svctype/Certstatus/OCSP/QC";
 
   public static final String STI_CRL = "http://uri.etsi.org/TrstSvc/Svctype/Certstatus/CRL";
 

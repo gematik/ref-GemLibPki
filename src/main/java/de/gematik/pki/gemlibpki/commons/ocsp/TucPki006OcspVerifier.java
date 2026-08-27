@@ -22,8 +22,6 @@ package de.gematik.pki.gemlibpki.commons.ocsp;
 
 import static de.gematik.pki.gemlibpki.commons.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_FUTURE_MILLISECONDS;
 import static de.gematik.pki.gemlibpki.commons.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_PAST_MILLISECONDS;
-import static de.gematik.pki.gemlibpki.commons.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_THISNEXTUPDATE_MILLISECONDS;
-import static de.gematik.pki.gemlibpki.commons.ocsp.OcspResponseGenerator.verifyHashAlgoSupported;
 import static de.gematik.pki.gemlibpki.commons.ocsp.OcspUtils.getBasicOcspResp;
 import static de.gematik.pki.gemlibpki.commons.ocsp.OcspUtils.getFirstSingleResp;
 import static de.gematik.pki.gemlibpki.commons.utils.CertReader.readX509;
@@ -44,10 +42,7 @@ import java.security.MessageDigest;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.time.Instant;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -58,17 +53,11 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.isismtt.ocsp.CertHash;
-import org.bouncycastle.asn1.ocsp.OCSPResponseStatus;
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.ocsp.BasicOCSPResp;
-import org.bouncycastle.cert.ocsp.CertificateID;
-import org.bouncycastle.cert.ocsp.CertificateStatus;
 import org.bouncycastle.cert.ocsp.OCSPException;
 import org.bouncycastle.cert.ocsp.OCSPResp;
-import org.bouncycastle.cert.ocsp.RevokedStatus;
-import org.bouncycastle.cert.ocsp.SingleResp;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentVerifierProvider;
 import org.bouncycastle.operator.OperatorCreationException;
@@ -120,176 +109,23 @@ public class TucPki006OcspVerifier {
     log.info("Performing OCSP checks...");
 
     verifyOcspResponseSignature();
-    verifyStatus(referenceDate);
-    verifyCertHash();
-
-    log.info("verify thisUpdate");
-    verifyThisUpdate(referenceDate);
-    log.info("verify producedAt");
-    verifyProducedAt(referenceDate);
-    log.info("verify nextUpdate");
-    verifyNextUpdate(referenceDate);
-
-    verifyOcspResponseCertId();
-
+    verifyOcspResponseChecks(referenceDate);
     log.info("OCSP validation (TUC-PKI-006) successfully finished.");
   }
 
-  /**
-   * Verify th status of the parameterized ocsp response
-   *
-   * @param referenceDate reference date for the revocation time to check against
-   * @throws GemPkiException thrown if response status is not SUCCESSFUL (0)
-   */
-  protected void verifyStatus(@NonNull final ZonedDateTime referenceDate) throws GemPkiException {
-    if (ocspResponse.getStatus() != OCSPResponseStatus.SUCCESSFUL) {
-      throw new GemPkiException(productType, ErrorCode.TE_1058_OCSP_STATUS_ERROR);
-    }
-
-    final CertificateStatus certificateStatus = getFirstSingleResp(ocspResponse).getCertStatus();
-
-    if (CertificateStatus.GOOD == certificateStatus) {
-      return;
-    }
-
-    if (certificateStatus instanceof final RevokedStatus revokedStatus) {
-
-      final ZonedDateTime revocationTime =
-          ZonedDateTime.ofInstant(revokedStatus.getRevocationTime().toInstant(), ZoneOffset.UTC);
-
-      if (revocationTime.isAfter(referenceDate)) {
-        return;
-      }
-
-      throw new GemPkiException(productType, ErrorCode.SW_1047_CERT_REVOKED);
-
-    } else {
-      // the only remaining case: certificateStatus instanceof UnknownStatus
-      throw new GemPkiException(productType, ErrorCode.TW_1044_CERT_UNKNOWN);
-    }
-  }
-
-  /**
-   * Verify th status of the parameterized ocsp response
-   *
-   * @throws GemPkiException thrown if response status is not SUCCESSFUL (0)
-   */
-  protected void verifyStatus() throws GemPkiException {
-    verifyStatus(GemLibPkiUtils.now());
-  }
-
-  /**
-   * Verify that thisUpdate of the OCSP response is within its tolerance of {@link
-   * OcspConstants#OCSP_TIME_TOLERANCE_THISNEXTUPDATE_MILLISECONDS} in the future. Throws an
-   * exception if not.
-   *
-   * @param referenceDate a reference date to check thisUpdate against
-   * @throws GemPkiException thrown if ocsp thisUpdate is in future out of tolerance
-   */
-  protected void verifyThisUpdate(@NonNull final ZonedDateTime referenceDate)
+  public void performChecksForProvidedOcspResponse(@NonNull final ZonedDateTime referenceDate)
       throws GemPkiException {
-    final SingleResp singleResp = getFirstSingleResp(ocspResponse);
+    log.info("Performing OCSP checks for provided response...");
 
-    final Instant thisUpdateInstant = singleResp.getThisUpdate().toInstant();
-    final ZonedDateTime thisUpdate = ZonedDateTime.ofInstant(thisUpdateInstant, ZoneOffset.UTC);
+    verifyOcspResponseSignature();
+    verifyCertHash();
+    verifyProvidedOcspResponseBasics(referenceDate);
 
-    verifyToleranceForFuture(
-        thisUpdate, referenceDate, OCSP_TIME_TOLERANCE_THISNEXTUPDATE_MILLISECONDS, "thisUpdate");
+    log.info("OCSP validation for provided response successfully finished.");
   }
 
   /**
-   * Verify that thisProducedAt of the OCSP response is within its tolerance of {@link
-   * OcspConstants#OCSP_TIME_TOLERANCE_THISNEXTUPDATE_MILLISECONDS} in pas and future. Throws an
-   * exception if not.
-   *
-   * @param referenceDate a reference date to check producedAt against
-   * @throws GemPkiException thrown if ocsp producedAt is out of tolerance
-   */
-  protected void verifyProducedAt(@NonNull final ZonedDateTime referenceDate)
-      throws GemPkiException {
-    final BasicOCSPResp basicOcspResponse = getBasicOcspResp(ocspResponse);
-
-    final Instant producedAtInstant = basicOcspResponse.getProducedAt().toInstant();
-    final ZonedDateTime producedAt = ZonedDateTime.ofInstant(producedAtInstant, ZoneOffset.UTC);
-
-    verifyToleranceForPast(
-        producedAt, referenceDate, ocspTimeToleranceProducedAtPastMilliseconds, "producedAt");
-    verifyToleranceForFuture(
-        producedAt, referenceDate, ocspTimeToleranceProducedAtFutureMilliseconds, "producedAt");
-  }
-
-  /**
-   * Verify that nextUpdate of the OCSP response is within its tolerance of {@link
-   * OcspConstants#OCSP_TIME_TOLERANCE_THISNEXTUPDATE_MILLISECONDS} in the past. Throws an exception
-   * if not. The verification is not performed, if nextUpdate is not available.
-   *
-   * @param referenceDate a reference date to check nextUpdate against
-   * @throws GemPkiException thrown if ocsp nextUpdate is in past out of tolerance
-   */
-  protected void verifyNextUpdate(@NonNull final ZonedDateTime referenceDate)
-      throws GemPkiException {
-    final SingleResp singleResp = getFirstSingleResp(ocspResponse);
-
-    if (singleResp.getNextUpdate() == null) {
-      log.info("nextUpdate is not set: its verification is not performed");
-      return;
-    }
-
-    final Instant nextUpdateInstant = singleResp.getNextUpdate().toInstant();
-    final ZonedDateTime nextUpdate = ZonedDateTime.ofInstant(nextUpdateInstant, ZoneOffset.UTC);
-
-    verifyToleranceForPast(
-        nextUpdate, referenceDate, OCSP_TIME_TOLERANCE_THISNEXTUPDATE_MILLISECONDS, "nextUpdate");
-  }
-
-  private void verifyToleranceForFuture(
-      final ZonedDateTime dateToVerify,
-      final ZonedDateTime referenceDate,
-      final int toleranceMilliSeconds,
-      final String dateName)
-      throws GemPkiException {
-
-    final ZonedDateTime futureTolerance =
-        referenceDate.plus(toleranceMilliSeconds, ChronoUnit.MILLIS);
-
-    if (dateToVerify.isAfter(futureTolerance)) {
-
-      log.error(
-          "The interval for {} of the OCSP response {} is outside of the allowed {} milliseconds in"
-              + " the future {}.",
-          dateName,
-          dateToVerify,
-          toleranceMilliSeconds,
-          referenceDate);
-      throw new GemPkiException(productType, ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR);
-    }
-  }
-
-  private void verifyToleranceForPast(
-      final ZonedDateTime dateToVerify,
-      final ZonedDateTime referenceDate,
-      final int toleranceMilliSeconds,
-      final String dateName)
-      throws GemPkiException {
-
-    final ZonedDateTime pastTolerance =
-        referenceDate.minus(toleranceMilliSeconds, ChronoUnit.MILLIS);
-    log.info("toleranceMilliSeconds: {}", toleranceMilliSeconds);
-    log.info("pastTolerance: {}", pastTolerance);
-    if (dateToVerify.isBefore(pastTolerance)) {
-      log.error(
-          "The interval for {} of the OCSP response {} is outside of the allowed {} milliseconds in"
-              + " the past {}.",
-          dateName,
-          dateToVerify,
-          toleranceMilliSeconds,
-          referenceDate);
-      throw new GemPkiException(productType, ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR);
-    }
-  }
-
-  /**
-   * Verifies teh cert hash of the parameterized OCSP Response against the certificate.
+   * Verifies the cert hash of the parameterized OCSP Response against the certificate.
    *
    * @throws GemPkiException thrown if the hash is missing or does not match the hash over the
    *     certificate.
@@ -433,27 +269,40 @@ public class TucPki006OcspVerifier {
    * @throws GemPkiException thrown if the cert ids does not match.
    */
   protected void verifyOcspResponseCertId() throws GemPkiException {
+    OcspVerification.verifyOcspResponseCertId(
+        productType, ocspResponse, eeCert, getEeCertIssuerCert());
+  }
 
-    final SingleResp singleResp = getFirstSingleResp(ocspResponse);
-    final CertificateID respCertId = singleResp.getCertID();
+  protected void verifyProvidedOcspResponseBasics(@NonNull final ZonedDateTime referenceDate)
+      throws GemPkiException {
+    OcspVerification.verifyProvidedOcspResponse(
+        productType,
+        ocspResponse,
+        referenceDate,
+        GemLibPkiUtils.now(),
+        eeCert,
+        getEeCertIssuerCert(),
+        ocspTimeToleranceProducedAtFutureMilliseconds);
+  }
 
-    final AlgorithmIdentifier algorithmIdentifier = respCertId.toASN1Primitive().getHashAlgorithm();
+  protected void verifyOcspResponseChecks(@NonNull final ZonedDateTime referenceDate)
+      throws GemPkiException {
+    OcspVerification.verifyStatus(productType, ocspResponse, referenceDate);
+    verifyCertHash();
+    OcspVerification.verifyOcspResponseAfterStatus(
+        productType,
+        ocspResponse,
+        referenceDate,
+        GemLibPkiUtils.now(),
+        eeCert,
+        getEeCertIssuerCert(),
+        ocspTimeToleranceProducedAtPastMilliseconds,
+        ocspTimeToleranceProducedAtFutureMilliseconds);
+  }
 
+  private X509Certificate getEeCertIssuerCert() throws GemPkiException {
     final TspServiceSubset tspServiceSubset =
         new TspInformationProvider(tspServiceList, productType).getIssuerTspServiceSubset(eeCert);
-
-    final CertificateID computedCertId =
-        OcspRequestGenerator.createCertificateId(
-            eeCert.getSerialNumber(), tspServiceSubset.getX509IssuerCert(), algorithmIdentifier);
-
-    try {
-      verifyHashAlgoSupported(algorithmIdentifier.getAlgorithm());
-    } catch (final GemPkiRuntimeException e) {
-      throw new GemPkiException(productType, ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR);
-    }
-
-    if (!respCertId.equals(computedCertId)) {
-      throw new GemPkiException(productType, ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR);
-    }
+    return tspServiceSubset.getX509IssuerCert();
   }
 }

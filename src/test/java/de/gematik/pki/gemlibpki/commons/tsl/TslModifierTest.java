@@ -20,14 +20,14 @@
 
 package de.gematik.pki.gemlibpki.commons.tsl;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.GEMATIK_TEST_TSP_NAME;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.INVALID_EXTENSION_NOT_CRIT_CERT;
 import static de.gematik.pki.gemlibpki.commons.TestConstants.PRODUCT_TYPE;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_X509_EE_CERT_SMCB;
-import static de.gematik.pki.gemlibpki.commons.tsl.TslSignerTest.SIGNER_PATH_ECC;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.FILE_NAME_TSL_DEFAULT_NON_QES;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.GEMATIK_TEST_TSP_NAME;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.INVALID_EXTENSION_NOT_CRIT_CERT;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_X509_EE_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.commons.tsl.TslSignerNonQesTest.SIGNER_PATH_NON_QES;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.assertNonNullParameter;
-import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.readP12;
+import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.readP12nonQes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -35,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import de.gematik.pki.gemlibpki.commons.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.commons.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.commons.tsl.TslConverter.DocToBytesOption;
-import de.gematik.pki.gemlibpki.commons.tsl.TslSigner.TslSignerBuilder;
 import de.gematik.pki.gemlibpki.commons.utils.GemLibPkiUtils;
 import de.gematik.pki.gemlibpki.commons.utils.P12Container;
 import de.gematik.pki.gemlibpki.commons.utils.TestUtils;
@@ -67,21 +66,26 @@ import org.w3c.dom.Document;
 
 class TslModifierTest {
 
-  private TrustStatusListType tslUnsigned;
+  private TrustStatusListType tslUnsignedNonQes;
+  private TrustStatusListType tslUnsignedQes;
 
   @BeforeEach
   void setup() {
-    tslUnsigned = TestUtils.getDefaultTslUnsigned();
+
+    tslUnsignedNonQes = TestUtils.getDefaultTslUnsignedNonQes();
+    tslUnsignedQes = TestUtils.getDefaultTslUnsignedQes();
   }
 
   @Test
-  void deleteAllSspsOfOneTspAsBytes() throws GemPkiException {
+  void
+      deleteSspsForCAsOfEndEntity_whenNonQesBytesAndMatchingEndEntityAreProvided_thenRemovesServiceSupplyPoints()
+          throws GemPkiException {
 
     final X509Certificate eeCert = VALID_X509_EE_CERT_SMCB;
 
     final byte[] tslBytes =
         TslModifier.deleteSspsForCAsOfEndEntity(
-            TslConverter.tslUnsignedToBytes(tslUnsigned), eeCert, PRODUCT_TYPE);
+            TslConverter.tslUnsignedToBytes(tslUnsignedNonQes), eeCert, PRODUCT_TYPE);
     final TspService tspService =
         new TspInformationProvider(
                 new TslInformationProvider(TslConverter.bytesToTslUnsigned(tslBytes))
@@ -94,14 +98,16 @@ class TslModifierTest {
   }
 
   @Test
-  void deleteAllSspsOfOneTsp() throws GemPkiException {
+  void
+      deleteSspsForCAsOfEndEntity_whenNonQesTslAndMatchingEndEntityAreProvided_thenRemovesServiceSupplyPoints()
+          throws GemPkiException {
 
     final X509Certificate eeCert = VALID_X509_EE_CERT_SMCB;
 
-    TslModifier.deleteSspsForCAsOfEndEntity(tslUnsigned, eeCert, PRODUCT_TYPE);
+    TslModifier.deleteSspsForCAsOfEndEntity(tslUnsignedNonQes, eeCert, PRODUCT_TYPE);
     final TspService tspService =
         new TspInformationProvider(
-                new TslInformationProvider(tslUnsigned).getTspServices(), PRODUCT_TYPE)
+                new TslInformationProvider(tslUnsignedNonQes).getTspServices(), PRODUCT_TYPE)
             .getIssuerTspService(eeCert);
 
     assertThat(tspService.getTspServiceType().getServiceInformation().getServiceSupplyPoints())
@@ -109,14 +115,16 @@ class TslModifierTest {
   }
 
   @Test
-  void modifyAllSspsOfOneTsp() throws IOException {
+  void modifySspForCAsOfTsp_whenMatchingTspIsProvided_thenReplacesAllServiceSupplyPoints()
+      throws IOException {
     final Path destFilePath = Path.of("target/TSL-test_modifiedSsp.xml");
-    final int modifiedSspAmountExpected = 33;
+    final int modifiedSspAmountExpected = 21;
     final String newSsp = "http://my.new-service-supply-point:8080/ocsp";
     final String newSspElement = "<ServiceSupplyPoint>" + newSsp + "</ServiceSupplyPoint>";
 
-    TslModifier.modifySspForCAsOfTsp(tslUnsigned, GEMATIK_TEST_TSP_NAME, newSsp);
-    final TslInformationProvider tslInformationProvider = new TslInformationProvider(tslUnsigned);
+    TslModifier.modifySspForCAsOfTsp(tslUnsignedNonQes, GEMATIK_TEST_TSP_NAME, newSsp);
+    final TslInformationProvider tslInformationProvider =
+        new TslInformationProvider(tslUnsignedNonQes);
 
     // get sample and compare
     assertThat(
@@ -131,74 +139,111 @@ class TslModifierTest {
                 .getValue())
         .isEqualTo(newSsp);
 
-    TslWriter.writeUnsigned(tslUnsigned, destFilePath);
+    TslWriter.writeUnsigned(tslUnsignedNonQes, destFilePath);
     assertThat(countStringInFile(destFilePath, newSspElement)).isEqualTo(modifiedSspAmountExpected);
   }
 
   @Test
-  void modifySequenceNr() {
-    final Path destFileName = Path.of("target/TSL-test_modifiedSequenceNr.xml");
+  void modifySequenceNr_whenNonQesTslIsProvided_thenUpdatesSequenceNumber() {
+    final Path destFileName = Path.of("target/TSL-test_modifiedSequenceNr_nonQES.xml");
     final int newTslSeqNr = 4732;
-    TslModifier.modifySequenceNr(tslUnsigned, newTslSeqNr);
-    TslWriter.writeUnsigned(tslUnsigned, destFileName);
-    assertThat(tslUnsigned.getSchemeInformation().getTSLSequenceNumber())
+    TslModifier.modifySequenceNr(tslUnsignedNonQes, newTslSeqNr);
+    TslWriter.writeUnsigned(tslUnsignedNonQes, destFileName);
+    assertThat(tslUnsignedNonQes.getSchemeInformation().getTSLSequenceNumber())
         .isEqualTo(BigInteger.valueOf(newTslSeqNr));
   }
 
   @Test
-  void modifyNextUpdate() {
-    final Path path = Path.of("target/TSL-test_modifiedNextUpdate.xml");
+  void modifySequenceNr_whenQesTslIsProvided_thenUpdatesSequenceNumber() {
+    final Path destFileName = Path.of("target/TSL-test_modifiedSequenceNr_QES.xml");
+    final int newTslSeqNr = 4732;
+
+    TslModifier.modifySequenceNr(tslUnsignedQes, newTslSeqNr);
+    TslWriter.writeUnsigned(tslUnsignedQes, destFileName);
+    assertThat(tslUnsignedQes.getSchemeInformation().getTSLSequenceNumber())
+        .isEqualTo(BigInteger.valueOf(newTslSeqNr));
+  }
+
+  @Test
+  void modifyNextUpdate_whenNonQesTslIsProvided_thenUpdatesNextUpdate() {
+    final Path path = Path.of("target/TSL-test_modifiedNextUpdate_nonQES.xml");
     // 2028-12-24T17:30:00
 
     // 2028-12-24T17:30:00Z
     final ZonedDateTime nextUpdateZdtUtc =
         ZonedDateTime.of(2028, Month.DECEMBER.getValue(), 24, 17, 30, 0, 0, ZoneOffset.UTC);
 
-    TslModifier.modifyNextUpdate(tslUnsigned, nextUpdateZdtUtc);
-    TslWriter.writeUnsigned(tslUnsigned, path);
-    assertThat(TslReader.getNextUpdate(tslUnsigned)).isEqualTo(nextUpdateZdtUtc);
+    TslModifier.modifyNextUpdate(tslUnsignedNonQes, nextUpdateZdtUtc);
+    TslWriter.writeUnsigned(tslUnsignedNonQes, path);
+    assertThat(TslReader.getNextUpdate(tslUnsignedNonQes)).isEqualTo(nextUpdateZdtUtc);
   }
 
   @Test
-  void modifyIssueDate() {
-    final Path path = Path.of("target/TSL-test_modifiedIssueDate.xml");
+  void modifyNextUpdate_whenQesTslIsProvided_thenUpdatesNextUpdate() {
+    final Path path = Path.of("target/TSL-test_modifiedNextUpdate_QES.xml");
+    // 2028-12-24T17:30:00
+
+    // 2028-12-24T17:30:00Z
+    final ZonedDateTime nextUpdateZdtUtc =
+        ZonedDateTime.of(2028, Month.DECEMBER.getValue(), 24, 17, 30, 0, 0, ZoneOffset.UTC);
+
+    TslModifier.modifyNextUpdate(tslUnsignedQes, nextUpdateZdtUtc);
+    TslWriter.writeUnsigned(tslUnsignedQes, path);
+    assertThat(TslReader.getNextUpdate(tslUnsignedQes)).isEqualTo(nextUpdateZdtUtc);
+  }
+
+  @Test
+  void modifyIssueDate_whenNonQesTslIsProvided_thenUpdatesIssueDate() {
+    final Path path = Path.of("target/TSL-test_modifiedIssueDate_nonQES.xml");
     final ZonedDateTime issueDateZdUtc =
         ZonedDateTime.of(2027, Month.APRIL.getValue(), 30, 3, 42, 0, 0, ZoneOffset.UTC);
 
-    TslModifier.modifyIssueDate(tslUnsigned, issueDateZdUtc);
-    TslWriter.writeUnsigned(tslUnsigned, path);
-    assertThat(TslReader.getIssueDate(tslUnsigned)).isEqualTo(issueDateZdUtc);
+    TslModifier.modifyIssueDate(tslUnsignedNonQes, issueDateZdUtc);
+    TslWriter.writeUnsigned(tslUnsignedNonQes, path);
+    assertThat(TslReader.getIssueDate(tslUnsignedNonQes)).isEqualTo(issueDateZdUtc);
   }
 
   @Test
-  void setNextUpdateToNextMonthAfterIssueDate() {
+  void modifyIssueDate_whenQesTslIsProvided_thenUpdatesIssueDate() {
+    final Path path = Path.of("target/TSL-test_modifiedIssueDate_QES.xml");
+    final ZonedDateTime issueDateZdUtc =
+        ZonedDateTime.of(2027, Month.APRIL.getValue(), 30, 3, 42, 0, 0, ZoneOffset.UTC);
+
+    TslModifier.modifyIssueDate(tslUnsignedQes, issueDateZdUtc);
+    TslWriter.writeUnsigned(tslUnsignedQes, path);
+    assertThat(TslReader.getIssueDate(tslUnsignedQes)).isEqualTo(issueDateZdUtc);
+  }
+
+  @Test
+  void
+      modifyIssueDateAndRelatedNextUpdate_whenIssueDateAndMonthOffsetAreProvided_thenSetsNextUpdateOneMonthLater() {
     final Path path = Path.of("target/TSL-test_modifiedIssueDateAndNextUpdate.xml");
     final ZonedDateTime issueDateZdUtc = ZonedDateTime.parse("2030-04-22T10:00:00Z");
 
-    TslModifier.modifyIssueDateAndRelatedNextUpdate(tslUnsigned, issueDateZdUtc, 30);
-    TslWriter.writeUnsigned(tslUnsigned, path);
-    assertThat(TslReader.getIssueDate(tslUnsigned)).isEqualTo(issueDateZdUtc);
-    final ZonedDateTime nextUpdate = TslReader.getNextUpdate(tslUnsigned);
+    TslModifier.modifyIssueDateAndRelatedNextUpdate(tslUnsignedNonQes, issueDateZdUtc, 30);
+    TslWriter.writeUnsigned(tslUnsignedNonQes, path);
+    assertThat(TslReader.getIssueDate(tslUnsignedNonQes)).isEqualTo(issueDateZdUtc);
+    final ZonedDateTime nextUpdate = TslReader.getNextUpdate(tslUnsignedNonQes);
     assertThat(nextUpdate.getMonth()).isEqualTo(Month.MAY);
     assertThat(nextUpdate.toInstant()).hasToString("2030-05-22T10:00:00Z");
   }
 
   @Test
-  void modifyTslDownloadUrls() {
+  void setOtherTSLPointers_whenPrimaryAndBackupUrlsAreProvided_thenUpdatesBothDownloadUrls() {
     final Path path = Path.of("target/TSL-test_modifiedTslDownloadUrls.xml");
     final String tslDnlUrlPrimary = "http://download-primary/myNewTsl.xml";
     final String tslDnlUrlBackup = "http://download-backup/myNewTsl.xml";
     TslModifier.setOtherTSLPointers(
-        tslUnsigned,
+        tslUnsignedNonQes,
         Map.of(
             TslConstants.TSL_DOWNLOAD_URL_OID_PRIMARY,
             tslDnlUrlPrimary,
             TslConstants.TSL_DOWNLOAD_URL_OID_BACKUP,
             tslDnlUrlBackup));
-    TslWriter.writeUnsigned(tslUnsigned, path);
+    TslWriter.writeUnsigned(tslUnsignedNonQes, path);
 
-    assertThat(TslReader.getTslDownloadUrlPrimary(tslUnsigned)).isEqualTo(tslDnlUrlPrimary);
-    assertThat(TslReader.getTslDownloadUrlBackup(tslUnsigned)).isEqualTo(tslDnlUrlBackup);
+    assertThat(TslReader.getTslDownloadUrlPrimary(tslUnsignedNonQes)).isEqualTo(tslDnlUrlPrimary);
+    assertThat(TslReader.getTslDownloadUrlBackup(tslUnsignedNonQes)).isEqualTo(tslDnlUrlBackup);
   }
 
   /**
@@ -206,45 +251,45 @@ class TslModifierTest {
    * cannot work with such a TSL.
    */
   @Test
-  void modifyTslDownloadUrlsUnknownOidBackup() {
+  void setOtherTSLPointers_whenBackupOidIsUnknown_thenPrimaryUrlIsUpdatedAndBackupLookupFails() {
     final Path destFilePath = Path.of("target/TSL-test_modifiedTslDownloadUrls.xml");
     final String tslDnlUrlPrimary = "http://download-primary/myNewTsl.xml";
     final String tslDnlUrlBackup = "http://download-backup/myNewTsl.xml";
     TslModifier.setOtherTSLPointers(
-        tslUnsigned,
+        tslUnsignedNonQes,
         Map.of(
             TslConstants.TSL_DOWNLOAD_URL_OID_PRIMARY,
             tslDnlUrlPrimary,
             TslConstants.TSL_DOWNLOAD_URL_OID_BACKUP + ".00",
             tslDnlUrlBackup));
-    TslWriter.writeUnsigned(tslUnsigned, destFilePath);
+    TslWriter.writeUnsigned(tslUnsignedNonQes, destFilePath);
 
-    assertThat(TslReader.getTslDownloadUrlPrimary(tslUnsigned)).isEqualTo(tslDnlUrlPrimary);
-    assertThatThrownBy(() -> TslReader.getTslDownloadUrlBackup(tslUnsigned))
+    assertThat(TslReader.getTslDownloadUrlPrimary(tslUnsignedNonQes)).isEqualTo(tslDnlUrlPrimary);
+    assertThatThrownBy(() -> TslReader.getTslDownloadUrlBackup(tslUnsignedNonQes))
         .isInstanceOf(GemPkiRuntimeException.class)
         .hasMessageContaining(TslConstants.TSL_DOWNLOAD_URL_OID_BACKUP);
   }
 
   @Test
-  void modifyTslDownloadUrlPrimary() {
+  void modifyTslDownloadUrlPrimary_whenNewPrimaryUrlIsProvided_thenUpdatesPrimaryDownloadUrl() {
     final Path path = Path.of("target/TSL-test_modifiedTslDownloadUrlPrimary.xml");
     final String tslDnlUrlPrimary = "http://download-primary-only/myNewTsl.xml";
 
-    TslModifier.modifyTslDownloadUrlPrimary(tslUnsigned, tslDnlUrlPrimary);
-    TslWriter.writeUnsigned(tslUnsigned, path);
+    TslModifier.modifyTslDownloadUrlPrimary(tslUnsignedNonQes, tslDnlUrlPrimary);
+    TslWriter.writeUnsigned(tslUnsignedNonQes, path);
 
-    assertThat(TslReader.getTslDownloadUrlPrimary(tslUnsigned)).isEqualTo(tslDnlUrlPrimary);
+    assertThat(TslReader.getTslDownloadUrlPrimary(tslUnsignedNonQes)).isEqualTo(tslDnlUrlPrimary);
   }
 
   @Test
-  void modifyTslDownloadUrlbackup() {
+  void modifyTslDownloadUrlBackup_whenNewBackupUrlIsProvided_thenUpdatesBackupDownloadUrl() {
     final Path path = Path.of("target/TSL-test_modifiedTslDownloadUrlBackup.xml");
     final String tslDnlUrlBackup = "http://download-backup-only/myNewTsl.xml";
 
-    TslModifier.modifyTslDownloadUrlBackup(tslUnsigned, tslDnlUrlBackup);
-    TslWriter.writeUnsigned(tslUnsigned, path);
+    TslModifier.modifyTslDownloadUrlBackup(tslUnsignedNonQes, tslDnlUrlBackup);
+    TslWriter.writeUnsigned(tslUnsignedNonQes, path);
 
-    assertThat(TslReader.getTslDownloadUrlBackup(tslUnsigned)).isEqualTo(tslDnlUrlBackup);
+    assertThat(TslReader.getTslDownloadUrlBackup(tslUnsignedNonQes)).isEqualTo(tslDnlUrlBackup);
   }
 
   private static int countStringInFile(@NonNull final Path path, @NonNull final String expected)
@@ -259,13 +304,13 @@ class TslModifierTest {
   }
 
   @Test
-  void generateTslId() {
+  void generateTslId_whenSequenceNumberAndIssueDateAreProvided_thenReturnsFormattedId() {
     final ZonedDateTime issueDateZdUtc = ZonedDateTime.parse("2027-07-21T11:00:00Z");
     assertThat(TslModifier.generateTslId(42, issueDateZdUtc)).isEqualTo("ID34220270721110000Z");
   }
 
   @Test
-  void nonNullTestsPart1() {
+  void tslModifierMethods_whenCoreRequiredArgumentsAreNull_thenFailFast() {
     assertNonNullParameter(
         () ->
             TslModifier.modifySspForCAsOfTsp(
@@ -275,17 +320,17 @@ class TslModifierTest {
     assertNonNullParameter(
         () ->
             TslModifier.modifySspForCAsOfTsp(
-                tslUnsigned, null, "http://my.new-service-supply-point:8080/ocsp"),
+                tslUnsignedNonQes, null, "http://my.new-service-supply-point:8080/ocsp"),
         "tspName");
 
     assertNonNullParameter(
-        () -> TslModifier.modifySspForCAsOfTsp(tslUnsigned, "gematik", null), "newSsp");
+        () -> TslModifier.modifySspForCAsOfTsp(tslUnsignedNonQes, "gematik", null), "newSsp");
 
     assertNonNullParameter(() -> TslModifier.modifySequenceNr(null, 42), "tsl");
 
     assertNonNullParameter(() -> TslModifier.modifyNextUpdate(null, ZonedDateTime.now()), "tsl");
 
-    assertNonNullParameter(() -> TslModifier.modifyNextUpdate(tslUnsigned, null), "zdt");
+    assertNonNullParameter(() -> TslModifier.modifyNextUpdate(tslUnsignedNonQes, null), "zdt");
 
     assertNonNullParameter(() -> TslModifier.generateTslId(42, null), "issueDate");
 
@@ -301,21 +346,23 @@ class TslModifierTest {
         "tsl");
 
     assertNonNullParameter(
-        () -> TslModifier.setOtherTSLPointers(tslUnsigned, null), "tslPointerValues");
+        () -> TslModifier.setOtherTSLPointers(tslUnsignedNonQes, null), "tslPointerValues");
 
     assertNonNullParameter(() -> TslModifier.modifyTslDownloadUrlPrimary(null, "foo"), "tsl");
 
-    assertNonNullParameter(() -> TslModifier.modifyTslDownloadUrlPrimary(tslUnsigned, null), "url");
+    assertNonNullParameter(
+        () -> TslModifier.modifyTslDownloadUrlPrimary(tslUnsignedNonQes, null), "url");
 
     assertNonNullParameter(() -> TslModifier.modifyTslDownloadUrlBackup(null, "foo"), "tsl");
 
-    assertNonNullParameter(() -> TslModifier.modifyTslDownloadUrlBackup(tslUnsigned, null), "url");
     assertNonNullParameter(
-        () -> TslModifier.modifySignerCert(tslUnsigned, null), "x509CertificateEncoded");
+        () -> TslModifier.modifyTslDownloadUrlBackup(tslUnsignedNonQes, null), "url");
+    assertNonNullParameter(
+        () -> TslModifier.modifySignerCert(tslUnsignedNonQes, null), "x509CertificateEncoded");
   }
 
   @Test
-  void nonNullTestsPart2() {
+  void tslModifierMethods_whenAdditionalRequiredArgumentsAreNull_thenFailFast() {
     assertNonNullParameter(
         () -> TslModifier.modifiedStatusStartingTime(null, null, null, null, null), "tspName");
     assertNonNullParameter(
@@ -330,14 +377,15 @@ class TslModifierTest {
 
     assertNonNullParameter(() -> TslModifier.modifyIssueDate(null, ZonedDateTime.now()), "tsl");
 
-    assertNonNullParameter(() -> TslModifier.modifyIssueDate(tslUnsigned, null), "zdt");
+    assertNonNullParameter(() -> TslModifier.modifyIssueDate(tslUnsignedNonQes, null), "zdt");
 
     assertNonNullParameter(
         () -> TslModifier.modifyIssueDateAndRelatedNextUpdate(null, ZonedDateTime.now(), 42),
         "tsl");
 
     assertNonNullParameter(
-        () -> TslModifier.modifyIssueDateAndRelatedNextUpdate(tslUnsigned, null, 42), "issueDate");
+        () -> TslModifier.modifyIssueDateAndRelatedNextUpdate(tslUnsignedNonQes, null, 42),
+        "issueDate");
 
     final X509Certificate eeCert = VALID_X509_EE_CERT_SMCB;
 
@@ -360,11 +408,12 @@ class TslModifierTest {
         "tsl");
 
     assertNonNullParameter(
-        () -> TslModifier.deleteSspsForCAsOfEndEntity(tslUnsigned, null, PRODUCT_TYPE),
+        () -> TslModifier.deleteSspsForCAsOfEndEntity(tslUnsignedNonQes, null, PRODUCT_TYPE),
         "x509EeCert");
 
     assertNonNullParameter(
-        () -> TslModifier.deleteSspsForCAsOfEndEntity(tslUnsigned, eeCert, null), "productType");
+        () -> TslModifier.deleteSspsForCAsOfEndEntity(tslUnsignedNonQes, eeCert, null),
+        "productType");
   }
 
   private void assertSignerCertInTsl(final String tslStr, final X509Certificate signerCert) {
@@ -386,14 +435,14 @@ class TslModifierTest {
   }
 
   @Test
-  void testModifySignerCert() {
+  void modifiedSignerCert_whenNewSignerCertificateIsProvided_thenReplacesSignerCertificate() {
 
-    tslUnsigned = TestUtils.getTslUnsigned(FILE_NAME_TSL_ECC_DEFAULT);
-    final X509Certificate oldSignerCert = TslUtils.getFirstTslSignerCertificate(tslUnsigned);
+    tslUnsignedNonQes = TestUtils.getTslUnsigned(FILE_NAME_TSL_DEFAULT_NON_QES);
+    final X509Certificate oldSignerCert = TslUtils.getFirstTslSignerCertificate(tslUnsignedNonQes);
     final X509Certificate eeCert = INVALID_EXTENSION_NOT_CRIT_CERT;
     assertThat(oldSignerCert).isNotEqualTo(eeCert);
 
-    final byte[] tslBytes = TslConverter.tslUnsignedToBytes(tslUnsigned);
+    final byte[] tslBytes = TslConverter.tslUnsignedToBytes(tslUnsignedNonQes);
     final byte[] tslBytesNew = TslModifier.modifiedSignerCert(tslBytes, eeCert);
     final String tslStrNew = new String(tslBytesNew, StandardCharsets.UTF_8);
 
@@ -405,7 +454,7 @@ class TslModifierTest {
   }
 
   @Test
-  void testGetXmlGregorianCalendarException() {
+  void getXmlGregorianCalendar_whenDatatypeFactoryCreationFails_thenThrowsGemPkiRuntimeException() {
     final ZonedDateTime now = GemLibPkiUtils.now();
     try (final MockedStatic<DatatypeFactory> datatypeFactory =
         Mockito.mockStatic(DatatypeFactory.class)) {
@@ -420,17 +469,19 @@ class TslModifierTest {
   }
 
   @Test
-  void testGetXmlGregorianCalendarNonNull() {
+  void getXmlGregorianCalendar_whenArgumentIsNull_thenFailFast() {
     assertNonNullParameter(() -> TslModifier.getXmlGregorianCalendar(null), "zdt");
   }
 
   @Test
-  void testModifyWithSameSignerCert() {
+  void
+      modifiedSignerCert_whenExistingSignerCertificateIsProvided_thenLeavesSignerCertificateUnchanged() {
 
-    tslUnsigned = TestUtils.getTslUnsigned(FILE_NAME_TSL_ECC_DEFAULT);
-    final X509Certificate signerCertFromTsl = TslUtils.getFirstTslSignerCertificate(tslUnsigned);
+    tslUnsignedNonQes = TestUtils.getTslUnsigned(FILE_NAME_TSL_DEFAULT_NON_QES);
+    final X509Certificate signerCertFromTsl =
+        TslUtils.getFirstTslSignerCertificate(tslUnsignedNonQes);
 
-    final byte[] tslBytes = TslConverter.tslUnsignedToBytes(tslUnsigned);
+    final byte[] tslBytes = TslConverter.tslUnsignedToBytes(tslUnsignedNonQes);
     final byte[] tslBytesNew = TslModifier.modifiedSignerCert(tslBytes, signerCertFromTsl);
     final String tslStrNew = new String(tslBytesNew, StandardCharsets.UTF_8);
 
@@ -444,7 +495,7 @@ class TslModifierTest {
   }
 
   @Test
-  void testModifiedPrettyPrint() {
+  void docToBytes_whenPrettyPrintOptionIsUsed_thenReturnsFormattedXml() {
     final String xmlOneLine =
         "<note><to>email1</to><from>email2</from><heading>Reminder</heading><body>Gematik!</body></note>";
     final String xmlPrettyPrintExpected =
@@ -469,12 +520,12 @@ class TslModifierTest {
   }
 
   @Test
-  void testModifiedPrettyPrintAndSign() {
+  void docToBytes_whenSignedPrettyPrintedDocumentIsSerialized_thenKeepsIndentation() {
 
-    final TslSignerBuilder tslSignerBuilder = TslSigner.builder();
-    final P12Container signerEcc = readP12(SIGNER_PATH_ECC);
+    final TslSignerNonQes.TslSignerNonQesBuilder tslSignerBuilder = TslSignerNonQes.builder();
+    final P12Container signerEcc = readP12nonQes(SIGNER_PATH_NON_QES);
 
-    final Document tslDoc = TslConverter.tslToDocUnsigned(tslUnsigned);
+    final Document tslDoc = TslConverter.tslToDocUnsigned(tslUnsignedNonQes);
     final byte[] tslBytes = TslConverter.docToBytes(tslDoc);
 
     final String indentationIndicator = "\n ";
@@ -518,10 +569,10 @@ class TslModifierTest {
   }
 
   @Test
-  void testModifiedTslIdStr() {
+  void modifiedTslId_whenExplicitIdIsProvided_thenUpdatesTslId() {
     final String newTslId = "newId_" + GemLibPkiUtils.now();
     final byte[] modifiedTslBytes =
-        TslModifier.modifiedTslId(TslConverter.tslUnsignedToBytes(tslUnsigned), newTslId);
+        TslModifier.modifiedTslId(TslConverter.tslUnsignedToBytes(tslUnsignedNonQes), newTslId);
 
     final TrustStatusListType tslUnsigned = TslConverter.bytesToTslUnsigned(modifiedTslBytes);
 
@@ -529,14 +580,14 @@ class TslModifierTest {
   }
 
   @Test
-  void testModifiedTslIdTslSeqNrIssueDate() {
+  void modifiedTslId_whenSequenceNumberAndIssueDateAreProvided_thenUpdatesTslId() {
     final ZonedDateTime issueDate = GemLibPkiUtils.now().minusYears(1);
     final int tslSeqNr = 900001;
     final String expectedTslId = TslModifier.generateTslId(tslSeqNr, issueDate);
 
     final byte[] modifiedTslBytes =
         TslModifier.modifiedTslId(
-            TslConverter.tslUnsignedToBytes(tslUnsigned), tslSeqNr, issueDate);
+            TslConverter.tslUnsignedToBytes(tslUnsignedNonQes), tslSeqNr, issueDate);
 
     final TrustStatusListType tslUnsigned = TslConverter.bytesToTslUnsigned(modifiedTslBytes);
 
@@ -548,9 +599,9 @@ class TslModifierTest {
   }
 
   @Test
-  void testModifiedGematikDefaultTspTradeName() {
+  void modifiedTspTradeName_whenExistingTradeNameMatches_thenReplacesTradeNameOccurrences() {
 
-    final byte[] tslBytes = TslConverter.tslUnsignedToBytes(tslUnsigned);
+    final byte[] tslBytes = TslConverter.tslUnsignedToBytes(tslUnsignedNonQes);
     final String tslStr = new String(tslBytes, StandardCharsets.UTF_8);
 
     final String gematikTspName = "gematik GmbH - PKI TEST TSP";
@@ -574,10 +625,11 @@ class TslModifierTest {
   }
 
   @Test
-  void testModifiedStatusStartingTimeOfAnnouncedTrustAnchor()
+  void modifiedStatusStartingTime_whenAnnouncedTrustAnchorIsSelected_thenUpdatesStatusStartingTime()
       throws DatatypeConfigurationException {
 
-    final TrustStatusListType oldTsl = TestUtils.getTslUnsigned("tsls/ecc/valid/TSL_TAchange.xml");
+    final TrustStatusListType oldTsl =
+        TestUtils.getTslUnsigned("tsls/nonqes/valid/TSL_TAchange.xml");
 
     final String tspNameToSelect = "gematik GmbH - PKI TEST TSP";
     final String serviceIdentifierToSelect = TslConstants.STI_SRV_CERT_CHANGE;
@@ -623,9 +675,9 @@ class TslModifierTest {
   }
 
   @Test
-  void testDeleteSignature() {
+  void deleteSignature_whenTslContainsSignature_thenRemovesSignature() {
 
-    final TrustStatusListType tsl = TestUtils.getTslUnsigned("tsls/ecc/valid/TSL_TAchange.xml");
+    final TrustStatusListType tsl = TestUtils.getTslUnsigned("tsls/nonqes/valid/TSL_TAchange.xml");
     assertThat(tsl.getSignature()).isNotNull();
 
     TslModifier.deleteSignature(tsl);
@@ -633,14 +685,14 @@ class TslModifierTest {
   }
 
   @Test
-  void testModifyStatusStartingTime() {
+  void modifyStatusStartingTime_whenMatchingServiceExists_thenDoesNotThrow() {
 
     final String gematikTspName = "gematik GmbH - PKI TEST TSP";
     final ZonedDateTime now = GemLibPkiUtils.now();
     assertDoesNotThrow(
         () ->
             TslModifier.modifyStatusStartingTime(
-                tslUnsigned,
+                tslUnsignedNonQes,
                 gematikTspName,
                 TslConstants.STI_PKC,
                 TslConstants.SVCSTATUS_INACCORD,

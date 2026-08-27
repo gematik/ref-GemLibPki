@@ -20,7 +20,8 @@
 
 package de.gematik.pki.gemlibpki.commons.tsl;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.FILE_NAME_TSL_DEFAULT_NON_QES;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsQes.FILE_NAME_TSL_DEFAULT_QES;
 import static de.gematik.pki.gemlibpki.commons.utils.ResourceReader.getFilePathFromResources;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,59 +38,80 @@ import org.junit.jupiter.api.Test;
 
 class TslReaderTest {
 
-  TrustStatusListType tslUnsigned;
+  TrustStatusListType tslUnsignedNonQes;
+  TrustStatusListType tslUnsignedQes;
 
   @BeforeEach
   void setup() {
-    tslUnsigned = TestUtils.getDefaultTslUnsigned();
+
+    tslUnsignedNonQes = TestUtils.getDefaultTslUnsignedNonQes();
+    tslUnsignedQes = TestUtils.getDefaultTslUnsignedQes();
   }
 
   @Test
-  void verifyGetTrustStatusListTypeIsPresent() {
+  void getTslUnsigned_whenNonQesTslPathIsProvided_thenReturnsTrustStatusList() {
     assertThat(
             TslReader.getTslUnsigned(
-                getFilePathFromResources(FILE_NAME_TSL_ECC_DEFAULT, getClass())))
+                getFilePathFromResources(FILE_NAME_TSL_DEFAULT_NON_QES, getClass())))
         .isNotNull();
   }
 
   @Test
-  void getSequenceNumber() {
-    assertThat(TslReader.getTslSeqNr(tslUnsigned)).isEqualTo(420007);
+  void getTslUnsigned_whenQesTslPathIsProvided_thenReturnsTrustStatusList() {
+    assertThat(
+            TslReader.getTslUnsigned(
+                getFilePathFromResources(FILE_NAME_TSL_DEFAULT_QES, getClass())))
+        .isNotNull();
   }
 
   @Test
-  void getNextUpdate() {
-    assertThat(TslReader.getNextUpdate(tslUnsigned)).isNotNull();
+  void getTslSeqNr_whenNonQesTslIsProvided_thenReturnsExpectedSequenceNumber() {
+    assertThat(TslReader.getTslSeqNr(tslUnsignedNonQes)).isEqualTo(420127);
   }
 
   @Test
-  void getNextUpdateIsNull() {
-    tslUnsigned.getSchemeInformation().setNextUpdate(null);
-    assertThatThrownBy(() -> TslReader.getNextUpdate(tslUnsigned))
+  void getTslSeqNr_whenQesTslIsProvided_thenReturnsExpectedSequenceNumber() {
+    assertThat(TslReader.getTslSeqNr(tslUnsignedQes)).isEqualTo(60);
+  }
+
+  @Test
+  void getNextUpdate_whenNonQesTslIsProvided_thenReturnsNextUpdate() {
+    assertThat(TslReader.getNextUpdate(tslUnsignedNonQes)).isNotNull();
+  }
+
+  @Test
+  void getNextUpdate_whenQesTslIsProvided_thenReturnsNextUpdate() {
+    assertThat(TslReader.getNextUpdate(tslUnsignedQes)).isNotNull();
+  }
+
+  @Test
+  void getNextUpdate_whenNextUpdateIsMissing_thenThrowsGemPkiRuntimeException() {
+    tslUnsignedNonQes.getSchemeInformation().setNextUpdate(null);
+    assertThatThrownBy(() -> TslReader.getNextUpdate(tslUnsignedNonQes))
         .isInstanceOf(GemPkiRuntimeException.class)
         .hasMessage("NextUpdate not found in TSL.");
   }
 
   @Test
-  void getIssueDate() {
-    assertThat(TslReader.getIssueDate(tslUnsigned)).isNotNull();
+  void getIssueDate_whenTslIsProvided_thenReturnsIssueDate() {
+    assertThat(TslReader.getIssueDate(tslUnsignedNonQes)).isNotNull();
   }
 
   @Test
-  void getTslDownloadUrlPrimary() {
-    assertThat(TslReader.getTslDownloadUrlPrimary(tslUnsigned))
-        .isEqualTo("http://127.0.0.1:8084/tsl/tsl.xml?activeTslSeqNr=420007");
+  void getTslDownloadUrlPrimary_whenNonQesTslIsProvided_thenReturnsPrimaryUrl() {
+    assertThat(TslReader.getTslDownloadUrlPrimary(tslUnsignedNonQes))
+        .isEqualTo("http://127.0.0.1:8084/tsl/tsl.xml?activeTslSeqNr=420127");
   }
 
   @Test
-  void getTslDownloadUrlBackup() {
-    assertThat(TslReader.getTslDownloadUrlBackup(tslUnsigned))
-        .isEqualTo("http://127.0.0.1:8084/tsl-backup/tsl.xml?activeTslSeqNr=420007");
+  void getTslDownloadUrlBackup_whenNonQesTslIsProvided_thenReturnsBackupUrl() {
+    assertThat(TslReader.getTslDownloadUrlBackup(tslUnsignedNonQes))
+        .isEqualTo("http://127.0.0.1:8084/tsl-backup/tsl.xml?activeTslSeqNr=420127");
   }
 
   @Test
-  void getOtherTslPointers() {
-    final OtherTSLPointersType oTslPtr = TslReader.getOtherTslPointers(tslUnsigned);
+  void getOtherTslPointers_whenNonQesTslIsProvided_thenReturnsExpectedPointers() {
+    final OtherTSLPointersType oTslPtr = TslReader.getOtherTslPointers(tslUnsignedNonQes);
     assertThat(oTslPtr.getOtherTSLPointer()).hasSize(2);
     assertThat(
             ((MultiLangStringType)
@@ -104,16 +126,17 @@ class TslReaderTest {
   }
 
   @Test
-  void verifyGetTrustStatusListTypeFailed() {
+  void getTslUnsigned_whenXmlIsMalformed_thenThrowsGemPkiRuntimeException() {
     final Path tslPath =
-        getFilePathFromResources("tsls/ecc/invalid/TSL_invalid_xmlMalformed_altCA.xml", getClass());
+        getFilePathFromResources(
+            "tsls/nonqes/invalid/TSL_invalid_xmlMalformed_altCA.xml", getClass());
     assertThatThrownBy(() -> TslReader.getTslUnsigned(tslPath))
         .isInstanceOf(GemPkiRuntimeException.class)
         .hasMessage("Error reading TSL.");
   }
 
   @Test
-  void nonNullTests() {
+  void tslReaderMethods_whenRequiredArgumentsAreNull_thenFailFast() {
     assertNonNullParameter(() -> TslReader.getTslAsDoc(null), "tslPath");
 
     assertNonNullParameter(() -> TslReader.getTslUnsigned(null), "tslPath");

@@ -20,11 +20,12 @@
 
 package de.gematik.pki.gemlibpki.commons.utils;
 
+import static de.gematik.pki.gemlibpki.commons.TestConstants.P12_PASSWORD;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import de.gematik.pki.gemlibpki.commons.TestConstants;
+import de.gematik.pki.gemlibpki.commons.TestConstantsNonQes;
 import de.gematik.pki.gemlibpki.commons.exception.GemPkiRuntimeException;
 import java.nio.file.Path;
 import java.security.cert.X509Certificate;
@@ -35,25 +36,29 @@ class CertReaderTest {
 
   @SneakyThrows
   @Test
-  void readExistingX509DerCert() {
+  void readX509_whenDerCertificateBytesAreValid_thenReturnsCertificateWithExpectedSubject() {
     final byte[] file =
         GemLibPkiUtils.readContent(
-            Path.of(TestConstants.CERT_DIR, "GEM.SMCB-CA57/valid/PraxisBabetteBeyer.der"));
+            Path.of(
+                TestConstantsNonQes.CERT_DIR_NON_QES,
+                "GEM.SMCB-CA57/valid/PraxisBabetteBeyer.der"));
     assertThat(CertReader.readX509(file).getSubjectX500Principal().getName())
         .contains("Psychotherapeutische Praxis Babette Beyer");
   }
 
   @Test
-  void readX509NonNull() {
+  void readX509_whenPathIsNull_thenThrowsNullPointerException() {
     assertNonNullParameter(() -> CertReader.readX509((Path) null), "path");
   }
 
   @SneakyThrows
   @Test
-  void readX509() {
+  void readX509_whenDerCertificatePathIsValid_thenReturnsCertificateWithExpectedSubject() {
     assertThat(
             CertReader.readX509(
-                    Path.of(TestConstants.CERT_DIR, "GEM.SMCB-CA57/valid/PraxisBabetteBeyer.der"))
+                    Path.of(
+                        TestConstantsNonQes.CERT_DIR_NON_QES,
+                        "GEM.SMCB-CA57/valid/PraxisBabetteBeyer.der"))
                 .getSubjectX500Principal()
                 .getName())
         .contains("Psychotherapeutische Praxis Babette Beyer");
@@ -61,9 +66,9 @@ class CertReaderTest {
 
   @SneakyThrows
   @Test
-  void readExistingX509PemCert() {
+  void readX509_whenPemCertificateBytesAreValid_thenReturnsCertificateWithExpectedSubject() {
     final Path certPath =
-        Path.of(TestConstants.CERT_DIR, "GEM.SMCB-CA57/valid/PraxisBabetteBeyer.pem");
+        Path.of(TestConstantsNonQes.CERT_DIR_NON_QES, "GEM.SMCB-CA57/valid/PraxisBabetteBeyer.pem");
     final byte[] certBytes = GemLibPkiUtils.readContent(certPath);
     final X509Certificate cert = CertReader.readX509(certBytes);
     assertThat(cert.getSubjectX500Principal().getName())
@@ -72,7 +77,7 @@ class CertReaderTest {
 
   @SneakyThrows
   @Test
-  void readInvalidCert() {
+  void readX509_whenCertificateBytesAreInvalid_thenThrowsGemPkiRuntimeException() {
     final byte[] file = GemLibPkiUtils.readContent(Path.of("src/test/resources/log4j2.xml"));
     assertThatThrownBy(() -> CertReader.readX509(file))
         .isInstanceOf(GemPkiRuntimeException.class)
@@ -81,7 +86,7 @@ class CertReaderTest {
 
   @SneakyThrows
   @Test
-  void readInvalidP12Path() {
+  void getX509FromP12_whenPathDoesNotExist_thenThrowsGemPkiRuntimeException() {
     final Path path = Path.of("invalid/path.p12");
     assertThatThrownBy(() -> CertReader.getX509FromP12(path, ""))
         .isInstanceOf(GemPkiRuntimeException.class)
@@ -90,17 +95,14 @@ class CertReaderTest {
 
   @SneakyThrows
   @Test
-  void getX509CertificateFromP12() {
-    final Path p12Path = Path.of(TestConstants.CERT_DIR, "ocsp/eccOcspSigner.p12");
-    assertThat(
-            CertReader.getX509FromP12(p12Path, TestConstants.P12_PASSWORD)
-                .getSubjectX500Principal()
-                .getName())
+  void getX509FromP12_whenP12ContainsCertificate_thenReturnsCertificateWithExpectedSubject() {
+    final Path p12Path = Path.of(TestConstantsNonQes.CERT_DIR_NON_QES, "ocsp/eccOcspSigner.p12");
+    assertThat(CertReader.getX509FromP12(p12Path, P12_PASSWORD).getSubjectX500Principal().getName())
         .contains("pkits OCSP Signer 57 ecc TEST-ONLY");
   }
 
   @Test
-  void nullTest() {
+  void getX509FromP12_whenPathOrPasswordIsNull_thenThrowsNullPointerException() {
     final Path path = Path.of("unimportant");
 
     assertNonNullParameter(() -> CertReader.getX509FromP12(null, "foo"), "path");

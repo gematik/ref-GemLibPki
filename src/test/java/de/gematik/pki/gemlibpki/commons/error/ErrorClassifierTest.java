@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 class ErrorClassifierTest {
 
   @Test
-  void getDescription() {
+  void getDescription_whenErrorClassifierIsSecurityError_thenDoesNotThrow() {
     assertDoesNotThrow(ErrorClassifier.SECURITY_ERROR::getDescription);
   }
 }

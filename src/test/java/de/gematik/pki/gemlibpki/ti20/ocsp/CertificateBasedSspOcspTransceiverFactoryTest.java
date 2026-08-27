@@ -20,9 +20,10 @@
 
 package de.gematik.pki.gemlibpki.ti20.ocsp;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
 import static de.gematik.pki.gemlibpki.commons.TestConstants.PRODUCT_TYPE;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_X509_EE_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.FILE_NAME_TSL_DEFAULT_NON_QES;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_X509_EE_CERT_SMCB;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import de.gematik.pki.gemlibpki.commons.ocsp.OcspTransceiver;
@@ -42,7 +43,7 @@ class CertificateBasedSspOcspTransceiverFactoryTest {
   @BeforeEach
   void setup() {
     final List<TspService> tspServices =
-        new TslInformationProvider(TestUtils.getTslUnsigned(FILE_NAME_TSL_ECC_DEFAULT))
+        new TslInformationProvider(TestUtils.getTslUnsigned(FILE_NAME_TSL_DEFAULT_NON_QES))
             .getTspServices();
 
     final int TIMEOUT = 5;
@@ -53,8 +54,15 @@ class CertificateBasedSspOcspTransceiverFactoryTest {
   }
 
   @Test
-  void shouldNotThrowExceptionForValidCert() throws Exception {
+  void create_whenCertificateHasAuthorityInformationAccess_thenReturnsTransceiver()
+      throws Exception {
     final OcspTransceiver transceiver = factory.create(eeCert);
     assertNotNull(transceiver);
+  }
+
+  @Test
+  void determineOcspSsp_whenCertificateHasAuthorityInformationAccess_thenReturnsAiaUrl()
+      throws Exception {
+    assertThat(factory.determineOcspSsp(eeCert)).isEqualTo("http://ehca.gematik.de/ecc-ocsp");
   }
 }

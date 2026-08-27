@@ -2,10 +2,25 @@
 
 # Release notes GemLibPki
 
+## Release 5.0.1
+
+- add QES support for TSL handling (dedicated methods for QES and nonQES)
+- introduce BNETZA-VL as QES trust list
+- remove RSA support for TSL handling
+- add TUC_PKI_030 verification
+- refactor package structure to distinguish between QES and nonQES
+- refactor names of all unit tests to scheme: methodUnderTest_whenCondition_thenExpectedOutcome
+- support more than one profession oid in admission
+- update dependencies
+- API break:
+    - rename ...commons.tsl.TslSigner to ...commons.tsl.TslSignerNonQes
+
 ## Release 4.0.2
 
-- API change for distinction of code for TI 1.0 and TI 2.0: introduce packages commons and ti20, restructure everything
-- Introduce OcspTransceiverFactory as an optional parameter for TucPki001Verifier and TucPki018Verifier (see [README.md](README.md))
+- API change for distinction of code for TI 1.0 and TI 2.0: introduce packages commons and ti20,
+  restructure everything
+- Introduce OcspTransceiverFactory as an optional parameter for TucPki001Verifier and
+  TucPki018Verifier (see [README.md](README.md))
 - TucPki018Verifier as optional parameter for TucPki001Verifier
 
 ## Release 3.4.0
@@ -15,7 +30,8 @@
 
 ## Release 3.3.1
 
-- SignerCa certificate of OcspResponse signer will be part of OcspResponse when OcspResponseGenerator is optionally initialized with signerCaCert
+- SignerCa certificate of OcspResponse signer will be part of OcspResponse when
+  OcspResponseGenerator is optionally initialized with signerCaCert
 - update dependencies
 
 ## Release 3.2.0
@@ -148,8 +164,8 @@
   specification
 - API change: method `performTucPki006Checks()` does not need the OCSP requests anymore because of
   change in certId checks
-- change behavior of certId checks in OCSP responses: it is calculated from announced hash
-  algorithm and compared to the fields of the response
+- change behavior of certId checks in OCSP responses: it is calculated from announced hash algorithm
+  and compared to the fields of the response
 - change default behavior of certId OCSP response generation: the algorithm used is mirrored by the
   algorithm used in the OCSP request, this can be overwritten with the `responseAlgoBehavior`
   builder parameter via an enum
@@ -230,7 +246,7 @@
 
 - API change: rename enum elements
   in [CertificateProfile](src/main/java/de/gematik/pki/gemlibpki/certificate/CertificateProfile.java)
-- API change: rename getTspServiceSubset() to getIssuerTspServiceSubset()
+- API change: rename getTspServiceSubset () to getIssuerTspServiceSubset ()
   in [CertificateProfile](src/main/java/de/gematik/pki/gemlibpki/tsl/TspInformationProvider.java)
 - Update XAdES4j because of https://github.com/luisgoncalves/xades4j/issues/261. This brings new
   dependencies in jaxb context (glassfish, jakarta, etc.)
@@ -272,12 +288,11 @@
 
 ## Release 0.7.0
 
-- API change: rename method doOcsp() to doOcspIfConfigured()
+- API change: rename method doOcsp () to doOcspIfConfigured ()
   in [TucPki018Verifier](src/main/java/de/gematik/pki/certificate/TucPki018Verifier.java)
 - API change: rework exception handling
 - add class [TucPki001Verifier](src/main/java/de/gematik/pki/tsl/TucPki001Verifier.java) for checks
-  of TSL.
-  The only check at the moment is the ocsp status of the TSL signing certificate.
+  of TSL. The only check at the moment is the ocsp status of the TSL signing certificate.
 
 ## Release 0.6.2
 
@@ -315,10 +330,9 @@
 
 ## Release 0.5.0
 
-- API change: Main method for certificate checks "performTucPki18Checks(..)" in
+- API change: Main method for certificate checks "performTucPki18Checks (..)" in
   class [TucPki018Verifier](src/main/java/de/gematik/pki/certificate/TucPki018Verifier.java) returns
-  Admission instead
-  of CertificateType.
+  Admission instead of CertificateType.
 - add methods for TSL handling: read, write, modify, sign+validate (RSA/ECC)
 - OCSP request implemented, active by default
 - additional CertificateProfiles implemented

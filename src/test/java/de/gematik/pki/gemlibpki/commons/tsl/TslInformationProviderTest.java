@@ -20,43 +20,79 @@
 
 package de.gematik.pki.gemlibpki.commons.tsl;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.GEMATIK_TEST_TSP_NAME;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.GEMATIK_TEST_TSP_NAME;
 import static de.gematik.pki.gemlibpki.commons.tsl.TslConstants.STI_CA_LIST;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import de.gematik.pki.gemlibpki.commons.utils.TestUtils;
+import eu.europa.esig.trustedlist.jaxb.tsl.TSPType;
+import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class TslInformationProviderTest {
 
-  private TslInformationProvider tslInformationProvider;
+  private TslInformationProvider tslInformationProviderNonQes;
+  private TslInformationProvider tslInformationProviderQes;
 
   @BeforeEach
   void setUp() {
-    tslInformationProvider = new TslInformationProvider(TestUtils.getDefaultTslUnsigned());
+    tslInformationProviderNonQes =
+        new TslInformationProvider(TestUtils.getDefaultTslUnsignedNonQes());
+    tslInformationProviderQes = new TslInformationProvider(TestUtils.getDefaultTslUnsignedQes());
   }
 
   @Test
-  void readTspServices_PkcServicesSizeShouldBeCorrect() {
+  void getFilteredTspServices_whenFilteringForPkcInNonQesTsl_thenReturnsExpectedNumberServices() {
     assertThat(
-            tslInformationProvider.getFilteredTspServices(
+            tslInformationProviderNonQes.getFilteredTspServices(
                 Collections.singletonList(TslConstants.STI_PKC)))
-        .hasSize(160);
+        .hasSize(88);
   }
 
   @Test
-  void readTspServices_UnspecifiedServicesSizeShouldBeCorrect() {
+  void getTspServices_whenProviderHasNoServices_thenIgnoresProvider() {
+    final TrustStatusListType defaultTsl = TestUtils.getDefaultTslUnsignedNonQes();
+
+    // baseline: number of services in the default TSL
+    final int baselineSize =
+        new TslInformationProvider(TestUtils.getDefaultTslUnsignedNonQes()).getTspServices().size();
+
+    // add a provider without TSPServices (null) -> should be ignored by getTspServices()
+    defaultTsl.getTrustServiceProviderList().getTrustServiceProvider().add(new TSPType());
+
+    final var result = new TslInformationProvider(defaultTsl).getTspServices();
+
+    org.assertj.core.api.Assertions.assertThat(result).hasSize(baselineSize);
+  }
+
+  @Test
+  void getTspServices_whenProvidersHaveEmptyOrNullServices_thenReturnsEmptyLists() {
+    // with services empty
+    final TrustStatusListType tslQesWithoutTspService = TestUtils.getDefaultTslUnsignedNonQes();
+    tslQesWithoutTspService
+        .getTrustServiceProviderList()
+        .getTrustServiceProvider()
+        .forEach(tspType -> tspType.getTSPServices().getTSPService().clear());
+
+    final TslInformationProvider tslInformationProvider =
+        new TslInformationProvider(tslQesWithoutTspService);
+    assertThat(tslInformationProvider.getTspServices()).isEmpty();
     assertThat(
-            tslInformationProvider.getFilteredTspServices(
-                Collections.singletonList(TslConstants.STI_UNSPECIFIED)))
-        .hasSize(22);
-  }
+            tslInformationProvider.getTspServicesForTsp(
+                GEMATIK_TEST_TSP_NAME, Collections.singletonList(TslConstants.STI_QC)))
+        .isEmpty();
 
-  @Test
-  void readTspServices_QcServicesProviderSizeShouldBeCorrect() {
+    // with services null
+    tslQesWithoutTspService
+        .getTrustServiceProviderList()
+        .getTrustServiceProvider()
+        .forEach(tspType -> tspType.setTSPServices(null));
+    final TslInformationProvider tslInformationProviderNullServices =
+        new TslInformationProvider(tslQesWithoutTspService);
+    assertThat(tslInformationProviderNullServices.getTspServices()).isEmpty();
     assertThat(
             tslInformationProvider.getFilteredTspServices(
                 Collections.singletonList(TslConstants.STI_QC)))
@@ -64,27 +100,65 @@ class TslInformationProviderTest {
   }
 
   @Test
-  void readTspServices_CrlServicesProviderSizeShouldBeCorrect() {
+  void getFilteredTspServices_whenFilteringForPkcInQesTsl_thenReturnsEmptyList() {
     assertThat(
-            tslInformationProvider.getFilteredTspServices(
+            tslInformationProviderQes.getFilteredTspServices(
+                Collections.singletonList(TslConstants.STI_PKC)))
+        .isEmpty();
+  }
+
+  @Test
+  void
+      getFilteredTspServices_whenFilteringForUnspecifiedInNonQesTsl_thenReturnsExpectedNumberOfServices() {
+    assertThat(
+            tslInformationProviderNonQes.getFilteredTspServices(
+                Collections.singletonList(TslConstants.STI_UNSPECIFIED)))
+        .hasSize(20);
+  }
+
+  @Test
+  void getFilteredTspServices_whenFilteringForQcInNonQesTsl_thenReturnsEmptyList() {
+    assertThat(
+            tslInformationProviderNonQes.getFilteredTspServices(
+                Collections.singletonList(TslConstants.STI_QC)))
+        .isEmpty();
+  }
+
+  @Test
+  void getFilteredTspServices_whenFilteringForQcInQesTsl_thenReturnsExpectedNumberOfServices() {
+    assertThat(
+            tslInformationProviderQes.getFilteredTspServices(
+                Collections.singletonList(TslConstants.STI_QC)))
+        .hasSize(401);
+  }
+
+  @Test
+  void getFilteredTspServices_whenFilteringForCrlInNonQesTsl_thenReturnsExpectedNumberOfServices() {
+    assertThat(
+            tslInformationProviderNonQes.getFilteredTspServices(
                 Collections.singletonList(TslConstants.STI_CRL)))
-        .hasSize(2);
+        .hasSize(1);
   }
 
   @Test
-  void readAllTspServices_ServicesSizeShouldBeCorrect() {
-    assertThat(tslInformationProvider.getTspServices()).hasSize(316);
+  void getTspServices_whenNonQesTslIsProvided_thenReturnsExpectedNumberOfServices() {
+    assertThat(tslInformationProviderNonQes.getTspServices()).hasSize(183);
   }
 
   @Test
-  void nonNull() {
+  void getTspServices_whenQesTslIsProvided_thenReturnsExpectedNumberOfServices() {
+    assertThat(tslInformationProviderQes.getTspServices()).hasSize(863);
+  }
+
+  @Test
+  void tslInformationProviderMethods_whenRequiredArgumentsAreNull_thenFailFast() {
     assertNonNullParameter(
-        () -> tslInformationProvider.getFilteredTspServices(null), "stiFilterList");
+        () -> tslInformationProviderNonQes.getFilteredTspServices(null), "stiFilterList");
 
     assertNonNullParameter(
-        () -> tslInformationProvider.getTspServicesForTsp(null, STI_CA_LIST), "tsp");
+        () -> tslInformationProviderNonQes.getTspServicesForTsp(null, STI_CA_LIST), "tsp");
     assertNonNullParameter(
-        () -> tslInformationProvider.getTspServicesForTsp(GEMATIK_TEST_TSP_NAME, null),
+        () -> tslInformationProviderNonQes.getTspServicesForTsp(GEMATIK_TEST_TSP_NAME, null),
         "stiFilterList");
   }
 }

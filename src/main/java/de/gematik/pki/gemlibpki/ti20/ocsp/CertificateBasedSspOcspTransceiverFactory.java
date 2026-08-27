@@ -20,15 +20,13 @@
 
 package de.gematik.pki.gemlibpki.ti20.ocsp;
 
-import de.gematik.pki.gemlibpki.commons.error.ErrorCode;
 import de.gematik.pki.gemlibpki.commons.exception.GemPkiException;
+import de.gematik.pki.gemlibpki.commons.ocsp.OcspSspSupport;
 import de.gematik.pki.gemlibpki.commons.ocsp.OcspTransceiver;
 import de.gematik.pki.gemlibpki.commons.ocsp.OcspTransceiverFactory;
 import de.gematik.pki.gemlibpki.commons.tsl.TspInformationProvider;
 import de.gematik.pki.gemlibpki.commons.tsl.TspService;
 import de.gematik.pki.gemlibpki.commons.tsl.TspServiceSubset;
-import de.gematik.pki.gemlibpki.ti20.certificate.AuthorityInformationAccessExtension;
-import java.io.IOException;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import lombok.NonNull;
@@ -57,23 +55,18 @@ public class CertificateBasedSspOcspTransceiverFactory implements OcspTransceive
     final TspServiceSubset subset =
         new TspInformationProvider(tspServiceList, productType).getIssuerTspServiceSubset(eeCert);
 
-    final String ssp;
-    try {
-      ssp = new AuthorityInformationAccessExtension(eeCert).getSsp();
-    } catch (final IOException e) {
-      throw new GemPkiException(
-          ErrorCode.TE_1026_SERVICESUPPLYPOINT_MISSING,
-          "AuthorityInformationAccessExtension empty",
-          e);
-    }
-
     return OcspTransceiver.builder()
         .productType(productType)
         .x509EeCert(eeCert)
         .x509IssuerCert(subset.getX509IssuerCert())
-        .ssp(ssp)
+        .ssp(determineOcspSsp(eeCert))
         .ocspTimeoutSeconds(timeoutSeconds)
         .tolerateOcspFailure(tolerateOcspFailure)
         .build();
+  }
+
+  protected String determineOcspSsp(@NonNull final X509Certificate x509EeCert)
+      throws GemPkiException {
+    return OcspSspSupport.extractAiaOcspUrl(productType, x509EeCert);
   }
 }

@@ -20,6 +20,7 @@
 
 package de.gematik.pki.gemlibpki.ti20.certificate;
 
+import static de.gematik.pki.gemlibpki.commons.TestConstantsQes.VALID_X509_EE_CERT_QES;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,23 +31,31 @@ import org.junit.jupiter.api.Test;
 
 class AuthorityInformationAccessExtensionTest {
 
-  private static final X509Certificate CERT_WITH_OCSP =
-      TestUtils.readCert("ti20/GEM.SMCB-CA57/Arztpraxis-Olga-Olbricht-Internet-TEST-ONLY.pem");
+  private static final X509Certificate NONQES_CERT_WITH_OCSP =
+      TestUtils.readCertNonQes(
+          "ti20/GEM.SMCB-CA57/Arztpraxis-Olga-Olbricht-Internet-TEST-ONLY.pem");
+  private static final X509Certificate QES_CERT = VALID_X509_EE_CERT_QES;
 
   @Test
-  void getSsp() throws IOException {
-    final String ssp = new AuthorityInformationAccessExtension(CERT_WITH_OCSP).getSsp();
+  void getSsp_whenCertificateIsNonQesWithOcsp_thenReturnsHttpUrl() throws IOException {
+    final String ssp = new AuthorityInformationAccessExtension(NONQES_CERT_WITH_OCSP).getSsp();
     assertThat(ssp).isNotNull().startsWith("http://");
   }
 
   @Test
-  void authorityInformationAccessExtensionCertNull() {
+  void getSsp_whenCertificateIsQesWithOcsp_thenReturnsHttpUrl() throws IOException {
+    final String ssp = new AuthorityInformationAccessExtension(QES_CERT).getSsp();
+    assertThat(ssp).isNotNull().startsWith("http://");
+  }
+
+  @Test
+  void constructor_whenCertificateIsNull_thenThrowsNullPointerException() {
     assertNonNullParameter(() -> new AuthorityInformationAccessExtension(null), "x509EeCert");
   }
 
   @Test
-  void getSspSpecificValue() throws IOException {
-    assertThat(new AuthorityInformationAccessExtension(CERT_WITH_OCSP).getSsp())
+  void getSsp_whenCertificateContainsSpecificOcspUrl_thenReturnsExpectedValue() throws IOException {
+    assertThat(new AuthorityInformationAccessExtension(NONQES_CERT_WITH_OCSP).getSsp())
         .isEqualTo("http://127.0.0.1:8083/ocsp/");
   }
 }

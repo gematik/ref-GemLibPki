@@ -20,11 +20,11 @@
 
 package de.gematik.pki.gemlibpki.commons.validators;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.INVALID_CERT_TYPE;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.MISSING_CERT_TYPE;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.MISSING_POLICY_ID_CERT;
 import static de.gematik.pki.gemlibpki.commons.TestConstants.PRODUCT_TYPE;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_X509_EE_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.INVALID_CERT_TYPE;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.MISSING_CERT_TYPE;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.MISSING_POLICY_ID_CERT;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_X509_EE_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.commons.certificate.CertificateProfile.CERT_PROFILE_C_HCI_AUT_ECC;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.assertNonNullParameter;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -43,13 +43,13 @@ import org.mockito.Mockito;
 class CertificateProfileByCertificateTypeOidValidatorTest {
 
   @Test
-  void verifyConstructorNullParameter() {
+  void constructor_whenProductTypeIsNull_thenThrowsNullPointerException() {
     assertNonNullParameter(
         () -> new CertificateProfileByCertificateTypeOidValidator(null), "productType");
   }
 
   @Test
-  void verifyValidateCertificateNullParameter() {
+  void validateCertificate_whenCertificateOrProfileIsNull_thenThrowsNullPointerException() {
     final X509Certificate x509EeCert = Mockito.mock(X509Certificate.class);
 
     final CertificateProfileByCertificateTypeOidValidator tested =
@@ -62,7 +62,7 @@ class CertificateProfileByCertificateTypeOidValidatorTest {
   }
 
   @Test
-  void verifyCertificateProfileInvalidCertType() {
+  void validateCertificate_whenCertificateTypeDoesNotMatchProfile_thenThrowsGemPkiException() {
 
     assertThatThrownBy(() -> doValidateCertificate(INVALID_CERT_TYPE))
         .isInstanceOf(GemPkiException.class)
@@ -70,21 +70,21 @@ class CertificateProfileByCertificateTypeOidValidatorTest {
   }
 
   @Test
-  void multipleCertificateProfilesMultipleCertTypesInEe() {
+  void validateCertificate_whenCertificateContainsMultipleCertificateTypes_thenDoesNotThrow() {
     final X509Certificate eeMultipleCertTypes =
-        TestUtils.readCert("GEM.SMCB-CA51/Aschoffsche_Apotheke-AUT-twoCertTypes-ECC.pem");
+        TestUtils.readCertNonQes("GEM.SMCB-CA51/Aschoffsche_Apotheke-AUT-twoCertTypes-ECC.pem");
     assertDoesNotThrow(() -> doValidateCertificate(eeMultipleCertTypes));
   }
 
   @Test
-  void verifyCertificateProfileMissingPolicyId() {
+  void validateCertificate_whenCertificatePolicyIdIsMissing_thenThrowsGemPkiException() {
     assertThatThrownBy(() -> doValidateCertificate(MISSING_POLICY_ID_CERT))
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.SE_1033_CERT_TYPE_INFO_MISSING.getErrorMessage(PRODUCT_TYPE));
   }
 
   @Test
-  void verifyCertificateProfileMissingCertType() {
+  void validateCertificate_whenCertificateTypeExtensionIsMissing_thenThrowsGemPkiException() {
 
     assertThatThrownBy(() -> doValidateCertificate(MISSING_CERT_TYPE))
         .isInstanceOf(GemPkiException.class)
@@ -92,7 +92,8 @@ class CertificateProfileByCertificateTypeOidValidatorTest {
   }
 
   @Test
-  void testGetCertificatePolicyOidsException() {
+  void
+      validateCertificate_whenReadingCertificatePoliciesThrowsIOException_thenThrowsGemPkiException() {
     try (final MockedConstruction<Policies> ignored =
         Mockito.mockConstructionWithAnswer(
             Policies.class,

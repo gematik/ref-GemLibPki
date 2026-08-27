@@ -20,10 +20,10 @@
 
 package de.gematik.pki.gemlibpki.ti20.certificate;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.OCSP_HOST;
 import static de.gematik.pki.gemlibpki.commons.TestConstants.PRODUCT_TYPE;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.TI20_VALID_X509_EE_CERT_SMCB;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_X509_EE_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.OCSP_HOST;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.TI20_VALID_X509_EE_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_X509_EE_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.commons.certificate.CertificateProfile.CERT_PROFILE_C_HCI_AUT_ECC;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.overwriteSspUrls;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -81,7 +81,7 @@ class TucPki018VerifierIT {
   private TucPki018Verifier buildTucPki018Verifier(
       final List<CertificateProfile> certificateProfiles) {
 
-    final List<TspService> tspServiceList = TestUtils.getDefaultTspServiceList();
+    final List<TspService> tspServiceList = TestUtils.getDefaultTspServiceListNonQes();
     overwriteSspUrls(tspServiceList, ocspResponderMock.getSspUrl());
     final CertificateBasedSspOcspTransceiverFactory ocspTransceiverFactory =
         new CertificateBasedSspOcspTransceiverFactory(

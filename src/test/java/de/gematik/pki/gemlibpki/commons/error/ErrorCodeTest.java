@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 class ErrorCodeTest {
 
   @Test
-  void getErrorMessage() {
+  void getErrorSeverity_whenErrorCodeIsKnown_thenDoesNotThrowWhenReadingSeverityDescription() {
     assertDoesNotThrow(() -> ErrorCode.SE_1016_WRONG_KEYUSAGE.getErrorSeverity().getDescription());
   }
 }

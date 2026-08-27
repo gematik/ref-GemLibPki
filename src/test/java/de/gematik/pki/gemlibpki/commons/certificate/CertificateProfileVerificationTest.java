@@ -20,8 +20,8 @@
 
 package de.gematik.pki.gemlibpki.commons.certificate;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_X509_EE_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.FILE_NAME_TSL_DEFAULT_NON_QES;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_X509_EE_CERT_SMCB;
 import static de.gematik.pki.gemlibpki.commons.certificate.CertificateProfile.CERT_PROFILE_C_HCI_AUT_ECC;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
@@ -35,13 +35,14 @@ import org.junit.jupiter.api.Test;
 class CertificateProfileVerificationTest {
 
   @Test
-  void verifyValid() throws GemPkiException {
+  void verifyAll_whenCertificateMatchesProfile_thenCompletesWithoutException()
+      throws GemPkiException {
 
     final String productType = "IDP";
 
     final TspServiceSubset tspServiceSubset =
         new TspInformationProvider(
-                new TslInformationProvider(TestUtils.getTslUnsigned(FILE_NAME_TSL_ECC_DEFAULT))
+                new TslInformationProvider(TestUtils.getTslUnsigned(FILE_NAME_TSL_DEFAULT_NON_QES))
                     .getTspServices(),
                 productType)
             .getIssuerTspServiceSubset(VALID_X509_EE_CERT_SMCB);

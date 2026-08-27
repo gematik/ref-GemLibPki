@@ -28,14 +28,20 @@ import lombok.Getter;
 public class OcspTestConstants {
 
   @Getter
-  private static final P12Container ocspSignerRsa = TestUtils.readP12("ocsp/rsaOcspSigner.p12");
+  private static final P12Container ocspSignerRsa =
+      TestUtils.readP12nonQes("ocsp/rsaOcspSigner.p12");
 
   @Getter
-  private static final P12Container ocspSignerEcc = TestUtils.readP12("ocsp/eccOcspSigner.p12");
+  private static final P12Container ocspSignerEccNonQes =
+      TestUtils.readP12nonQes("ocsp/eccOcspSigner.p12");
+
+  @Getter
+  private static final P12Container ocspSignerQes =
+      TestUtils.readP12Qes("ocsp/OcspSigner57Qes.p12");
 
   @Getter
   private static final X509Certificate ocspSignerCaEcc =
-      TestUtils.readCert("GEM.EGK-CA57/GEM.EGK-CA57-TEST-ONLY.pem");
+      TestUtils.readCertNonQes("GEM.EGK-CA57/GEM.EGK-CA57-TEST-ONLY.pem");
 
   public static final int TIMEOUT_DELTA_MILLISECONDS = 1500;
 }

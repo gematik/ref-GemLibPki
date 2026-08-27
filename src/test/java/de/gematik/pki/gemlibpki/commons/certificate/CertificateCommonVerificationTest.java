@@ -20,9 +20,9 @@
 
 package de.gematik.pki.gemlibpki.commons.certificate;
 
-import static de.gematik.pki.gemlibpki.commons.TestConstants.FILE_NAME_TSL_ECC_DEFAULT;
 import static de.gematik.pki.gemlibpki.commons.TestConstants.PRODUCT_TYPE;
-import static de.gematik.pki.gemlibpki.commons.TestConstants.VALID_X509_EE_CERT_SMCB;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.FILE_NAME_TSL_DEFAULT_NON_QES;
+import static de.gematik.pki.gemlibpki.commons.TestConstantsNonQes.VALID_X509_EE_CERT_SMCB;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import de.gematik.pki.gemlibpki.commons.exception.GemPkiException;
@@ -42,12 +42,13 @@ import org.junit.jupiter.api.Test;
 class CertificateCommonVerificationTest {
 
   @Test
-  void verifyValid() throws GemPkiException {
+  void verifyAll_whenCertificateAndTspServiceSubsetAreValid_thenCompletesWithoutException()
+      throws GemPkiException {
 
     final ZonedDateTime zonedDateTime = ZonedDateTime.parse("2025-03-20T15:00:00Z");
 
     final List<TspService> tspServices =
-        new TslInformationProvider(TestUtils.getTslUnsigned(FILE_NAME_TSL_ECC_DEFAULT))
+        new TslInformationProvider(TestUtils.getTslUnsigned(FILE_NAME_TSL_DEFAULT_NON_QES))
             .getTspServices();
     final TspServiceSubset tspServiceSubset =
         new TspInformationProvider(tspServices, PRODUCT_TYPE)

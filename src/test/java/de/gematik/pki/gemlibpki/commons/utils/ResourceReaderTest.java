@@ -36,7 +36,8 @@ import org.mockito.Mockito;
 class ResourceReaderTest {
 
   @Test
-  void testGetFilePathFromResources() {
+  void
+      getFilePathFromResources_whenFilenameOrClassIsNullOrResourceIsMissing_thenThrowsExpectedException() {
 
     assertNonNullParameter(
         () -> ResourceReader.getFilePathFromResources(null, getClass()), "filename");
@@ -49,7 +50,9 @@ class ResourceReaderTest {
   }
 
   @Test
-  void testGetFilePathFromResourcesUriException() throws URISyntaxException, MalformedURLException {
+  void
+      getFilePathFromResources_whenResourceUrlCannotBeConvertedToUri_thenThrowsGemPkiRuntimeException()
+          throws URISyntaxException, MalformedURLException {
 
     final URL url = Path.of("dummyFile").toUri().toURL();
     final URL urlMock = Mockito.spy(url);
@@ -72,13 +75,14 @@ class ResourceReaderTest {
   }
 
   @Test
-  void testGetUrlFromResources() {
+  void getUrlFromResources_whenFilenameOrClassIsNull_thenThrowsNullPointerException() {
     assertNonNullParameter(() -> ResourceReader.getUrlFromResources(null, getClass()), "filename");
     assertNonNullParameter(() -> ResourceReader.getUrlFromResources("dummy.txt", null), "clazz");
   }
 
   @Test
-  void testFileFromResourceAsBytes() {
+  void
+      getFileFromResourceAsBytes_whenFilenameOrClassIsNullOrResourceIsMissing_thenThrowsExpectedException() {
 
     assertNonNullParameter(
         () -> ResourceReader.getFileFromResourceAsBytes(null, getClass()), "filename");
@@ -91,7 +95,8 @@ class ResourceReaderTest {
   }
 
   @Test
-  void testFileFromResourceAsString() {
+  void
+      getFileFromResourceAsString_whenCalledWithValidAndInvalidInputs_thenReturnsContentOrThrowsExpectedException() {
 
     assertThat(ResourceReader.getFileFromResourceAsString("test.txt", getClass()))
         .isEqualTo("test");

@@ -28,8 +28,8 @@ import org.junit.jupiter.api.Test;
 class P12ContainerTest {
 
   @Test
-  void testToString() {
-    assertThat(OcspTestConstants.getOcspSignerEcc())
+  void toString_whenContainerContainsOcspSigner_thenReturnsSubjectName() {
+    assertThat(OcspTestConstants.getOcspSignerEccNonQes())
         .hasToString("CN=pkits OCSP Signer 57 ecc TEST-ONLY,O=gematik NOT-VALID,C=DE");
   }
 }

@@ -44,6 +44,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hc.core5.http.HttpHeaders;
+import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.cert.ocsp.OCSPReq;
 import org.bouncycastle.cert.ocsp.OCSPResp;
 
@@ -65,8 +66,12 @@ public final class OcspTransceiver {
   @Builder.Default private final boolean tolerateOcspFailure = false;
 
   public Optional<OCSPResp> getOcspResponse() throws GemPkiException {
+    return getOcspResponse(null);
+  }
+
+  public Optional<OCSPResp> getOcspResponse(final Extension extension) throws GemPkiException {
     final OCSPReq ocspReq =
-        OcspRequestGenerator.generateSingleOcspRequest(x509EeCert, x509IssuerCert);
+        OcspRequestGenerator.generateSingleOcspRequest(x509EeCert, x509IssuerCert, extension);
     return sendOcspRequest(ocspReq);
   }
 
