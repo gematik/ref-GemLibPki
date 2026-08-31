@@ -269,8 +269,6 @@ public final class OcspVerification {
         futureToleranceMilliSeconds);
     verifyNextUpdate(productType, ocspResponse, referenceDate);
     verifyOcspResponseCertId(productType, ocspResponse, eeCert, issuerCert);
-    verifyProvidedOcspResponseTimePlausibility(
-        productType, ocspResponse, plausibilityReferenceDate, futureToleranceMilliSeconds);
   }
 
   /**
