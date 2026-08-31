@@ -2,6 +2,10 @@
 
 # Release notes GemLibPki
 
+## Release 5.0.2
+
+- fix OcspVerification for live ocsp responses
+
 ## Release 5.0.1
 
 - add QES support for TSL handling (dedicated methods for QES and nonQES)
@@ -14,6 +18,8 @@
 - update dependencies
 - API break:
     - rename ...commons.tsl.TslSigner to ...commons.tsl.TslSignerNonQes
+- known bug (fixed in 5.0.2): OcspVerification for live ocsp responses call method
+  verifyProvidedOcspResponseTimePlausibility (..
 
 ## Release 4.0.2
 
