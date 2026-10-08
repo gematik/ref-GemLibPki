@@ -1,6 +1,6 @@
 # Release notes GemLibPki
 
-## Release 5.0.3
+## Release 6.0.0
 
 - ready for Java 25
 - update dependencies
