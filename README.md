@@ -155,7 +155,8 @@ component: [TslProcurer](https://github.com/gematik/app-PkiTestsuite/blob/main/p
 - for nonQES instantiate
   a [TucPki001Verifier](src/main/java/de/gematik/pki/gemlibpki/commons/tsl/TucPki001Verifier.java)
   (via builder) and call its public method `performTucPki001Checks()`. The offline mode for
-  TUC_PKI_001 (used solely for a Konnektor) is not implemented
+  TUC_PKI_001 (used solely for a Konnektor) is not implemented. Information about XSD schema is
+  available at: https://gemspec.gematik.de/docs/gemSpec/gemSpec_TSL/gemSpec_TSL_V1.25.0/
 - for QES instantiate ... tbd
 
 ### Error codes
@@ -169,6 +170,10 @@ Build with:
 ```bash
 mvn clean install
 ```
+
+## Contributing
+
+If you want to contribute, please check our [CONTRIBUTING.md](.github/CONTRIBUTING.md).
 
 ## License
 

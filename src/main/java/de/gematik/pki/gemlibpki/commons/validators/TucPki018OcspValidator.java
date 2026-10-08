@@ -52,7 +52,6 @@ public final class TucPki018OcspValidator implements CertificateValidator {
   @NonNull private final List<TspService> tspServiceList;
 
   private final boolean withOcspCheck;
-  private final OCSPResp ocspResponse;
   private final OcspRespCache ocspRespCache;
   private final int ocspTimeoutSeconds;
   private final OcspTransceiver ocspTransceiver;
@@ -75,6 +74,14 @@ public final class TucPki018OcspValidator implements CertificateValidator {
   @Override
   public void validateCertificate(
       @NonNull final X509Certificate x509EeCert, @NonNull final ZonedDateTime referenceDate)
+      throws GemPkiException {
+    validateCertificate(x509EeCert, referenceDate, null);
+  }
+
+  public void validateCertificate(
+      @NonNull final X509Certificate x509EeCert,
+      @NonNull final ZonedDateTime referenceDate,
+      final OCSPResp ocspResponse)
       throws GemPkiException {
 
     verifyToleranceSettings();

@@ -28,6 +28,7 @@ import static de.gematik.pki.gemlibpki.commons.ocsp.OcspConstants.OCSP_TIME_TOLE
 import static de.gematik.pki.gemlibpki.commons.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_THISNEXTUPDATE_MILLISECONDS;
 import static de.gematik.pki.gemlibpki.commons.ocsp.OcspTestConstants.TIMEOUT_DELTA_MILLISECONDS;
 import static de.gematik.pki.gemlibpki.commons.utils.TestUtils.assertNonNullParameter;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
@@ -445,7 +446,6 @@ class OcspVerificationTest {
                 null,
                 ocspResp,
                 now,
-                now,
                 VALID_X509_EE_CERT_SMCB,
                 VALID_ISSUER_CERT_SMCB,
                 OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_PAST_MILLISECONDS,
@@ -456,7 +456,6 @@ class OcspVerificationTest {
             OcspVerification.verifyOcspResponseAfterStatus(
                 PRODUCT_TYPE,
                 null,
-                now,
                 now,
                 VALID_X509_EE_CERT_SMCB,
                 VALID_ISSUER_CERT_SMCB,
@@ -469,7 +468,6 @@ class OcspVerificationTest {
                 PRODUCT_TYPE,
                 ocspResp,
                 null,
-                now,
                 VALID_X509_EE_CERT_SMCB,
                 VALID_ISSUER_CERT_SMCB,
                 OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_PAST_MILLISECONDS,
@@ -482,19 +480,6 @@ class OcspVerificationTest {
                 ocspResp,
                 now,
                 null,
-                VALID_X509_EE_CERT_SMCB,
-                VALID_ISSUER_CERT_SMCB,
-                OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_PAST_MILLISECONDS,
-                OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_FUTURE_MILLISECONDS),
-        "plausibilityReferenceDate");
-    assertNonNullParameter(
-        () ->
-            OcspVerification.verifyOcspResponseAfterStatus(
-                PRODUCT_TYPE,
-                ocspResp,
-                now,
-                now,
-                null,
                 VALID_ISSUER_CERT_SMCB,
                 OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_PAST_MILLISECONDS,
                 OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_FUTURE_MILLISECONDS),
@@ -505,12 +490,51 @@ class OcspVerificationTest {
                 PRODUCT_TYPE,
                 ocspResp,
                 now,
-                now,
                 VALID_X509_EE_CERT_SMCB,
                 null,
                 OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_PAST_MILLISECONDS,
                 OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_FUTURE_MILLISECONDS),
         "issuerCert");
+  }
+
+  /*
+  Verify bug from version 5.0.1
+   */
+  @Test
+  void
+      verifyOcspResponseAfterStatus_whenProducedAtIsBeforeThisUpdateButWithinTolerances_thenDoesNotThrow() {
+    final ZonedDateTime referenceDate = ZonedDateTime.now();
+    final ZonedDateTime thisUpdate =
+        referenceDate.plus(
+            OCSP_TIME_TOLERANCE_THISNEXTUPDATE_MILLISECONDS - TIMEOUT_DELTA_MILLISECONDS,
+            ChronoUnit.MILLIS);
+    final ZonedDateTime producedAt =
+        referenceDate.minus(
+            OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_PAST_MILLISECONDS - TIMEOUT_DELTA_MILLISECONDS,
+            ChronoUnit.MILLIS);
+
+    final OCSPResp ocspResp = genOcspRespWithThisUpdateAndProducedAt(thisUpdate, producedAt);
+
+    final ZonedDateTime thisUpdateFromResponse =
+        ZonedDateTime.ofInstant(
+            OcspUtils.getFirstSingleResp(ocspResp).getThisUpdate().toInstant(),
+            referenceDate.getZone());
+    final ZonedDateTime producedAtFromResponse =
+        ZonedDateTime.ofInstant(
+            OcspUtils.getBasicOcspResp(ocspResp).getProducedAt().toInstant(),
+            referenceDate.getZone());
+    assertThat(producedAtFromResponse).isBefore(thisUpdateFromResponse);
+
+    assertDoesNotThrow(
+        () ->
+            OcspVerification.verifyOcspResponseAfterStatus(
+                PRODUCT_TYPE,
+                ocspResp,
+                referenceDate,
+                VALID_X509_EE_CERT_SMCB,
+                VALID_ISSUER_CERT_SMCB,
+                OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_PAST_MILLISECONDS,
+                OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_FUTURE_MILLISECONDS));
   }
 
   private static OCSPResp genDefaultOcspResp() {
@@ -540,6 +564,16 @@ class OcspVerificationTest {
     return OcspResponseGenerator.builder()
         .signer(OcspTestConstants.getOcspSignerEccNonQes())
         .nextUpdate(nextUpdate)
+        .build()
+        .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
+  }
+
+  private static OCSPResp genOcspRespWithThisUpdateAndProducedAt(
+      final ZonedDateTime thisUpdate, final ZonedDateTime producedAt) {
+    return OcspResponseGenerator.builder()
+        .signer(OcspTestConstants.getOcspSignerEccNonQes())
+        .thisUpdate(thisUpdate)
+        .producedAt(producedAt)
         .build()
         .generate(ocspReq, VALID_X509_EE_CERT_SMCB, VALID_ISSUER_CERT_SMCB);
   }

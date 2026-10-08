@@ -120,7 +120,6 @@ class TucPki030OcspValidatorTest {
             .productType(PRODUCT_TYPE)
             .tspServiceListBNetzAVl(tspServiceListBNetzAVlDefault)
             .withOcspCheck(true)
-            .ocspResponse(ocspResponse)
             .ocspTimeToleranceProducedAtPastMilliseconds(OCSP_GRACE_PERIOD_10_SECONDS * 1000)
             .ocspTimeoutSeconds(DEFAULT_OCSP_TIMEOUT_SECONDS)
             .tolerateOcspFailure(false)
@@ -129,11 +128,17 @@ class TucPki030OcspValidatorTest {
 
     assertThrows(
         NullPointerException.class,
-        () -> tucPki030OcspValidator.validateCertificate(null, null, referenceDate));
+        () ->
+            tucPki030OcspValidator.validateCertificate(
+                null, null, referenceDate, null, ocspResponse));
     assertThatThrownBy(
             () ->
                 tucPki030OcspValidator.validateCertificate(
-                    VALID_X509_EE_CERT_QES, VALID_ISSUER_CERT_QES_DEFAULT_CA, referenceDate))
+                    VALID_X509_EE_CERT_QES,
+                    VALID_ISSUER_CERT_QES_DEFAULT_CA,
+                    referenceDate,
+                    null,
+                    ocspResponse))
         .isInstanceOf(GemPkiException.class)
         .hasMessage(TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
   }
@@ -157,7 +162,6 @@ class TucPki030OcspValidatorTest {
             .productType(PRODUCT_TYPE)
             .tspServiceListBNetzAVl(tspServiceListBNetzAVlalternative)
             .withOcspCheck(true)
-            .ocspResponse(ocspResponse)
             .ocspTimeToleranceProducedAtPastMilliseconds(OCSP_GRACE_PERIOD_10_SECONDS * 1000)
             .ocspTimeoutSeconds(DEFAULT_OCSP_TIMEOUT_SECONDS)
             .tolerateOcspFailure(false)
@@ -166,7 +170,11 @@ class TucPki030OcspValidatorTest {
     assertDoesNotThrow(
         () ->
             tucPki030OcspValidator.validateCertificate(
-                VALID_X509_EE_CERT_QES, VALID_ISSUER_CERT_QES_DEFAULT_CA, referenceDate));
+                VALID_X509_EE_CERT_QES,
+                VALID_ISSUER_CERT_QES_DEFAULT_CA,
+                referenceDate,
+                null,
+                ocspResponse));
   }
 
   @Test
@@ -193,7 +201,6 @@ class TucPki030OcspValidatorTest {
             .productType(PRODUCT_TYPE)
             .tspServiceListBNetzAVl(tspServiceListBNetzAVlalternative)
             .withOcspCheck(true)
-            .ocspResponse(ocspResponse)
             .ocspTimeToleranceProducedAtPastMilliseconds(OCSP_GRACE_PERIOD_10_SECONDS * 1000)
             .ocspTimeoutSeconds(DEFAULT_OCSP_TIMEOUT_SECONDS)
             .tolerateOcspFailure(false)
@@ -202,7 +209,11 @@ class TucPki030OcspValidatorTest {
     assertDoesNotThrow(
         () ->
             tucPki030OcspValidator.validateCertificate(
-                VALID_X509_EE_CERT_QES, VALID_ISSUER_CERT_QES_DEFAULT_CA, referenceDate));
+                VALID_X509_EE_CERT_QES,
+                VALID_ISSUER_CERT_QES_DEFAULT_CA,
+                referenceDate,
+                null,
+                ocspResponse));
   }
 
   @Test
@@ -228,7 +239,6 @@ class TucPki030OcspValidatorTest {
             .productType(PRODUCT_TYPE)
             .tspServiceListBNetzAVl(tspServiceListBNetzAVlalternative)
             .withOcspCheck(true)
-            .ocspResponse(ocspResponse)
             .ocspTimeToleranceProducedAtPastMilliseconds(OCSP_GRACE_PERIOD_10_SECONDS * 1000)
             .ocspTimeoutSeconds(DEFAULT_OCSP_TIMEOUT_SECONDS)
             .tolerateOcspFailure(false)
@@ -237,7 +247,11 @@ class TucPki030OcspValidatorTest {
     assertThatThrownBy(
             () ->
                 tucPki030OcspValidator.validateCertificate(
-                    VALID_X509_EE_CERT_QES, VALID_ISSUER_CERT_QES_DEFAULT_CA, referenceDate))
+                    VALID_X509_EE_CERT_QES,
+                    VALID_ISSUER_CERT_QES_DEFAULT_CA,
+                    referenceDate,
+                    null,
+                    ocspResponse))
         .isInstanceOf(GemPkiException.class)
         .hasMessage(TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
   }
@@ -265,7 +279,6 @@ class TucPki030OcspValidatorTest {
             .productType(PRODUCT_TYPE)
             .tspServiceListBNetzAVl(tspServiceListBNetzAVlDefault)
             .withOcspCheck(true)
-            .ocspResponse(ocspResponse)
             .ocspTimeToleranceProducedAtPastMilliseconds(OCSP_GRACE_PERIOD_10_SECONDS * 1000)
             .ocspTimeoutSeconds(DEFAULT_OCSP_TIMEOUT_SECONDS)
             .tolerateOcspFailure(false)
@@ -274,7 +287,11 @@ class TucPki030OcspValidatorTest {
     assertThatThrownBy(
             () ->
                 tucPki030OcspValidator.validateCertificate(
-                    VALID_X509_EE_CERT_QES, VALID_ISSUER_CERT_QES_DEFAULT_CA, referenceDate))
+                    VALID_X509_EE_CERT_QES,
+                    VALID_ISSUER_CERT_QES_DEFAULT_CA,
+                    referenceDate,
+                    null,
+                    ocspResponse))
         .isInstanceOf(GemPkiException.class)
         .hasMessage(TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
   }

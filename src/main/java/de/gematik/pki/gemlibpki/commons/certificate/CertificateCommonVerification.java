@@ -25,6 +25,7 @@ import static de.gematik.pki.gemlibpki.commons.utils.GemLibPkiUtils.setBouncyCas
 import de.gematik.pki.gemlibpki.commons.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.commons.tsl.TspServiceSubset;
 import de.gematik.pki.gemlibpki.commons.validators.IssuerServiceStatusValidator;
+import de.gematik.pki.gemlibpki.commons.validators.ShellModelValidator;
 import de.gematik.pki.gemlibpki.commons.validators.SignatureValidator;
 import de.gematik.pki.gemlibpki.commons.validators.ValidityValidator;
 import java.security.cert.X509Certificate;
@@ -59,6 +60,7 @@ public final class CertificateCommonVerification {
   @Builder.Default private ValidityValidator validityValidator = null;
   @Builder.Default private SignatureValidator signatureValidator = null;
   @Builder.Default private IssuerServiceStatusValidator issuerServiceStatusValidator = null;
+  @Builder.Default private ShellModelValidator shellModelValidator = null;
 
   private void initializeValidators() {
 
@@ -69,10 +71,12 @@ public final class CertificateCommonVerification {
     validityValidator = new ValidityValidator(productType);
     signatureValidator = new SignatureValidator(productType, tspServiceSubset.getX509IssuerCert());
     issuerServiceStatusValidator = new IssuerServiceStatusValidator(productType, tspServiceSubset);
+    shellModelValidator =
+        new ShellModelValidator(productType, tspServiceSubset.getX509IssuerCert());
   }
 
   /**
-   * Perform verifications of validity, signature and issue service status
+   * Perform verifications of validity, signature, shell model and issuer service status
    *
    * @throws GemPkiException thrown if cert is not valid according to time, signature or issuer
    *     service status
@@ -83,6 +87,7 @@ public final class CertificateCommonVerification {
 
     validityValidator.validateCertificate(x509EeCert, referenceDate);
     signatureValidator.validateCertificate(x509EeCert, referenceDate);
+    shellModelValidator.validateCertificate(x509EeCert, referenceDate);
     issuerServiceStatusValidator.validateCertificate(x509EeCert, referenceDate);
   }
 }

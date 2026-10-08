@@ -34,16 +34,11 @@ import de.gematik.pki.gemlibpki.commons.tsl.TspServiceSubset;
 import de.gematik.pki.gemlibpki.commons.utils.GemLibPkiUtils;
 import de.gematik.pki.gemlibpki.commons.validators.QesCaQualificationValidator;
 import de.gematik.pki.gemlibpki.commons.validators.SignatureValidator;
-import eu.europa.esig.trustedlist.jaxb.tsl.DigitalIdentityType;
-import eu.europa.esig.trustedlist.jaxb.tsl.TSPServiceType;
-import java.security.MessageDigest;
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -130,31 +125,6 @@ public class TucPki030OcspVerifier {
     throw new GemPkiException(productType, ErrorCode.SE_1031_OCSP_SIGNATURE_ERROR);
   }
 
-  private boolean isServiceTypeIdentifierOcsp(final TSPServiceType tspServiceType) {
-    return hasServiceTypeIdentifier(tspServiceType, TslConstants.STI_OCSP)
-        || hasServiceTypeIdentifier(tspServiceType, TslConstants.STI_OCSP_QC);
-  }
-
-  private boolean isSameCertificate(
-      final TSPServiceType tspServiceType, final byte[] derX509EeCert) {
-    if (tspServiceType.getServiceInformation() == null
-        || tspServiceType.getServiceInformation().getServiceDigitalIdentity() == null
-        || tspServiceType.getServiceInformation().getServiceDigitalIdentity().getDigitalId()
-            == null) {
-      return false;
-    }
-
-    return tspServiceType
-        .getServiceInformation()
-        .getServiceDigitalIdentity()
-        .getDigitalId()
-        .stream()
-        .map(DigitalIdentityType::getX509Certificate)
-        .filter(Objects::nonNull)
-        .map(GemLibPkiUtils::calculateSha256)
-        .anyMatch(candidateHash -> MessageDigest.isEqual(derX509EeCert, candidateHash));
-  }
-
   private X509Certificate identifyValidOcspSigner() throws GemPkiException {
     final X509Certificate ocspSignerCert = getSignerCertFromOcspResponse();
     if (hasOcspSignerCertInBNetzAVl(ocspSignerCert)) {
@@ -201,20 +171,16 @@ public class TucPki030OcspVerifier {
   }
 
   private boolean hasOcspSignerCertInBNetzAVl(final X509Certificate ocspSignerCert) {
-    final byte[] ocspSignerCertHash = calculateCertificateHash(ocspSignerCert);
     return tspServiceListBNetzAVl.stream()
-        .map(TspService::getTspServiceType)
-        .filter(this::isServiceTypeIdentifierOcsp)
-        .anyMatch(tspServiceType -> isSameCertificate(tspServiceType, ocspSignerCertHash));
+        .filter(TspService::isOcspService)
+        .anyMatch(tspService -> tspService.containsCertificate(ocspSignerCert));
   }
 
   protected TspServiceSubset findQesCaTspServiceBNetzAVl(@NonNull final X509Certificate x509EeCert)
       throws GemPkiException {
     final List<TspService> qesCaServices =
         tspServiceListBNetzAVl.stream()
-            .filter(
-                tspService ->
-                    hasServiceTypeIdentifier(tspService.getTspServiceType(), TslConstants.STI_QC))
+            .filter(tspService -> tspService.hasServiceTypeIdentifier(TslConstants.STI_QC))
             .toList();
     return new TspInformationProvider(qesCaServices, productType)
         .getIssuerQesCaTspServiceSubset(x509EeCert);
@@ -234,20 +200,6 @@ public class TucPki030OcspVerifier {
   private X509Certificate convertToX509Certificate(final X509CertificateHolder certHolder)
       throws CertificateException {
     return new JcaX509CertificateConverter().getCertificate(certHolder);
-  }
-
-  private byte[] calculateCertificateHash(final X509Certificate certificate) {
-    try {
-      return GemLibPkiUtils.calculateSha256(certificate.getEncoded());
-    } catch (final CertificateEncodingException e) {
-      throw new GemPkiRuntimeException("Fehler beim Lesen des OCSP Signers aus der Response.", e);
-    }
-  }
-
-  private boolean hasServiceTypeIdentifier(
-      final TSPServiceType tspServiceType, final String serviceTypeIdentifier) {
-    return serviceTypeIdentifier.equals(
-        tspServiceType.getServiceInformation().getServiceTypeIdentifier());
   }
 
   protected void verifyProvidedOcspResponseBasics(@NonNull final ZonedDateTime referenceDate)

@@ -443,7 +443,8 @@ class TucPki018VerifierTest {
     assertNonNullParameter(
         () -> tucPki018Verifier.performTucPki018Checks(null, GemLibPkiUtils.now()), "x509EeCert");
     assertNonNullParameter(
-        () -> tucPki018Verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, null),
+        () ->
+            tucPki018Verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, (ZonedDateTime) null),
         "referenceDate");
 
     assertNonNullParameter(() -> buildTucPki18Verifier(null), "certificateProfiles");
@@ -492,10 +493,12 @@ class TucPki018VerifierTest {
         () -> tucPki018Verifier.commonChecks(VALID_X509_EE_CERT_SMCB, tspServiceSubset, null),
         "referenceDate");
 
-    assertNonNullParameter(() -> tucPki018Verifier.doOcspIfConfigured(null, now), "x509EeCert");
+    assertNonNullParameter(
+        () -> tucPki018Verifier.doOcspIfConfigured(null, now, null), "x509EeCert");
 
     assertNonNullParameter(
-        () -> tucPki018Verifier.doOcspIfConfigured(VALID_X509_EE_CERT_SMCB, null), "referenceDate");
+        () -> tucPki018Verifier.doOcspIfConfigured(VALID_X509_EE_CERT_SMCB, null, null),
+        "referenceDate");
   }
 
   @Test
@@ -608,11 +611,10 @@ class TucPki018VerifierTest {
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .certificateProfiles(certificateProfiles)
-            .ocspResponse(ocspResp)
             .build();
 
     assertDoesNotThrow(
-        () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate));
+        () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate, ocspResp));
   }
 
   @Test
@@ -641,12 +643,11 @@ class TucPki018VerifierTest {
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .certificateProfiles(certificateProfiles)
-            .ocspResponse(ocspResp)
             .ocspTimeToleranceProducedAtPastMilliseconds(SECONDS_10_AS_MILLISECS)
             .build();
 
     assertDoesNotThrow(
-        () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate));
+        () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate, ocspResp));
   }
 
   /**
@@ -681,23 +682,24 @@ class TucPki018VerifierTest {
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .certificateProfiles(certificateProfiles)
-            .ocspResponse(ocspResp)
             .ocspTimeToleranceProducedAtFutureMilliseconds(SECONDS_50_AS_MILLISECS)
             .build();
 
     assertDoesNotThrow(
-        () -> verifierPass.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate));
+        () ->
+            verifierPass.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate, ocspResp));
 
     final TucPki018Verifier verifierFail =
         TucPki018Verifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .certificateProfiles(certificateProfiles)
-            .ocspResponse(ocspResp)
             .build();
 
     assertThatThrownBy(
-            () -> verifierFail.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate))
+            () ->
+                verifierFail.performTucPki018Checks(
+                    VALID_X509_EE_CERT_SMCB, referenceDate, ocspResp))
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
   }
@@ -727,12 +729,11 @@ class TucPki018VerifierTest {
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .certificateProfiles(certificateProfiles)
-            .ocspResponse(ocspResp)
             .ocspTimeToleranceProducedAtPastMilliseconds(SECONDS_50_AS_MILLISECS)
             .build();
 
     assertThatThrownBy(
-            () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate))
+            () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate, ocspResp))
         .isInstanceOf(GemPkiException.class)
         .hasMessage(ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
   }
@@ -762,11 +763,10 @@ class TucPki018VerifierTest {
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .certificateProfiles(certificateProfiles)
-            .ocspResponse(ocspResp)
             .build();
 
     assertDoesNotThrow(
-        () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate));
+        () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate, ocspResp));
   }
 
   @Test
@@ -791,9 +791,9 @@ class TucPki018VerifierTest {
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .certificateProfiles(certificateProfiles)
-            .ocspResponse(ocspResp)
             .build();
-    assertDoesNotThrow(() -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, thisUpdate));
+    assertDoesNotThrow(
+        () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, thisUpdate, ocspResp));
   }
 
   @Test
@@ -823,11 +823,10 @@ class TucPki018VerifierTest {
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .certificateProfiles(certificateProfiles)
-            .ocspResponse(ocspResp)
             .build();
 
     assertThatThrownBy(
-            () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate))
+            () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate, ocspResp))
         .isInstanceOf(GemPkiException.class);
   }
 
@@ -859,12 +858,11 @@ class TucPki018VerifierTest {
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .certificateProfiles(certificateProfiles)
-            .ocspResponse(ocspResp)
             .ocspTimeToleranceProducedAtFutureMilliseconds(SECONDS_10_AS_MILLISECS)
             .build();
 
     assertThatThrownBy(
-            () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate))
+            () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate, ocspResp))
         .isInstanceOf(GemPkiException.class);
   }
 
@@ -895,12 +893,11 @@ class TucPki018VerifierTest {
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .certificateProfiles(certificateProfiles)
-            .ocspResponse(ocspResp)
             .ocspTimeToleranceProducedAtFutureMilliseconds(SECONDS_5_AS_MILLISECS)
             .build();
 
     assertThatThrownBy(
-            () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate))
+            () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceDate, ocspResp))
         .isInstanceOf(GemPkiException.class);
   }
 
@@ -929,10 +926,9 @@ class TucPki018VerifierTest {
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .certificateProfiles(certificateProfiles)
-            .ocspResponse(ocspResp)
             .build();
 
-    assertDoesNotThrow(() -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB));
+    assertDoesNotThrow(() -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, ocspResp));
   }
 
   /**
@@ -971,12 +967,11 @@ class TucPki018VerifierTest {
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .certificateProfiles(certificateProfiles)
-            .ocspResponse(ocspResp)
             .ocspRespCache(new OcspRespCache(OCSP_GRACE_PERIOD))
             .build();
 
     assertDoesNotThrow(
-        () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceTime));
+        () -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, referenceTime, ocspResp));
   }
 
   @Test
@@ -1009,11 +1004,10 @@ class TucPki018VerifierTest {
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .certificateProfiles(certificateProfiles)
-            .ocspResponse(ocspResp)
             .build();
 
     // TECHNICAL_WARNING TW_1050_PROVIDED_OCSP_RESPONSE_NOT_VALID
-    assertDoesNotThrow(() -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB));
+    assertDoesNotThrow(() -> verifier.performTucPki018Checks(VALID_X509_EE_CERT_SMCB, ocspResp));
   }
 
   @Test

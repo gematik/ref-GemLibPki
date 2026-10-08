@@ -93,8 +93,8 @@ import org.mockito.Mockito;
 class TucPki030VerifierTest {
 
   private TucPki030Verifier tucPki030Verifier;
-  private TucPki030Verifier tucPki030VerifierWithOcspResp;
-  private TucPki030Verifier tucPki030VerifierAltCaWithOcspResp;
+  private OCSPResp ocspResponseValid;
+  private OCSPResp ocspResponseAltCa;
   private static final int SECONDS_50_AS_MILLISECS = 50000;
   private OcspResponderMock ocspResponderMock;
 
@@ -178,48 +178,32 @@ class TucPki030VerifierTest {
             .tspServiceListTsl(TestUtils.getDefaultTspServiceListNonQes())
             .build();
 
-    tucPki030VerifierWithOcspResp =
-        TucPki030Verifier.builder()
-            .productType(PRODUCT_TYPE)
-            .tspServiceListBNetzAVl(
-                new TslInformationProvider(TestUtils.getAdditionalCaDefaultTslUnsignedQes())
-                    .getTspServices())
-            .tspServiceListTsl(TestUtils.getDefaultTspServiceListNonQes())
-            .ocspResponse(
-                generateOcspResponse(
-                    VALID_X509_EE_CERT_QES,
-                    VALID_ISSUER_CERT_QES_DEFAULT_CA,
-                    OcspTestConstants.getOcspSignerQes(),
-                    OcspRequestGenerator.generateNonceExtension()))
-            .build();
+    ocspResponseValid =
+        generateOcspResponse(
+            VALID_X509_EE_CERT_QES,
+            VALID_ISSUER_CERT_QES_DEFAULT_CA,
+            OcspTestConstants.getOcspSignerQes(),
+            OcspRequestGenerator.generateNonceExtension());
 
-    tucPki030VerifierAltCaWithOcspResp =
-        TucPki030Verifier.builder()
-            .productType(PRODUCT_TYPE)
-            .tspServiceListBNetzAVl(
-                new TslInformationProvider(TestUtils.getAdditionalCaDefaultTslUnsignedQes())
-                    .getTspServices())
-            .tspServiceListTsl(TestUtils.getDefaultTspServiceListNonQes())
-            .ocspResponse(
-                generateOcspResponse(
-                    VALID_X509_EE_CERT_QES_ALT_CA,
-                    VALID_ISSUER_CERT_QES_ALT_CA,
-                    OcspTestConstants.getOcspSignerQes(),
-                    OcspRequestGenerator.generateNonceExtension()))
-            .build();
+    ocspResponseAltCa =
+        generateOcspResponse(
+            VALID_X509_EE_CERT_QES_ALT_CA,
+            VALID_ISSUER_CERT_QES_ALT_CA,
+            OcspTestConstants.getOcspSignerQes(),
+            OcspRequestGenerator.generateNonceExtension());
   }
 
   @Test
   void performTucPki030Checks_whenOcspResponseIsValid_thenDoesNotThrow() {
     assertDoesNotThrow(
-        () -> tucPki030VerifierWithOcspResp.performTucPki030Checks(VALID_X509_EE_CERT_QES));
+        () -> tucPki030Verifier.performTucPki030Checks(VALID_X509_EE_CERT_QES, ocspResponseValid));
   }
 
   @Test
   void performTucPki030Checks_whenEECertificateHasCaIssuersInAIA_thenDoesNotThrow()
       throws GemPkiException {
     final var admission =
-        tucPki030VerifierAltCaWithOcspResp.performTucPki030Checks(VALID_X509_EE_CERT_QES_ALT_CA);
+        tucPki030Verifier.performTucPki030Checks(VALID_X509_EE_CERT_QES_ALT_CA, ocspResponseAltCa);
     assertThat(admission).isNotNull();
     assertThat(admission.getProfessionOids()).hasSize(1);
   }
@@ -227,7 +211,7 @@ class TucPki030VerifierTest {
   @Test
   void performTucPki030Checks_thenReturnAdmission() throws GemPkiException {
     final var admission =
-        tucPki030VerifierWithOcspResp.performTucPki030Checks(VALID_X509_EE_CERT_QES);
+        tucPki030Verifier.performTucPki030Checks(VALID_X509_EE_CERT_QES, ocspResponseValid);
     assertThat(admission).isNotNull();
     assertThat(admission.getProfessionOids()).hasSize(1);
   }
@@ -241,16 +225,17 @@ class TucPki030VerifierTest {
                 new TslInformationProvider(TestUtils.getAdditionalCaDefaultTslUnsignedQes())
                     .getTspServices())
             .tspServiceListTsl(TestUtils.getDefaultTspServiceListNonQes())
-            .ocspResponse(
-                generateOcspResponse(
-                    VALID_X509_EE_CERT_QES_PSYCHO_TWO_ADMISSIONS,
-                    VALID_ISSUER_CERT_QES_DEFAULT_CA,
-                    OcspTestConstants.getOcspSignerQes(),
-                    OcspRequestGenerator.generateNonceExtension()))
             .build();
+    final OCSPResp ocspResponse =
+        generateOcspResponse(
+            VALID_X509_EE_CERT_QES_PSYCHO_TWO_ADMISSIONS,
+            VALID_ISSUER_CERT_QES_DEFAULT_CA,
+            OcspTestConstants.getOcspSignerQes(),
+            OcspRequestGenerator.generateNonceExtension());
 
     final Admission admission =
-        tucPki030Verifier_.performTucPki030Checks(VALID_X509_EE_CERT_QES_PSYCHO_TWO_ADMISSIONS);
+        tucPki030Verifier_.performTucPki030Checks(
+            VALID_X509_EE_CERT_QES_PSYCHO_TWO_ADMISSIONS, ocspResponse);
     assertThat(admission.getProfessionOids()).hasSize(2);
   }
 
@@ -265,16 +250,16 @@ class TucPki030VerifierTest {
                 new TslInformationProvider(TestUtils.getAdditionalCaDefaultTslUnsignedQes())
                     .getTspServices())
             .tspServiceListTsl(TestUtils.getDefaultTspServiceListNonQes())
-            .ocspResponse(
-                generateOcspResponse(
-                    X509_EE_CERT_QES_MISSING_ADMISSION,
-                    VALID_ISSUER_CERT_QES_DEFAULT_CA,
-                    OcspTestConstants.getOcspSignerQes(),
-                    null))
             .build();
+    final OCSPResp ocspResponse =
+        generateOcspResponse(
+            X509_EE_CERT_QES_MISSING_ADMISSION,
+            VALID_ISSUER_CERT_QES_DEFAULT_CA,
+            OcspTestConstants.getOcspSignerQes(),
+            null);
 
     final Admission admission =
-        tucPki030Verifier_.performTucPki030Checks(X509_EE_CERT_QES_MISSING_ADMISSION);
+        tucPki030Verifier_.performTucPki030Checks(X509_EE_CERT_QES_MISSING_ADMISSION, ocspResponse);
     assertThat(admission.getProfessionOids()).isEmpty();
   }
 
@@ -336,16 +321,16 @@ class TucPki030VerifierTest {
                 new TslInformationProvider(TestUtils.getAdditionalCaDefaultTslUnsignedQes())
                     .getTspServices())
             .tspServiceListTsl(TestUtils.getDefaultTspServiceListNonQes())
-            .ocspResponse(
-                generateOcspResponse(
-                    X509_EE_CERT_QES_MISSING_ROLE,
-                    VALID_ISSUER_CERT_QES_DEFAULT_CA,
-                    OcspTestConstants.getOcspSignerQes(),
-                    null))
             .build();
+    final OCSPResp ocspResponse =
+        generateOcspResponse(
+            X509_EE_CERT_QES_MISSING_ROLE,
+            VALID_ISSUER_CERT_QES_DEFAULT_CA,
+            OcspTestConstants.getOcspSignerQes(),
+            null);
 
     final Admission admission =
-        tucPki030Verifier_.performTucPki030Checks(X509_EE_CERT_QES_MISSING_ROLE);
+        tucPki030Verifier_.performTucPki030Checks(X509_EE_CERT_QES_MISSING_ROLE, ocspResponse);
     assertThat(admission).isNull();
   }
 
@@ -376,16 +361,18 @@ class TucPki030VerifierTest {
                 new TslInformationProvider(TestUtils.getAdditionalCaDefaultTslUnsignedQes())
                     .getTspServices())
             .tspServiceListTsl(TestUtils.getDefaultTspServiceListNonQes())
-            .ocspResponse(
-                generateOcspResponse(
-                    VALID_X509_EE_CERT_QES,
-                    VALID_ISSUER_CERT_QES_DEFAULT_CA,
-                    OcspTestConstants.getOcspSignerQes(),
-                    nonceExtension))
             .build();
+    final OCSPResp ocspResponse =
+        generateOcspResponse(
+            VALID_X509_EE_CERT_QES,
+            VALID_ISSUER_CERT_QES_DEFAULT_CA,
+            OcspTestConstants.getOcspSignerQes(),
+            nonceExtension);
 
     assertDoesNotThrow(
-        () -> tucPki030Verifier_.performTucPki030Checks(VALID_X509_EE_CERT_QES, nonceExtension));
+        () ->
+            tucPki030Verifier_.performTucPki030Checks(
+                VALID_X509_EE_CERT_QES, nonceExtension, ocspResponse));
   }
 
   @Test
@@ -398,16 +385,82 @@ class TucPki030VerifierTest {
                 new TslInformationProvider(TestUtils.getAdditionalCaDefaultTslUnsignedQes())
                     .getTspServices())
             .tspServiceListTsl(TestUtils.getDefaultTspServiceListNonQes())
-            .ocspResponse(
-                generateOcspResponse(
-                    VALID_X509_EE_CERT_QES,
-                    VALID_ISSUER_CERT_QES_DEFAULT_CA,
-                    OcspTestConstants.getOcspSignerQes(),
-                    nonce))
             .build();
+    final OCSPResp ocspResponse =
+        generateOcspResponse(
+            VALID_X509_EE_CERT_QES,
+            VALID_ISSUER_CERT_QES_DEFAULT_CA,
+            OcspTestConstants.getOcspSignerQes(),
+            nonce);
 
     assertDoesNotThrow(
-        () -> verifierWithNonce.performTucPki030Checks(VALID_X509_EE_CERT_QES, nonce));
+        () ->
+            verifierWithNonce.performTucPki030Checks(VALID_X509_EE_CERT_QES, nonce, ocspResponse));
+  }
+
+  @Test
+  void
+      performTucPki030Checks_whenReferenceDateIsProvided_thenPassesReferenceDateAndGeneratedNonceToOcsp()
+          throws GemPkiException {
+    final Extension[] capturedNonce = new Extension[1];
+    final ZonedDateTime[] capturedReferenceDate = new ZonedDateTime[1];
+    final ZonedDateTime referenceDate =
+        VALID_X509_EE_CERT_QES.getNotBefore().toInstant().atZone(ZoneOffset.UTC).plusDays(1);
+    final TucPki030Verifier verifier = Mockito.spy(tucPki030Verifier);
+
+    Mockito.doAnswer(
+            invocation -> {
+              capturedReferenceDate[0] = invocation.getArgument(2);
+              capturedNonce[0] = invocation.getArgument(3);
+              return null;
+            })
+        .when(verifier)
+        .doOcspIfConfigured(
+            Mockito.any(X509Certificate.class),
+            Mockito.any(X509Certificate.class),
+            Mockito.any(ZonedDateTime.class),
+            Mockito.nullable(Extension.class),
+            Mockito.nullable(OCSPResp.class));
+
+    final Admission admission =
+        verifier.performTucPki030Checks(VALID_X509_EE_CERT_QES, referenceDate);
+
+    assertThat(admission).isNotNull();
+    assertThat(capturedReferenceDate[0]).isEqualTo(referenceDate);
+    assertThat(capturedNonce[0]).isNotNull();
+    assertThat(capturedNonce[0].getExtnId()).isEqualTo(OCSPObjectIdentifiers.id_pkix_ocsp_nonce);
+  }
+
+  @Test
+  void performTucPki030Checks_whenReferenceDateAndNonceAreProvided_thenPassesBothToOcsp()
+      throws GemPkiException {
+    final Extension[] capturedNonce = new Extension[1];
+    final ZonedDateTime[] capturedReferenceDate = new ZonedDateTime[1];
+    final ZonedDateTime referenceDate =
+        VALID_X509_EE_CERT_QES.getNotBefore().toInstant().atZone(ZoneOffset.UTC).plusDays(1);
+    final Extension nonce = OcspRequestGenerator.generateNonceExtension();
+    final TucPki030Verifier verifier = Mockito.spy(tucPki030Verifier);
+
+    Mockito.doAnswer(
+            invocation -> {
+              capturedReferenceDate[0] = invocation.getArgument(2);
+              capturedNonce[0] = invocation.getArgument(3);
+              return null;
+            })
+        .when(verifier)
+        .doOcspIfConfigured(
+            Mockito.any(X509Certificate.class),
+            Mockito.any(X509Certificate.class),
+            Mockito.any(ZonedDateTime.class),
+            Mockito.nullable(Extension.class),
+            Mockito.nullable(OCSPResp.class));
+
+    final Admission admission =
+        verifier.performTucPki030Checks(VALID_X509_EE_CERT_QES, referenceDate, nonce);
+
+    assertThat(admission).isNotNull();
+    assertThat(capturedReferenceDate[0]).isEqualTo(referenceDate);
+    assertThat(capturedNonce[0]).isSameAs(nonce);
   }
 
   @Test
@@ -508,12 +561,13 @@ class TucPki030VerifierTest {
                 new TslInformationProvider(TestUtils.getAdditionalCaDefaultTslUnsignedQes())
                     .getTspServices())
             .tspServiceListTsl(TestUtils.getDefaultTspServiceListNonQes())
-            .ocspResponse(invalidOcspResponse)
             .ocspTransceiver(getOcspTransceiver(ocspResponderMock.getSspUrl()))
             .build();
 
     assertDoesNotThrow(
-        () -> verifierWithFallback.performTucPki030Checks(VALID_X509_EE_CERT_QES, nonce));
+        () ->
+            verifierWithFallback.performTucPki030Checks(
+                VALID_X509_EE_CERT_QES, nonce, invalidOcspResponse));
   }
 
   @Test
@@ -547,12 +601,13 @@ class TucPki030VerifierTest {
                 new TslInformationProvider(TestUtils.getAdditionalCaDefaultTslUnsignedQes())
                     .getTspServices())
             .tspServiceListTsl(TestUtils.getDefaultTspServiceListNonQes())
-            .ocspResponse(invalidOcspResponse)
             .ocspTransceiverFactory(ocspTransceiverFactory)
             .build();
 
     assertDoesNotThrow(
-        () -> verifierWithFactoryFallback.performTucPki030Checks(VALID_X509_EE_CERT_QES, nonce));
+        () ->
+            verifierWithFactoryFallback.performTucPki030Checks(
+                VALID_X509_EE_CERT_QES, nonce, invalidOcspResponse));
     Mockito.verify(ocspTransceiverFactory).create(VALID_X509_EE_CERT_QES);
   }
 
@@ -571,22 +626,23 @@ class TucPki030VerifierTest {
                 new TslInformationProvider(TestUtils.getAdditionalCaDefaultTslUnsignedQes())
                     .getTspServices())
             .tspServiceListTsl(TestUtils.getDefaultTspServiceListNonQes())
-            .ocspResponse(
-                generateOcspResponseWithTimeStamps(
-                    VALID_X509_EE_CERT_QES,
-                    VALID_ISSUER_CERT_QES_DEFAULT_CA,
-                    OcspTestConstants.getOcspSignerQes(),
-                    nonce,
-                    thisUpdate,
-                    producedAt,
-                    nextUpdate,
-                    CertificateStatus.GOOD))
             .ocspTimeToleranceProducedAtFutureMilliseconds(SECONDS_50_AS_MILLISECS)
             .build();
+    final OCSPResp ocspResponse =
+        generateOcspResponseWithTimeStamps(
+            VALID_X509_EE_CERT_QES,
+            VALID_ISSUER_CERT_QES_DEFAULT_CA,
+            OcspTestConstants.getOcspSignerQes(),
+            nonce,
+            thisUpdate,
+            producedAt,
+            nextUpdate,
+            CertificateStatus.GOOD);
 
     assertDoesNotThrow(
         () ->
-            verifierWithNonce.performTucPki030Checks(VALID_X509_EE_CERT_QES, referenceDate, nonce));
+            verifierWithNonce.performTucPki030Checks(
+                VALID_X509_EE_CERT_QES, referenceDate, nonce, ocspResponse));
   }
 
   @Test
@@ -608,7 +664,8 @@ class TucPki030VerifierTest {
             Mockito.any(X509Certificate.class),
             Mockito.any(X509Certificate.class),
             Mockito.any(ZonedDateTime.class),
-            Mockito.nullable(Extension.class));
+            Mockito.nullable(Extension.class),
+            Mockito.nullable(OCSPResp.class));
 
     assertDoesNotThrow(() -> verifier.performTucPki030Checks(VALID_X509_EE_CERT_QES));
     assertThat(capturedNonce[0]).isNotNull();
@@ -619,7 +676,7 @@ class TucPki030VerifierTest {
   void performTucPki030Checks_whenNonceIsMissingAndOcspResponseIsPresent_thenPassesNullNonceToOcsp()
       throws GemPkiException {
     final Extension[] capturedNonce = new Extension[1];
-    final TucPki030Verifier verifier = Mockito.spy(tucPki030VerifierWithOcspResp);
+    final TucPki030Verifier verifier = Mockito.spy(tucPki030Verifier);
     Mockito.doAnswer(
             invocation -> {
               capturedNonce[0] = invocation.getArgument(3);
@@ -630,9 +687,11 @@ class TucPki030VerifierTest {
             Mockito.any(X509Certificate.class),
             Mockito.any(X509Certificate.class),
             Mockito.any(ZonedDateTime.class),
-            Mockito.nullable(Extension.class));
+            Mockito.nullable(Extension.class),
+            Mockito.nullable(OCSPResp.class));
 
-    assertDoesNotThrow(() -> verifier.performTucPki030Checks(VALID_X509_EE_CERT_QES));
+    assertDoesNotThrow(
+        () -> verifier.performTucPki030Checks(VALID_X509_EE_CERT_QES, ocspResponseValid));
     assertThat(capturedNonce[0]).isNull();
   }
 
@@ -647,11 +706,11 @@ class TucPki030VerifierTest {
                 new TslInformationProvider(TestUtils.getAdditionalCaDefaultTslUnsignedQes())
                     .getTspServices())
             .tspServiceListTsl(TestUtils.getDefaultTspServiceListNonQes())
-            .ocspResponse(
-                generateOcspResponse(
-                    x509EeCert, VALID_ISSUER_CERT_QES_ALT_CA, OcspTestConstants.getOcspSignerQes()))
             .build();
-    assertDoesNotThrow(() -> tucPki030Verifier_.performTucPki030Checks(x509EeCert));
+    final OCSPResp ocspResponse =
+        generateOcspResponse(
+            x509EeCert, VALID_ISSUER_CERT_QES_ALT_CA, OcspTestConstants.getOcspSignerQes());
+    assertDoesNotThrow(() -> tucPki030Verifier_.performTucPki030Checks(x509EeCert, ocspResponse));
   }
 
   @Test
@@ -665,11 +724,11 @@ class TucPki030VerifierTest {
                 new TslInformationProvider(TestUtils.getAdditionalCaDefaultTslUnsignedQes())
                     .getTspServices())
             .tspServiceListTsl(TestUtils.getDefaultTspServiceListNonQes())
-            .ocspResponse(
-                generateOcspResponse(
-                    x509EeCert, VALID_ISSUER_CERT_QES_ALT_CA, OcspTestConstants.getOcspSignerQes()))
             .build();
-    assertDoesNotThrow(() -> tucPki030Verifier_.performTucPki030Checks(x509EeCert));
+    final OCSPResp ocspResponse =
+        generateOcspResponse(
+            x509EeCert, VALID_ISSUER_CERT_QES_ALT_CA, OcspTestConstants.getOcspSignerQes());
+    assertDoesNotThrow(() -> tucPki030Verifier_.performTucPki030Checks(x509EeCert, ocspResponse));
   }
 
   @Test
@@ -682,11 +741,11 @@ class TucPki030VerifierTest {
             .tspServiceListBNetzAVl(
                 new TslInformationProvider(TestUtils.getDefaultTslUnsignedQes()).getTspServices())
             .tspServiceListTsl(TestUtils.getDefaultTspServiceListNonQes())
-            .ocspResponse(
-                generateOcspResponse(
-                    x509EeCert, VALID_ISSUER_CERT_QES_ALT_CA, OcspTestConstants.getOcspSignerQes()))
             .build();
-    assertThatThrownBy(() -> tucPki030Verifier_.performTucPki030Checks(x509EeCert))
+    final OCSPResp ocspResponse =
+        generateOcspResponse(
+            x509EeCert, VALID_ISSUER_CERT_QES_ALT_CA, OcspTestConstants.getOcspSignerQes());
+    assertThatThrownBy(() -> tucPki030Verifier_.performTucPki030Checks(x509EeCert, ocspResponse))
         .isInstanceOf(GemPkiException.class)
         .hasMessageContaining(
             ErrorCode.SE_1059_CA_CERTIFICATE_NOT_QES_QUALIFIED.getErrorMessage(PRODUCT_TYPE));
@@ -768,17 +827,17 @@ class TucPki030VerifierTest {
         TucPki030Verifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceListBNetzAVl(tspServiceListBnetzAVl)
-            .ocspResponse(
-                TestUtils.generateOcspResponseWithTimeStamps(
-                    eeCert,
-                    VALID_ISSUER_CERT_QES_ALT_CA,
-                    OcspTestConstants.getOcspSignerQes(),
-                    null,
-                    thisUpdate,
-                    producedAt,
-                    nextUpdate,
-                    CertificateStatus.GOOD))
             .build();
+    final OCSPResp ocspResponse =
+        TestUtils.generateOcspResponseWithTimeStamps(
+            eeCert,
+            VALID_ISSUER_CERT_QES_ALT_CA,
+            OcspTestConstants.getOcspSignerQes(),
+            null,
+            thisUpdate,
+            producedAt,
+            nextUpdate,
+            CertificateStatus.GOOD);
 
     assertThat(qesCaTspServiceSubset.getServiceStatus()).isEqualTo(SVCSTATUS_WITHDRAWN);
     assertThat(certificateIssuanceDate).isBefore(qesCaTspServiceSubset.getStatusStartingTime());
@@ -786,7 +845,8 @@ class TucPki030VerifierTest {
 
     assertDoesNotThrow(
         () ->
-            verifierWithWithdrawnBNetzAVl.performTucPki030Checks(eeCert, validationReferenceDate));
+            verifierWithWithdrawnBNetzAVl.performTucPki030Checks(
+                eeCert, validationReferenceDate, ocspResponse));
   }
 
   /**
@@ -821,17 +881,17 @@ class TucPki030VerifierTest {
         TucPki030Verifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceListBNetzAVl(tspServiceListBnetzAVl)
-            .ocspResponse(
-                TestUtils.generateOcspResponseWithTimeStamps(
-                    eeCert,
-                    VALID_ISSUER_CERT_QES_ALT_CA,
-                    OcspTestConstants.getOcspSignerQes(),
-                    null,
-                    thisUpdate,
-                    producedAt,
-                    nextUpdate,
-                    CertificateStatus.GOOD))
             .build();
+    final OCSPResp ocspResponse =
+        TestUtils.generateOcspResponseWithTimeStamps(
+            eeCert,
+            VALID_ISSUER_CERT_QES_ALT_CA,
+            OcspTestConstants.getOcspSignerQes(),
+            null,
+            thisUpdate,
+            producedAt,
+            nextUpdate,
+            CertificateStatus.GOOD);
 
     assertThat(qesCaTspServiceSubset.getServiceStatus()).isEqualTo(SVCSTATUS_WITHDRAWN);
     assertThat(certificateIssuanceDate).isBefore(qesCaTspServiceSubset.getStatusStartingTime());
@@ -840,7 +900,7 @@ class TucPki030VerifierTest {
     assertThatThrownBy(
             () ->
                 verifierWithWithdrawnBNetzAVl.performTucPki030Checks(
-                    eeCert, validationReferenceDate))
+                    eeCert, validationReferenceDate, ocspResponse))
         .isInstanceOf(GemPkiException.class)
         .hasMessageContaining(
             ErrorCode.SE_1059_CA_CERTIFICATE_NOT_QES_QUALIFIED.getErrorMessage(PRODUCT_TYPE));
@@ -879,17 +939,17 @@ class TucPki030VerifierTest {
         TucPki030Verifier.builder()
             .productType(PRODUCT_TYPE)
             .tspServiceListBNetzAVl(tspServiceListBnetzAVl)
-            .ocspResponse(
-                TestUtils.generateOcspResponseWithTimeStamps(
-                    eeCert,
-                    VALID_ISSUER_CERT_QES_ALT_CA,
-                    OcspTestConstants.getOcspSignerQes(),
-                    null,
-                    thisUpdate,
-                    producedAt,
-                    nextUpdate,
-                    CertificateStatus.GOOD))
             .build();
+    final OCSPResp ocspResponse =
+        TestUtils.generateOcspResponseWithTimeStamps(
+            eeCert,
+            VALID_ISSUER_CERT_QES_ALT_CA,
+            OcspTestConstants.getOcspSignerQes(),
+            null,
+            thisUpdate,
+            producedAt,
+            nextUpdate,
+            CertificateStatus.GOOD);
 
     assertThat(qesCaTspServiceSubset.getServiceStatus()).isEqualTo(SVCSTATUS_WITHDRAWN);
     assertThat(certificateIssuanceDate).isAfter(qesCaTspServiceSubset.getStatusStartingTime());
@@ -898,7 +958,7 @@ class TucPki030VerifierTest {
     assertThatThrownBy(
             () ->
                 verifierWithWithdrawnBNetzAVl.performTucPki030Checks(
-                    eeCert, validationReferenceDate))
+                    eeCert, validationReferenceDate, ocspResponse))
         .isInstanceOf(GemPkiException.class)
         .hasMessageContaining(
             ErrorCode.SE_1021_CERTIFICATE_NOT_VALID_TIME.getErrorMessage(PRODUCT_TYPE));

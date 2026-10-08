@@ -31,9 +31,15 @@ import de.gematik.pki.gemlibpki.commons.tsl.TspInformationProvider;
 import de.gematik.pki.gemlibpki.commons.tsl.TspService;
 import de.gematik.pki.gemlibpki.commons.tsl.TspServiceSubset;
 import de.gematik.pki.gemlibpki.commons.utils.TestUtils;
+import de.gematik.pki.gemlibpki.commons.validators.IssuerServiceStatusValidator;
+import de.gematik.pki.gemlibpki.commons.validators.ShellModelValidator;
+import de.gematik.pki.gemlibpki.commons.validators.SignatureValidator;
+import de.gematik.pki.gemlibpki.commons.validators.ValidityValidator;
+import java.security.cert.X509Certificate;
 import java.time.ZonedDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 /**
  * Dieser Test arbeitet ausschließlich mit einem Zertifikatsprofil (SMCB). Andere Profile zu testen
@@ -63,5 +69,36 @@ class CertificateCommonVerificationTest {
             .build();
 
     assertDoesNotThrow(tested::verifyAll);
+  }
+
+  @Test
+  void verifyAll_whenValidatorsAreInjected_thenAllValidatorsAreInvoked() throws GemPkiException {
+    final X509Certificate x509EeCert = Mockito.mock(X509Certificate.class);
+    final TspServiceSubset tspServiceSubset = Mockito.mock(TspServiceSubset.class);
+    final ZonedDateTime referenceDate = ZonedDateTime.parse("2025-03-20T15:00:00Z");
+    final ValidityValidator validityValidator = Mockito.mock(ValidityValidator.class);
+    final SignatureValidator signatureValidator = Mockito.mock(SignatureValidator.class);
+    final IssuerServiceStatusValidator issuerServiceStatusValidator =
+        Mockito.mock(IssuerServiceStatusValidator.class);
+    final ShellModelValidator shellModelValidator = Mockito.mock(ShellModelValidator.class);
+
+    final CertificateCommonVerification tested =
+        CertificateCommonVerification.builder()
+            .productType(PRODUCT_TYPE)
+            .x509EeCert(x509EeCert)
+            .tspServiceSubset(tspServiceSubset)
+            .referenceDate(referenceDate)
+            .validityValidator(validityValidator)
+            .signatureValidator(signatureValidator)
+            .issuerServiceStatusValidator(issuerServiceStatusValidator)
+            .shellModelValidator(shellModelValidator)
+            .build();
+
+    tested.verifyAll();
+
+    Mockito.verify(validityValidator).validateCertificate(x509EeCert, referenceDate);
+    Mockito.verify(signatureValidator).validateCertificate(x509EeCert, referenceDate);
+    Mockito.verify(shellModelValidator).validateCertificate(x509EeCert, referenceDate);
+    Mockito.verify(issuerServiceStatusValidator).validateCertificate(x509EeCert, referenceDate);
   }
 }

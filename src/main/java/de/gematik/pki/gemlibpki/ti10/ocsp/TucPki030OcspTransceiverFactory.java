@@ -24,6 +24,7 @@ import de.gematik.pki.gemlibpki.commons.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.commons.ocsp.OcspSspSupport;
 import de.gematik.pki.gemlibpki.commons.ocsp.OcspTransceiver;
 import de.gematik.pki.gemlibpki.commons.ocsp.OcspTransceiverFactory;
+import de.gematik.pki.gemlibpki.commons.tsl.TslConstants;
 import de.gematik.pki.gemlibpki.commons.tsl.TspService;
 import eu.europa.esig.trustedlist.jaxb.tsl.AdditionalServiceInformationType;
 import eu.europa.esig.trustedlist.jaxb.tsl.ExtensionType;
@@ -96,8 +97,7 @@ public class TucPki030OcspTransceiverFactory implements OcspTransceiverFactory {
   }
 
   protected boolean isBNetzAVlService(final TspService tspService) {
-    return "http://uri.telematik/TrstSvc/Svctype/TrustedList/schemerules/DE"
-        .equals(tspService.getTspServiceType().getServiceInformation().getServiceTypeIdentifier());
+    return tspService.hasServiceTypeIdentifier(TslConstants.SERVICE_TYPE_IDENTIFIER_BNETZAVL);
   }
 
   protected java.util.stream.Stream<AdditionalServiceInformationType>

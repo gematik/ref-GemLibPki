@@ -52,7 +52,6 @@ public class TucPki030OcspValidator {
   @NonNull protected final List<TspService> tspServiceListBNetzAVl;
 
   private final boolean withOcspCheck;
-  private final OCSPResp ocspResponse;
   private final OcspRespCache ocspRespCache;
   private final int ocspTimeoutSeconds;
   private final OcspTransceiver ocspTransceiver;
@@ -71,7 +70,7 @@ public class TucPki030OcspValidator {
       @NonNull final X509Certificate x509IssuerCert,
       @NonNull final java.time.ZonedDateTime referenceDate)
       throws GemPkiException {
-    validateCertificate(x509EeCert, x509IssuerCert, referenceDate, null);
+    validateCertificate(x509EeCert, x509IssuerCert, referenceDate, null, null);
   }
 
   public void validateCertificate(
@@ -79,6 +78,16 @@ public class TucPki030OcspValidator {
       @NonNull final X509Certificate x509IssuerCert,
       @NonNull final java.time.ZonedDateTime referenceDate,
       final Extension nonce)
+      throws GemPkiException {
+    validateCertificate(x509EeCert, x509IssuerCert, referenceDate, nonce, null);
+  }
+
+  public void validateCertificate(
+      @NonNull final java.security.cert.X509Certificate x509EeCert,
+      @NonNull final X509Certificate x509IssuerCert,
+      @NonNull final java.time.ZonedDateTime referenceDate,
+      final Extension nonce,
+      final OCSPResp ocspResponse)
       throws GemPkiException {
     if (!withOcspCheck) {
       log.warn(ErrorCode.SW_1039_NO_OCSP_CHECK.getErrorMessage(productType));

@@ -123,7 +123,6 @@ class TucPki018OcspValidatorTest {
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .withOcspCheck(true)
-            .ocspResponse(ocspResponse)
             .ocspRespCache(cache)
             .ocspTimeToleranceProducedAtPastMilliseconds(OCSP_GRACE_PERIOD_10_SECONDS * 1000)
             .ocspTimeoutSeconds(DEFAULT_OCSP_TIMEOUT_SECONDS)
@@ -133,9 +132,12 @@ class TucPki018OcspValidatorTest {
     final ZonedDateTime referenceDate = ZonedDateTime.now(ZoneOffset.UTC);
 
     assertThrows(
-        NullPointerException.class, () -> tucPki018OcspValidator.validateCertificate(null, null));
+        NullPointerException.class,
+        () -> tucPki018OcspValidator.validateCertificate(null, null, null));
     assertDoesNotThrow(
-        () -> tucPki018OcspValidator.validateCertificate(VALID_X509_EE_CERT_SMCB, referenceDate));
+        () ->
+            tucPki018OcspValidator.validateCertificate(
+                VALID_X509_EE_CERT_SMCB, referenceDate, ocspResponse));
 
     // check that given OCSP response was not cached
     assertThat(cache.getSize()).isZero();
@@ -202,7 +204,6 @@ class TucPki018OcspValidatorTest {
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .withOcspCheck(true)
-            .ocspResponse(ocspResponse)
             .ocspRespCache(cache)
             .ocspTimeToleranceProducedAtPastMilliseconds(OCSP_GRACE_PERIOD_10_SECONDS * 1000)
             .ocspTimeoutSeconds(DEFAULT_OCSP_TIMEOUT_SECONDS)
@@ -213,7 +214,8 @@ class TucPki018OcspValidatorTest {
 
     assertThatThrownBy(
             () ->
-                tucPki018OcspValidator.validateCertificate(VALID_X509_EE_CERT_SMCB, referenceDate))
+                tucPki018OcspValidator.validateCertificate(
+                    VALID_X509_EE_CERT_SMCB, referenceDate, ocspResponse))
         .isInstanceOf(GemPkiException.class)
         .hasMessageContaining(
             ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
@@ -253,7 +255,6 @@ class TucPki018OcspValidatorTest {
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .withOcspCheck(true)
-            .ocspResponse(ocspResp)
             .ocspRespCache(ocspRespCache)
             .ocspTimeToleranceProducedAtPastMilliseconds(OCSP_GRACE_PERIOD_10_SECONDS * 1000)
             .ocspTimeoutSeconds(DEFAULT_OCSP_TIMEOUT_SECONDS)
@@ -262,13 +263,15 @@ class TucPki018OcspValidatorTest {
             .build();
 
     assertDoesNotThrow(
-        () -> tucPki018OcspValidator.validateCertificate(VALID_X509_EE_CERT_SMCB, referenceTime));
+        () ->
+            tucPki018OcspValidator.validateCertificate(
+                VALID_X509_EE_CERT_SMCB, referenceTime, ocspResp));
 
     // reference time is after the revocation time, so the certificate is revoked
     assertThatThrownBy(
             () ->
                 tucPki018OcspValidator.validateCertificate(
-                    VALID_X509_EE_CERT_SMCB, ZonedDateTime.now(ZoneOffset.UTC)))
+                    VALID_X509_EE_CERT_SMCB, ZonedDateTime.now(ZoneOffset.UTC), ocspResp))
         .isInstanceOf(GemPkiException.class)
         .hasMessageContaining(
             ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
@@ -298,7 +301,6 @@ class TucPki018OcspValidatorTest {
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .withOcspCheck(true)
-            .ocspResponse(ocspResp)
             .ocspRespCache(new OcspRespCache(30))
             .ocspTimeToleranceProducedAtPastMilliseconds(OCSP_GRACE_PERIOD_10_SECONDS * 1000)
             .ocspTimeoutSeconds(DEFAULT_OCSP_TIMEOUT_SECONDS)
@@ -307,7 +309,9 @@ class TucPki018OcspValidatorTest {
             .build();
 
     assertDoesNotThrow(
-        () -> tucPki018OcspValidator.validateCertificate(VALID_X509_EE_CERT_SMCB, referenceDate));
+        () ->
+            tucPki018OcspValidator.validateCertificate(
+                VALID_X509_EE_CERT_SMCB, referenceDate, ocspResp));
   }
 
   @Test
@@ -333,7 +337,6 @@ class TucPki018OcspValidatorTest {
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .withOcspCheck(true)
-            .ocspResponse(ocspResp)
             .ocspRespCache(new OcspRespCache(30))
             .ocspTimeToleranceProducedAtPastMilliseconds(OCSP_GRACE_PERIOD_10_SECONDS * 1000)
             .ocspTimeoutSeconds(DEFAULT_OCSP_TIMEOUT_SECONDS)
@@ -343,7 +346,8 @@ class TucPki018OcspValidatorTest {
 
     assertThatThrownBy(
             () ->
-                tucPki018OcspValidator.validateCertificate(VALID_X509_EE_CERT_SMCB, referenceDate))
+                tucPki018OcspValidator.validateCertificate(
+                    VALID_X509_EE_CERT_SMCB, referenceDate, ocspResp))
         .isInstanceOf(GemPkiException.class)
         .hasMessageContaining(
             ErrorCode.TE_1029_OCSP_CHECK_REVOCATION_ERROR.getErrorMessage(PRODUCT_TYPE));
@@ -370,7 +374,6 @@ class TucPki018OcspValidatorTest {
             .productType(PRODUCT_TYPE)
             .tspServiceList(tspServiceList)
             .withOcspCheck(true)
-            .ocspResponse(ocspResponse)
             .ocspTimeToleranceProducedAtPastMilliseconds(OCSP_GRACE_PERIOD_10_SECONDS * 1000)
             .ocspRespCache(cache)
             .ocspTimeoutSeconds(DEFAULT_OCSP_TIMEOUT_SECONDS)
@@ -380,7 +383,9 @@ class TucPki018OcspValidatorTest {
     final ZonedDateTime referenceDate = ZonedDateTime.now(ZoneOffset.UTC);
 
     assertDoesNotThrow(
-        () -> tucPki018OcspValidator.validateCertificate(VALID_X509_EE_CERT_SMCB, referenceDate));
+        () ->
+            tucPki018OcspValidator.validateCertificate(
+                VALID_X509_EE_CERT_SMCB, referenceDate, ocspResponse));
 
     // check that received OCSP response was cached
     assertThat(cache.getSize()).isEqualTo(1);
@@ -411,7 +416,6 @@ class TucPki018OcspValidatorTest {
             .productType(PRODUCT_TYPE)
             .tspServiceList(emptyTspServiceList)
             .withOcspCheck(true)
-            .ocspResponse(null)
             .ocspRespCache(cache)
             .ocspTimeToleranceProducedAtPastMilliseconds(OCSP_GRACE_PERIOD_10_SECONDS * 1000)
             .ocspTimeoutSeconds(DEFAULT_OCSP_TIMEOUT_SECONDS)
