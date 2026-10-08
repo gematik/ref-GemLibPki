@@ -20,6 +20,8 @@
 
 package de.gematik.pki.gemlibpki.commons.tsl;
 
+import de.gematik.pki.gemlibpki.commons.error.ErrorCode;
+import de.gematik.pki.gemlibpki.commons.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.commons.exception.GemPkiRuntimeException;
 import java.io.IOException;
 import java.security.KeyStore;
@@ -28,6 +30,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.List;
 import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -52,6 +55,53 @@ import xades4j.verification.XadesVerifier;
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class TslValidator {
+
+  /**
+   * Checks the signature of a given non-QES TSL (mathematically and against the issuing trust
+   * anchor from the provided trusted services).
+   *
+   * @param tslToVerify the tsl to check
+   * @param tslSigner the signer certificate from the signature
+   * @param trustedServices trusted services used to resolve the signer's issuer
+   * @param productType the product type for error reporting
+   * @param errorCode error to throw if the signature is invalid
+   * @throws GemPkiException if the issuer cannot be resolved or the signature is invalid
+   */
+  public static void verifyNonQesTslSignature(
+      final byte @NonNull [] tslToVerify,
+      @NonNull final X509Certificate tslSigner,
+      @NonNull final List<TspService> trustedServices,
+      @NonNull final String productType,
+      @NonNull final ErrorCode errorCode)
+      throws GemPkiException {
+    final X509Certificate trustAnchor =
+        new TspInformationProvider(trustedServices, productType)
+            .getIssuerTspServiceSubset(tslSigner)
+            .getX509IssuerCert();
+
+    if (!checkNonQesTslSignatureWithTrustAnchor(tslToVerify, trustAnchor)) {
+      throw new GemPkiException(productType, errorCode);
+    }
+  }
+
+  /**
+   * Checks the signature of a given QES TSL and throws the given error if the signature is invalid.
+   *
+   * @param tslToVerify the tsl to check
+   * @param productType the product type for error reporting
+   * @param errorCode error to throw if the signature is invalid
+   * @throws GemPkiException if the signature is invalid
+   */
+  public static void verifyQesTslSignature(
+      final byte @NonNull [] tslToVerify,
+      @NonNull final X509Certificate signerCertificate,
+      @NonNull final String productType,
+      @NonNull final ErrorCode errorCode)
+      throws GemPkiException {
+    if (!checkQesTslSignatureWithCertificate(tslToVerify, signerCertificate)) {
+      throw new GemPkiException(productType, errorCode);
+    }
+  }
 
   /**
    * Checks the signature of a given TSL (mathematically and against a given trust anchor).
@@ -165,6 +215,46 @@ public final class TslValidator {
    */
   public static boolean checkQesTslSignatureWithTslBasedTrust(final byte @NonNull [] tsl) {
     return checkQesTslSignatureWithTslBasedTrust(TslConverter.bytesToDoc(tsl));
+  }
+
+  /**
+   * Validates the signature of a given QES TSL (mathematically) against the provided signer
+   * certificate.
+   *
+   * @param tsl the tsl to check
+   * @param signerCertificate the signer certificate to use for verification
+   * @return true if the signature is valid, otherwise false
+   */
+  public static boolean checkQesTslSignatureWithCertificate(
+      final byte @NonNull [] tsl, @NonNull final X509Certificate signerCertificate) {
+    return checkQesTslSignatureWithCertificate(TslConverter.bytesToDoc(tsl), signerCertificate);
+  }
+
+  /**
+   * Validates the signature of a given QES TSL (mathematically) against the provided signer
+   * certificate.
+   *
+   * @param tsl the tsl to check
+   * @param signerCertificate the signer certificate to use for verification
+   * @return true if the signature is valid, otherwise false
+   */
+  public static boolean checkQesTslSignatureWithCertificate(
+      @NonNull final Document tsl, @NonNull final X509Certificate signerCertificate) {
+    try {
+      Init.init();
+
+      final Element signatureElement = TslUtils.getSignature(tsl);
+      if (signatureElement == null) {
+        return false;
+      }
+
+      registerIds(tsl);
+
+      final XMLSignature xmlSignature = new XMLSignature(signatureElement, "");
+      return xmlSignature.checkSignatureValue(signerCertificate);
+    } catch (final Exception e) {
+      return false;
+    }
   }
 
   private static void registerIds(final Document doc) {

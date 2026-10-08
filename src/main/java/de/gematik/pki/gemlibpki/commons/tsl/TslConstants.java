@@ -54,4 +54,6 @@ public final class TslConstants {
   public static final String TSL_DOWNLOAD_URL_OID_BACKUP = "1.2.276.0.76.4.121";
   public static final String TSL_ID_PREFIX = "ID";
   public static final String TSL_VERSION = "3";
+  public static final String SERVICE_TYPE_IDENTIFIER_BNETZAVL =
+      "http://uri.telematik/TrstSvc/Svctype/TrustedList/schemerules/DE";
 }

@@ -290,8 +290,10 @@ public class OcspResponseGenerator {
         switch (signer.getPrivateKey().getAlgorithm()) {
           case "RSA" -> "SHA256withRSA";
           case "EC" -> "SHA256WITHECDSA";
-          default -> throw new GemPkiRuntimeException(
-              "Signaturalgorithmus nicht unterstützt: " + signer.getPrivateKey().getAlgorithm());
+          default ->
+              throw new GemPkiRuntimeException(
+                  "Signaturalgorithmus nicht unterstützt: "
+                      + signer.getPrivateKey().getAlgorithm());
         };
 
     BasicOCSPResp basicOcspResp = null;

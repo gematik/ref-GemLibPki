@@ -24,28 +24,21 @@ import static de.gematik.pki.gemlibpki.commons.ocsp.OcspConstants.OCSP_TIME_TOLE
 import static de.gematik.pki.gemlibpki.commons.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_PAST_MILLISECONDS;
 import static de.gematik.pki.gemlibpki.commons.ocsp.OcspUtils.getBasicOcspResp;
 import static de.gematik.pki.gemlibpki.commons.ocsp.OcspUtils.getFirstSingleResp;
-import static de.gematik.pki.gemlibpki.commons.utils.CertReader.readX509;
 import static de.gematik.pki.gemlibpki.commons.utils.GemLibPkiUtils.calculateSha256;
 import static org.bouncycastle.internal.asn1.isismtt.ISISMTTObjectIdentifiers.id_isismtt_at_certHash;
 
 import de.gematik.pki.gemlibpki.commons.error.ErrorCode;
 import de.gematik.pki.gemlibpki.commons.exception.GemPkiException;
 import de.gematik.pki.gemlibpki.commons.exception.GemPkiRuntimeException;
-import de.gematik.pki.gemlibpki.commons.tsl.TslConstants;
 import de.gematik.pki.gemlibpki.commons.tsl.TspInformationProvider;
 import de.gematik.pki.gemlibpki.commons.tsl.TspService;
 import de.gematik.pki.gemlibpki.commons.tsl.TspServiceSubset;
 import de.gematik.pki.gemlibpki.commons.utils.GemLibPkiUtils;
-import eu.europa.esig.trustedlist.jaxb.tsl.DigitalIdentityType;
-import eu.europa.esig.trustedlist.jaxb.tsl.TSPServiceType;
 import java.security.MessageDigest;
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -64,7 +57,7 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder;
 
 /**
- * Entry point to access a verification of ocsp responses regarding standard process called
+ * Entry point to access verification of ocsp responses regarding a standard process called
  * TucPki006. This class works with parameterized variables (defined by builder pattern) and with
  * given variables provided during runtime (method parameters).
  */
@@ -89,7 +82,7 @@ public class TucPki006OcspVerifier {
       OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_FUTURE_MILLISECONDS;
 
   /**
-   * Performs TUC_PKI_006 checks (OCSP verification) against current date time.
+   * Performs TUC_PKI_006 checks (OCSP verification) against the current date time.
    *
    * @throws GemPkiException thrown in case of failed verification against gemSpec_PKI TUC_PKI_006
    */
@@ -98,7 +91,7 @@ public class TucPki006OcspVerifier {
   }
 
   /**
-   * Performs TUC_PKI_006 checks (OCSP verification) against given date time as reference date
+   * Performs TUC_PKI_006 checks (OCSP verification) against the given date time as reference date
    *
    * @param referenceDate reference date to check against if the certificate is revoked, as well
    *     thisUpdate, producedAt, nextUpdate
@@ -150,66 +143,14 @@ public class TucPki006OcspVerifier {
     }
   }
 
-  private X509Certificate getFirstCertificate(final TSPServiceType tspServiceType) {
-    return readX509(
-        tspServiceType
-            .getServiceInformation()
-            .getServiceDigitalIdentity()
-            .getDigitalId()
-            .getFirst()
-            .getX509Certificate());
-  }
-
-  private boolean isServiceTypeIdentifierOcsp(final TSPServiceType tspServiceType) {
-
-    final String targetServiceTypeIdentifier =
-        tspServiceType.getServiceInformation().getServiceTypeIdentifier();
-
-    return targetServiceTypeIdentifier.equals(TslConstants.STI_OCSP);
-  }
-
-  private boolean isSameCertificate(
-      final TSPServiceType tspServiceType, final byte[] derX509EeCert) {
-
-    final List<DigitalIdentityType> digitalIdentityTypes =
-        tspServiceType.getServiceInformation().getServiceDigitalIdentity().getDigitalId();
-
-    final Optional<DigitalIdentityType> matchedDigitalIdentityType =
-        digitalIdentityTypes.stream()
-            .filter(
-                digitalIdentityType -> {
-                  final byte[] derX509EeCert2 =
-                      GemLibPkiUtils.calculateSha256(digitalIdentityType.getX509Certificate());
-                  return Arrays.equals(derX509EeCert, derX509EeCert2);
-                })
-            .findAny();
-
-    return matchedDigitalIdentityType.isPresent();
-  }
-
   private X509Certificate getOcspSignerFromTsl(final X509Certificate x509EeCert)
       throws GemPkiException {
-
-    final byte[] derX509EeCert;
-    try {
-      derX509EeCert = GemLibPkiUtils.calculateSha256(x509EeCert.getEncoded());
-    } catch (final CertificateEncodingException e) {
-      throw new GemPkiRuntimeException("Fehler beim Lesen des OCSP Signers aus der Response.", e);
-    }
-
-    final Optional<TspService> matchedTspService =
-        tspServiceList.stream()
-            .filter(
-                tspService ->
-                    isServiceTypeIdentifierOcsp(tspService.getTspServiceType())
-                        && isSameCertificate(tspService.getTspServiceType(), derX509EeCert))
-            .findAny();
-
-    return getFirstCertificate(
-        matchedTspService
-            .orElseThrow(
-                () -> new GemPkiException(productType, ErrorCode.SE_1030_OCSP_CERT_MISSING))
-            .getTspServiceType());
+    return tspServiceList.stream()
+        .filter(
+            tspService -> tspService.isOcspService() && tspService.containsCertificate(x509EeCert))
+        .findAny()
+        .orElseThrow(() -> new GemPkiException(productType, ErrorCode.SE_1030_OCSP_CERT_MISSING))
+        .getFirstX509Certificate();
   }
 
   private X509Certificate getSignerFromOcspResponse() throws GemPkiException {
@@ -293,7 +234,6 @@ public class TucPki006OcspVerifier {
         productType,
         ocspResponse,
         referenceDate,
-        GemLibPkiUtils.now(),
         eeCert,
         getEeCertIssuerCert(),
         ocspTimeToleranceProducedAtPastMilliseconds,

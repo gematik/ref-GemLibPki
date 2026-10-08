@@ -31,7 +31,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import de.gematik.pki.gemlibpki.commons.utils.ResourceReader;
 import de.gematik.pki.gemlibpki.commons.utils.TestUtils;
+import java.security.cert.X509Certificate;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.w3c.dom.Document;
 
 class TslValidatorTest {
@@ -122,6 +124,44 @@ class TslValidatorTest {
     assertThat(TslValidator.checkQesTslSignatureWithTslBasedTrust(tslQes)).isFalse();
   }
 
+  @Test
+  void checkQesTslSignatureWithCertificate_whenQesTslIsValid_thenReturnsTrue() {
+    final byte[] tslQes =
+        TslConverter.docToBytes(
+            TslReader.getTslAsDoc(
+                ResourceReader.getFilePathFromResources(
+                    FILE_NAME_TSL_DEFAULT_QES, TestUtils.class)));
+    final X509Certificate signerCertificate =
+        TslUtils.getFirstTslSignerCertificate(TestUtils.getDefaultTslUnsignedQes());
+
+    assertThat(TslValidator.checkQesTslSignatureWithCertificate(tslQes, signerCertificate))
+        .isTrue();
+  }
+
+  @Test
+  void checkQesTslSignatureWithCertificate_whenSignatureValueIsInvalid_thenReturnsFalse() {
+    final byte[] tslQes =
+        TslConverter.docToBytes(
+            TslReader.getTslAsDoc(
+                ResourceReader.getFilePathFromResources(
+                    FILE_NAME_TSL_QES_SIGNATURE_BROKEN, TestUtils.class)));
+    final X509Certificate signerCertificate =
+        TslUtils.getFirstTslSignerCertificate(TestUtils.getDefaultTslUnsignedQes());
+
+    assertThat(TslValidator.checkQesTslSignatureWithCertificate(tslQes, signerCertificate))
+        .isFalse();
+  }
+
+  @Test
+  void checkQesTslSignatureWithCertificate_whenDocumentAccessThrows_thenReturnsFalse() {
+    final Document tsl = Mockito.mock(Document.class);
+    final X509Certificate signerCertificate = Mockito.mock(X509Certificate.class);
+    Mockito.when(tsl.getElementsByTagNameNS(Mockito.anyString(), Mockito.eq("Signature")))
+        .thenThrow(new RuntimeException("boom"));
+
+    assertThat(TslValidator.checkQesTslSignatureWithCertificate(tsl, signerCertificate)).isFalse();
+  }
+
   /**
    * fileTsleccDefault_signatureBroken is a copy of FILE_NAME_TSL_ECC_DEFAULT with modified
    * <ds:SignatureValue> element
@@ -137,5 +177,14 @@ class TslValidatorTest {
     assertThat(
             TslValidator.checkNonQesTslSignatureWithTrustAnchor(tslEcc, VALID_ISSUER_CERT_TSL_CA51))
         .isFalse();
+  }
+
+  @Test
+  void checkQesTslSignatureWithTslBasedTrust_whenDocumentAccessThrows_thenReturnsFalse() {
+    final Document tsl = Mockito.mock(Document.class);
+    Mockito.when(tsl.getElementsByTagNameNS(Mockito.anyString(), Mockito.eq("Signature")))
+        .thenThrow(new RuntimeException("boom"));
+
+    assertThat(TslValidator.checkQesTslSignatureWithTslBasedTrust(tsl)).isFalse();
   }
 }

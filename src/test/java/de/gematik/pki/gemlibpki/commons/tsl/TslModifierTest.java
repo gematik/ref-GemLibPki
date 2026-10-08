@@ -500,13 +500,13 @@ class TslModifierTest {
         "<note><to>email1</to><from>email2</from><heading>Reminder</heading><body>Gematik!</body></note>";
     final String xmlPrettyPrintExpected =
         """
-            <note>
-                <to>email1</to>
-                <from>email2</from>
-                <heading>Reminder</heading>
-                <body>Gematik!</body>
-            </note>
-            """;
+        <note>
+            <to>email1</to>
+            <from>email2</from>
+            <heading>Reminder</heading>
+            <body>Gematik!</body>
+        </note>
+        """;
     assertThat(xmlOneLine).isNotEqualTo(xmlPrettyPrintExpected);
 
     final Document xmlDoc = TslConverter.bytesToDoc(xmlOneLine.getBytes(StandardCharsets.UTF_8));

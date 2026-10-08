@@ -9,13 +9,12 @@ In this guide, you will get an overview of how you can contribute to our project
 issue,
 creating, reviewing and merging a pull request.
 
-Use the table of contents icon in the top left corner of this document to get to a specific section
-of this guide quickly.
+Use the table of contents icon in the top-left corner of this document to quickly navigate to a
+specific section of this guide.
 
 ## Reporting a security vulnerability
 
-Please do not report vulnerabilities and security incidents as GitHub issues. Please report them
-using the contact form at https://fachportal.gematik.de/kontaktformular.
+Please check [SECURITY.md](./SECURITY.md) for information on how to report a security vulnerability.
 
 ## New contributor guide
 
@@ -54,6 +53,13 @@ Commit the changes once you are happy with them.
 ### Pull Request Process
 
 - When you're finished with the changes, create a pull request, also known as a PR.
+- To open a PR
+  please [fork the repository](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork).
+  When you are making changes, it is recommended that you create
+  a [new branch](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-and-deleting-branches-within-your-repository)
+  for this purpose, based off of the main/master branch. After your changes are pushed back to your
+  forked
+  repository, you can then create a pull request from there.
 - Fill the pull request template so that we can review your PR. This template helps reviewers to
   understand your changes as well as the purpose of your pull request.
 - Don't forget

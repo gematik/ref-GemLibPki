@@ -65,7 +65,6 @@ public class TucPki018Verifier {
   @NonNull protected final List<TspService> tspServiceList;
   @NonNull protected final List<CertificateProfile> certificateProfiles;
   @Builder.Default protected final boolean withOcspCheck = true;
-  protected final OCSPResp ocspResponse;
   protected final OcspRespCache ocspRespCache;
 
   @Builder.Default
@@ -98,7 +97,14 @@ public class TucPki018Verifier {
   public Admission performTucPki018Checks(@NonNull final X509Certificate x509EeCert)
       throws GemPkiException {
     final ZonedDateTime referenceDate = ZonedDateTime.now(ZoneOffset.UTC);
-    return performTucPki018Checks(x509EeCert, referenceDate);
+    return performTucPki018Checks(x509EeCert, referenceDate, null);
+  }
+
+  public Admission performTucPki018Checks(
+      @NonNull final X509Certificate x509EeCert, final OCSPResp ocspResponse)
+      throws GemPkiException {
+    final ZonedDateTime referenceDate = ZonedDateTime.now(ZoneOffset.UTC);
+    return performTucPki018Checks(x509EeCert, referenceDate, ocspResponse);
   }
 
   /**
@@ -114,13 +120,21 @@ public class TucPki018Verifier {
   public Admission performTucPki018Checks(
       @NonNull final X509Certificate x509EeCert, @NonNull final ZonedDateTime referenceDate)
       throws GemPkiException {
+    return performTucPki018Checks(x509EeCert, referenceDate, null);
+  }
+
+  public Admission performTucPki018Checks(
+      @NonNull final X509Certificate x509EeCert,
+      @NonNull final ZonedDateTime referenceDate,
+      final OCSPResp ocspResponse)
+      throws GemPkiException {
     log.debug("TUC_PKI_018 Checks...");
     final TspServiceSubset tspServiceSubset =
         new TspInformationProvider(tspServiceList, productType)
             .getIssuerTspServiceSubset(x509EeCert);
 
     commonChecks(x509EeCert, tspServiceSubset, referenceDate);
-    doOcspIfConfigured(x509EeCert, referenceDate);
+    doOcspIfConfigured(x509EeCert, referenceDate, ocspResponse);
     return tucPki018ProfileChecks(x509EeCert, tspServiceSubset);
   }
 
@@ -135,7 +149,6 @@ public class TucPki018Verifier {
             .productType(productType)
             .tspServiceList(tspServiceList)
             .withOcspCheck(withOcspCheck)
-            .ocspResponse(ocspResponse)
             .ocspRespCache(ocspRespCache)
             .ocspTimeoutSeconds(ocspTimeoutSeconds)
             .ocspTransceiver(ocspTransceiver)
@@ -169,7 +182,9 @@ public class TucPki018Verifier {
    * @throws GemPkiException thrown if OCSP status is not "good" for the certificate
    */
   protected void doOcspIfConfigured(
-      @NonNull final X509Certificate x509EeCert, @NonNull final ZonedDateTime referenceDate)
+      @NonNull final X509Certificate x509EeCert,
+      @NonNull final ZonedDateTime referenceDate,
+      final OCSPResp ocspResponse)
       throws GemPkiException {
     if (!withOcspCheck) {
       log.warn(ErrorCode.SW_1039_NO_OCSP_CHECK.getErrorMessage(productType));
@@ -178,7 +193,7 @@ public class TucPki018Verifier {
     initializeTransceiver(x509EeCert);
     initializeValidator();
 
-    tucPki018OcspValidator.validateCertificate(x509EeCert, referenceDate);
+    tucPki018OcspValidator.validateCertificate(x509EeCert, referenceDate, ocspResponse);
   }
 
   /**
@@ -242,7 +257,7 @@ public class TucPki018Verifier {
   }
 
   /**
-   * Common checks for date/mathematical validity and certificate chain
+   * Common checks for date validity, shell model, mathematical validity and certificate chain
    *
    * @param x509EeCert end-entity certificate to check
    * @param tspServiceSubset the issuing certificates as trust store

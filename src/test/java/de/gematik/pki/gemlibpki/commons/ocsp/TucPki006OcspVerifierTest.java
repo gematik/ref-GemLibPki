@@ -405,10 +405,10 @@ class TucPki006OcspVerifierTest {
     log.info(
         """
 
-            requestAlgorithmIdentifier: {} {}
-            responseAlgoBehavior: {}
-            responseWithNullParameterHashAlgoOfCertId: {}
-            """,
+        requestAlgorithmIdentifier: {} {}
+        responseAlgoBehavior: {}
+        responseWithNullParameterHashAlgoOfCertId: {}
+        """,
         requestAlgorithmIdentifier.getAlgorithm().getId(),
         requestAlgorithmIdentifier.getParameters(),
         responseAlgoBehavior,

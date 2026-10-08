@@ -22,14 +22,11 @@ package de.gematik.pki.gemlibpki.commons.tsl;
 
 import static de.gematik.pki.gemlibpki.commons.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_FUTURE_MILLISECONDS;
 import static de.gematik.pki.gemlibpki.commons.ocsp.OcspConstants.OCSP_TIME_TOLERANCE_PRODUCEDAT_DEFAULT_PAST_MILLISECONDS;
-import static de.gematik.pki.gemlibpki.commons.utils.ResourceReader.getUrlFromResources;
-import static javax.xml.XMLConstants.W3C_XML_SCHEMA_NS_URI;
 
 import de.gematik.pki.gemlibpki.commons.certificate.CertificateProfile;
 import de.gematik.pki.gemlibpki.commons.certificate.TucPki018Verifier;
 import de.gematik.pki.gemlibpki.commons.error.ErrorCode;
 import de.gematik.pki.gemlibpki.commons.exception.GemPkiException;
-import de.gematik.pki.gemlibpki.commons.exception.GemPkiRuntimeException;
 import de.gematik.pki.gemlibpki.commons.ocsp.OcspConstants;
 import de.gematik.pki.gemlibpki.commons.ocsp.OcspRespCache;
 import de.gematik.pki.gemlibpki.commons.ocsp.OcspTransceiverFactory;
@@ -38,18 +35,13 @@ import de.gematik.pki.gemlibpki.commons.utils.GemLibPkiUtils;
 import de.gematik.pki.gemlibpki.commons.validators.ValidityValidator;
 import eu.europa.esig.trustedlist.jaxb.tsl.TSPServiceType;
 import eu.europa.esig.trustedlist.jaxb.tsl.TrustStatusListType;
-import java.io.IOException;
 import java.math.BigInteger;
-import java.net.URL;
 import java.security.cert.X509Certificate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 import javax.xml.datatype.XMLGregorianCalendar;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.validation.Schema;
-import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -58,11 +50,9 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
 
 /**
- * Entry point to access a verification of TSLs regarding standard process called TucPki001. This
+ * Entry point to access verification of TSLs regarding a standard process called TucPki001. This
  * class works with parameterized variables (defined by builder pattern) and with given variables
  * provided by runtime (method parameters).
  *
@@ -105,6 +95,11 @@ public class TucPki001Verifier {
   @Builder.Default private OcspTransceiverFactory ocspTransceiverFactory = null;
 
   @Builder.Default private TucPki018Verifier tucPki018Verifier = null;
+  private static final String[] TSL_SCHEMA_SCHEMES = {
+    "schemas/ts_102231v030102_xsd.xsd",
+    "schemas/ts_102231v030102_additionaltypes_xsd.xsd",
+    "schemas/ts_102231v030102_sie_xsd.xsd"
+  };
 
   /**
    * Performs TSL validity verification: This method is implemented static, as it ist not part of
@@ -144,7 +139,7 @@ public class TucPki001Verifier {
    * Performs TUC_PKI_001 checks (TSL verification)
    *
    * @return {@link TrustAnchorUpdate} instance
-   * @throws GemPkiException thrown when TSL is not conform to gemSpec_PKI
+   * @throws GemPkiException thrown when TSL is not conformed to gemSpec_PKI
    */
   public Optional<TrustAnchorUpdate> performTucPki001Checks() throws GemPkiException {
     log.debug("TUC_PKI_001 Checks...");
@@ -162,7 +157,12 @@ public class TucPki001Verifier {
     certVerifier.performTucPki018Checks(tslSigner);
 
     // TUC_PKI_012 XML-Signatur-Prüfung
-    checkTslSignature(tslSigner);
+    TslValidator.verifyNonQesTslSignature(
+        tslToCheck,
+        tslSigner,
+        currentTrustedServices,
+        productType,
+        ErrorCode.SE_1013_XML_SIGNATURE_ERROR);
 
     // TUC_PKI_019 steps 5 and 6
     checkTslIdAndTslSeqNr();
@@ -172,47 +172,24 @@ public class TucPki001Verifier {
   }
 
   protected void validateWellFormedXml() throws GemPkiException {
-    try {
-      TslConverter.bytesToDoc(tslToCheck);
-    } catch (final GemPkiRuntimeException e) {
-      if (e.getCause() instanceof SAXException) {
-        throw new GemPkiException(productType, ErrorCode.TE_1011_TSL_NOT_WELLFORMED);
-      }
-      throw e;
-    }
+    TslSchemaValidator.validateWellFormedXml(
+        tslToCheck, productType, ErrorCode.TE_1011_TSL_NOT_WELLFORMED);
   }
 
   protected void validateAgainstXsdSchemas() throws GemPkiException {
-    validateXsd();
-    validateAdditionalTypes();
-    validateSie();
+    for (final String scheme : TSL_SCHEMA_SCHEMES) {
+      validateAgainstXsd(scheme);
+    }
     log.info("Schema validation successful!");
   }
 
   Validator getValidator(final String scheme) {
-    final SchemaFactory sf = SchemaFactory.newInstance(W3C_XML_SCHEMA_NS_URI); // NOSONAR
-    final URL schemaUrl = getUrlFromResources(scheme, TucPki001Verifier.class);
-    final Schema compiledSchema;
-    try {
-      compiledSchema = sf.newSchema(schemaUrl);
-    } catch (final SAXException e) {
-      throw new GemPkiRuntimeException("Error during parsing of schema file.", e);
-    }
-
-    return compiledSchema.newValidator();
+    return TslSchemaValidator.getValidator(scheme, TucPki001Verifier.class);
   }
 
   void validateAgainstXsd(final String scheme) throws GemPkiException {
-
-    final Validator validator = getValidator(scheme);
-    final Document tslToCheckDoc = TslConverter.bytesToDoc(tslToCheck);
-    try {
-      validator.validate(new DOMSource(tslToCheckDoc));
-    } catch (final SAXException e) {
-      throw new GemPkiException(productType, ErrorCode.TE_1012_TSL_SCHEMA_NOT_VALID, e);
-    } catch (final IOException e) {
-      throw new GemPkiRuntimeException("Error reading schema file.", e);
-    }
+    TslSchemaValidator.validateAgainstXsd(
+        getValidator(scheme), tslToCheck, productType, ErrorCode.TE_1012_TSL_SCHEMA_NOT_VALID);
   }
 
   private TucPki018Verifier getOrCreateCertVerifier() {
@@ -234,18 +211,6 @@ public class TucPki001Verifier {
         .tolerateOcspFailure(tolerateOcspFailure)
         .ocspTransceiverFactory(ocspTransceiverFactory)
         .build();
-  }
-
-  private void validateAdditionalTypes() throws GemPkiException {
-    validateAgainstXsd("schemas/ts_102231v030102_additionaltypes_xsd.xsd");
-  }
-
-  private void validateXsd() throws GemPkiException {
-    validateAgainstXsd("schemas/ts_102231v030102_xsd.xsd");
-  }
-
-  private void validateSie() throws GemPkiException {
-    validateAgainstXsd("schemas/ts_102231v030102_sie_xsd.xsd");
   }
 
   /** Class to keep information about announced trust anchor. */
@@ -363,21 +328,6 @@ public class TucPki001Verifier {
       return TslUtils.getFirstTslSignerCertificate(TslConverter.bytesToTslUnsigned(tslToCheck));
     } catch (final RuntimeException e) {
       throw new GemPkiException(productType, ErrorCode.TE_1002_TSL_CERT_EXTRACTION_ERROR);
-    }
-  }
-
-  // checks Tsl signature according to TUC_PKI_012
-  private void checkTslSignature(final X509Certificate tslSigner) throws GemPkiException {
-
-    final Document tslToCheckDoc = TslConverter.bytesToDoc(tslToCheck);
-
-    final X509Certificate trustAnchor =
-        new TspInformationProvider(currentTrustedServices, productType)
-            .getIssuerTspServiceSubset(tslSigner)
-            .getX509IssuerCert();
-
-    if (!TslValidator.checkNonQesTslSignatureWithTrustAnchor(tslToCheckDoc, trustAnchor)) {
-      throw new GemPkiException(productType, ErrorCode.SE_1013_XML_SIGNATURE_ERROR);
     }
   }
 

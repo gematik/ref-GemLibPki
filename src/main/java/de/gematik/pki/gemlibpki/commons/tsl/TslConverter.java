@@ -158,13 +158,15 @@ public final class TslConverter {
 
       final Transformer transformer;
       switch (docToBytesOption) {
-        case NO_LINE_BREAKS, RESET -> transformer =
-            transformerFactory.newTransformer(
-                new StreamSource(new StringReader(XSLT_NO_LINE_BREAKS)));
+        case NO_LINE_BREAKS, RESET ->
+            transformer =
+                transformerFactory.newTransformer(
+                    new StreamSource(new StringReader(XSLT_NO_LINE_BREAKS)));
 
-        case PRETTY_PRINT -> transformer =
-            transformerFactory.newTransformer(
-                new StreamSource(new StringReader(XSLT_PRETTY_PRINT)));
+        case PRETTY_PRINT ->
+            transformer =
+                transformerFactory.newTransformer(
+                    new StreamSource(new StringReader(XSLT_PRETTY_PRINT)));
 
         default -> transformer = transformerFactory.newTransformer();
       }

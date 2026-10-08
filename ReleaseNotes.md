@@ -1,6 +1,15 @@
-<img align="right" width="250" height="47" src="doc/images/Gematik_Logo_Flag_With_Background.png"/> <br/>
-
 # Release notes GemLibPki
+
+## Release 5.0.3
+
+- ready for Java 25
+- update dependencies
+- implement certificate validity checks for "Schalenmodell" in TUC_PKI_018
+- fix flag failOnMissingEku in certificate profiles
+- API break:
+    - remove builder parameter `ocspResponse` from `TucPki018Verifier` and `TucPki030Verifier`
+    - move optional provided `OCSPResp` to the `performTucPki018Checks(...)` /
+      `performTucPki030Checks(...)` method parameters
 
 ## Release 5.0.2
 

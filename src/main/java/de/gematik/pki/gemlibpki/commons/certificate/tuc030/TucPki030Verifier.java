@@ -74,7 +74,6 @@ public class TucPki030Verifier {
   @NonNull protected final List<TspService> tspServiceListBNetzAVl;
   @Builder.Default @NonNull protected final List<TspService> tspServiceListTsl = List.of();
   @Builder.Default protected final boolean withOcspCheck = true;
-  protected final OCSPResp ocspResponse;
 
   @Builder.Default
   protected final int ocspTimeoutSeconds = OcspConstants.DEFAULT_OCSP_TIMEOUT_SECONDS;
@@ -97,25 +96,56 @@ public class TucPki030Verifier {
   public Admission performTucPki030Checks(@NonNull final X509Certificate x509EeCert)
       throws GemPkiException {
     final ZonedDateTime referenceDate = ZonedDateTime.now(ZoneOffset.UTC);
-    return performTucPki030Checks(x509EeCert, referenceDate, null);
+    return performTucPki030Checks(x509EeCert, referenceDate, null, null);
   }
 
   public Admission performTucPki030Checks(
       @NonNull final X509Certificate x509EeCert, final Extension nonce) throws GemPkiException {
     final ZonedDateTime referenceDate = ZonedDateTime.now(ZoneOffset.UTC);
-    return performTucPki030Checks(x509EeCert, referenceDate, nonce);
+    return performTucPki030Checks(x509EeCert, referenceDate, nonce, null);
+  }
+
+  public Admission performTucPki030Checks(
+      @NonNull final X509Certificate x509EeCert, final OCSPResp ocspResponse)
+      throws GemPkiException {
+    final ZonedDateTime referenceDate = ZonedDateTime.now(ZoneOffset.UTC);
+    return performTucPki030Checks(x509EeCert, referenceDate, null, ocspResponse);
+  }
+
+  public Admission performTucPki030Checks(
+      @NonNull final X509Certificate x509EeCert, final Extension nonce, final OCSPResp ocspResponse)
+      throws GemPkiException {
+    final ZonedDateTime referenceDate = ZonedDateTime.now(ZoneOffset.UTC);
+    return performTucPki030Checks(x509EeCert, referenceDate, nonce, ocspResponse);
   }
 
   public Admission performTucPki030Checks(
       @NonNull final X509Certificate x509EeCert, @NonNull final ZonedDateTime referenceDate)
       throws GemPkiException {
-    return performTucPki030Checks(x509EeCert, referenceDate, null);
+    return performTucPki030Checks(x509EeCert, referenceDate, null, null);
+  }
+
+  public Admission performTucPki030Checks(
+      @NonNull final X509Certificate x509EeCert,
+      @NonNull final ZonedDateTime referenceDate,
+      final OCSPResp ocspResponse)
+      throws GemPkiException {
+    return performTucPki030Checks(x509EeCert, referenceDate, null, ocspResponse);
   }
 
   public Admission performTucPki030Checks(
       @NonNull final X509Certificate x509EeCert,
       @NonNull final ZonedDateTime referenceDate,
       final Extension nonce)
+      throws GemPkiException {
+    return performTucPki030Checks(x509EeCert, referenceDate, nonce, null);
+  }
+
+  public Admission performTucPki030Checks(
+      @NonNull final X509Certificate x509EeCert,
+      @NonNull final ZonedDateTime referenceDate,
+      final Extension nonce,
+      final OCSPResp ocspResponse)
       throws GemPkiException {
     log.debug("TUC_PKI_030 Checks...");
     final ZonedDateTime chainReferenceDate = getChainReferenceDate(x509EeCert);
@@ -140,7 +170,7 @@ public class TucPki030Verifier {
     new SignatureValidator(productType, qesCaTspServiceSubset.getX509IssuerCert())
         .validateCertificate(x509EeCert, chainReferenceDate);
 
-    final Extension ocspNonce = resolveOcspNonce(nonce);
+    final Extension ocspNonce = resolveOcspNonce(nonce, ocspResponse);
 
     // 7. - 12. OCSP
     // 7. Bestimmung OCSP-URL (AIA + ggf. TSL Override)
@@ -152,7 +182,11 @@ public class TucPki030Verifier {
     // 11. Auswertung OCSP-Response (Status, CertID, Zeitwerte, NONCE)
     // 12. Prüfung certStatus == "good" (zum Referenzzeitpunkt)
     doOcspIfConfigured(
-        x509EeCert, qesCaTspServiceSubset.getX509IssuerCert(), referenceDate, ocspNonce);
+        x509EeCert,
+        qesCaTspServiceSubset.getX509IssuerCert(),
+        referenceDate,
+        ocspNonce,
+        ocspResponse);
 
     // 13. TUC_PKI_009 "Rollenermittlung"
     // 14. OK (Rollen-OID(s) zurückgeben)
@@ -170,7 +204,6 @@ public class TucPki030Verifier {
             .productType(productType)
             .tspServiceListBNetzAVl(tspServiceListBNetzAVl)
             .withOcspCheck(withOcspCheck)
-            .ocspResponse(ocspResponse)
             .ocspTimeoutSeconds(ocspTimeoutSeconds)
             .ocspTransceiver(ocspTransceiver)
             .tolerateOcspFailure(tolerateOcspFailure)
@@ -206,17 +239,19 @@ public class TucPki030Verifier {
       @NonNull final X509Certificate x509EeCert,
       @NonNull final X509Certificate x509IssuerCert,
       @NonNull final ZonedDateTime referenceDate,
-      final Extension nonce)
+      final Extension nonce,
+      final OCSPResp ocspResponse)
       throws GemPkiException {
 
     // TODO: Warnmeldung, dass keine Online-Statusprüfung durchgeführt wurde (NO_OCSP_CHECK).
     initializeTransceiver(x509EeCert, x509IssuerCert);
     initializeValidator();
 
-    tucPki030OcspValidator.validateCertificate(x509EeCert, x509IssuerCert, referenceDate, nonce);
+    tucPki030OcspValidator.validateCertificate(
+        x509EeCert, x509IssuerCert, referenceDate, nonce, ocspResponse);
   }
 
-  protected Extension resolveOcspNonce(final Extension nonce) {
+  protected Extension resolveOcspNonce(final Extension nonce, final OCSPResp ocspResponse) {
     if (nonce != null) {
       return nonce;
     }
