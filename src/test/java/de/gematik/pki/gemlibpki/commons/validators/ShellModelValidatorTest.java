@@ -73,7 +73,7 @@ class ShellModelValidatorTest {
   }
 
   @Test
-  void validateCertificate_whenEeCertValidityIsWithinIssuerValidity_thenDoesNotThrow() {
+  void validateCertificate_whenEeCertAndIssuerAreValidAtReferenceDate_thenDoesNotThrow() {
     final X509Certificate x509EeCert =
         mockCertificate(ISSUER_NOT_BEFORE.plusDays(1), ISSUER_NOT_AFTER.minusDays(1));
 
@@ -81,9 +81,27 @@ class ShellModelValidatorTest {
   }
 
   @Test
-  void validateCertificate_whenEeCertStartsBeforeIssuer_thenThrowsGemPkiException() {
+  void
+      validateCertificate_whenEeCertStartsBeforeIssuerButIsValidAtReferenceDate_thenDoesNotThrow() {
     final X509Certificate x509EeCert =
         mockCertificate(ISSUER_NOT_BEFORE.minusSeconds(1), ISSUER_NOT_AFTER.minusDays(1));
+
+    assertDoesNotThrow(() -> shellModelValidator.validateCertificate(x509EeCert, REFERENCE_DATE));
+  }
+
+  @Test
+  void
+      validateCertificate_whenEeCertEndsAfterIssuerButBothAreValidAtReferenceDate_thenDoesNotThrow() {
+    final X509Certificate x509EeCert =
+        mockCertificate(ISSUER_NOT_BEFORE.plusDays(1), ISSUER_NOT_AFTER.plusSeconds(1));
+
+    assertDoesNotThrow(() -> shellModelValidator.validateCertificate(x509EeCert, REFERENCE_DATE));
+  }
+
+  @Test
+  void validateCertificate_whenEeCertIsNotValidAtReferenceDate_thenThrowsGemPkiException() {
+    final X509Certificate x509EeCert =
+        mockCertificate(REFERENCE_DATE.plusSeconds(1), ISSUER_NOT_AFTER.minusDays(1));
 
     assertThatThrownBy(() -> shellModelValidator.validateCertificate(x509EeCert, REFERENCE_DATE))
         .isInstanceOf(GemPkiException.class)
@@ -91,9 +109,12 @@ class ShellModelValidatorTest {
   }
 
   @Test
-  void validateCertificate_whenEeCertEndsAfterIssuer_thenThrowsGemPkiException() {
+  void validateCertificate_whenIssuerIsNotValidAtReferenceDate_thenThrowsGemPkiException() {
+    shellModelValidator =
+        new ShellModelValidator(
+            PRODUCT_TYPE, mockCertificate(ISSUER_NOT_BEFORE, REFERENCE_DATE.minusSeconds(1)));
     final X509Certificate x509EeCert =
-        mockCertificate(ISSUER_NOT_BEFORE.plusDays(1), ISSUER_NOT_AFTER.plusSeconds(1));
+        mockCertificate(ISSUER_NOT_BEFORE.plusDays(1), ISSUER_NOT_AFTER.minusDays(1));
 
     assertThatThrownBy(() -> shellModelValidator.validateCertificate(x509EeCert, REFERENCE_DATE))
         .isInstanceOf(GemPkiException.class)

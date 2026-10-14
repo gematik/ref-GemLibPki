@@ -1,5 +1,10 @@
 # Release notes GemLibPki
 
+## Release 6.1.0
+
+- certificate validity checks for "Schalenmodell" in TUC_PKI_018 for reference date only
+- update dependencies
+
 ## Release 6.0.0
 
 - ready for Java 25
