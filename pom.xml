@@ -4,7 +4,7 @@
 
   <groupId>de.gematik.pki</groupId>
   <artifactId>gemLibPki</artifactId>
-  <version>6.0.0</version>
+  <version>6.1.0</version>
   <packaging>jar</packaging>
   <name>GemLibPki</name>
   <description>library for implementation and tests of the gematik pki specification</description>
@@ -45,7 +45,7 @@
 
   <properties>
     <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm:ss'Z'</maven.build.timestamp.format>
-    <project.build.outputTimestamp>2026-10-08T06:57:56Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-10-14T12:09:24Z</project.build.outputTimestamp>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.encoding>${project.build.sourceEncoding}</maven.compiler.encoding>
     <java.version>21</java.version>
@@ -82,7 +82,7 @@
     <version.central-publishing-maven-plugin>0.11.0</version.central-publishing-maven-plugin>
     <version.sonar-maven-plugin>5.8.0.7211</version.sonar-maven-plugin>
     <version.spotless.google-java-format>1.30.0</version.spotless.google-java-format>
-    <version.spotless-maven-plugin>3.10.3</version.spotless-maven-plugin>
+    <version.spotless-maven-plugin>3.10.4</version.spotless-maven-plugin>
     <!-- settings for upload to sonar server -->
     <sonar.coverage.jacoco.xmlReportPaths>${project.reporting.outputDirectory}/jacoco/index.xml</sonar.coverage.jacoco.xmlReportPaths>
   </properties>

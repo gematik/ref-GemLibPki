@@ -37,10 +37,10 @@ public class ShellModelValidator implements CertificateValidator {
   @NonNull private final X509Certificate x509IssuerCert;
 
   /**
-   * Verify that the validity period of the end-entity certificate is fully enclosed (shell model)
-   * by the validity period of the issuing CA certificate.
+   * Verify that both the end-entity certificate and the issuing CA certificate are valid at the
+   * given reference date.
    *
-   * @throws GemPkiException if the validity periods violate the shell model
+   * @throws GemPkiException if at least one certificate is not valid at the reference date
    */
   @Override
   public void validateCertificate(
@@ -54,18 +54,27 @@ public class ShellModelValidator implements CertificateValidator {
     final ZonedDateTime eeNotBefore = x509EeCert.getNotBefore().toInstant().atZone(ZoneOffset.UTC);
     final ZonedDateTime eeNotAfter = x509EeCert.getNotAfter().toInstant().atZone(ZoneOffset.UTC);
 
-    final boolean followsShellModel =
-        !eeNotBefore.isBefore(issuerNotBefore) && !eeNotAfter.isAfter(issuerNotAfter);
+    final boolean eeCertValidAtReferenceDate = isBetween(referenceDate, eeNotBefore, eeNotAfter);
+    final boolean issuerCertValidAtReferenceDate =
+        isBetween(referenceDate, issuerNotBefore, issuerNotAfter);
 
-    if (!followsShellModel) {
+    if (!eeCertValidAtReferenceDate || !issuerCertValidAtReferenceDate) {
       log.debug(
-          "Der Gültigkeitszeitraum des End-Entity-Zertifikats [{} - {}] liegt nicht vollständig"
-              + " innerhalb des Gültigkeitszeitraums des CA-Zertifikats [{} - {}].",
+          "Das Referenzdatum {} liegt nicht innerhalb des Gültigkeitszeitraums des"
+              + " End-Entity-Zertifikats [{} - {}] oder des CA-Zertifikats [{} - {}].",
+          referenceDate,
           eeNotBefore,
           eeNotAfter,
           issuerNotBefore,
           issuerNotAfter);
       throw new GemPkiException(productType, ErrorCode.SE_1021_CERTIFICATE_NOT_VALID_TIME);
     }
+  }
+
+  private boolean isBetween(
+      final ZonedDateTime referenceDate,
+      final ZonedDateTime startDate,
+      final ZonedDateTime endDate) {
+    return referenceDate.isAfter(startDate) && referenceDate.isBefore(endDate);
   }
 }
